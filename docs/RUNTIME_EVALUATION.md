@@ -2,9 +2,10 @@
 
 Tested 12 October 2026 on the user's Apple Silicon Mac. The supplied installer
 can complete in a local Windows compatibility environment, and its native
-checking components can load. A complete quality assessment is not yet proven.
-The user selected the already-activated Windows shop installation for further
-checking and the temporary transition workflow.
+checking components can load. A complete quality assessment is not yet proven in
+that Mac compatibility environment. A real sample check in the user's activated
+Windows shop installation succeeded, establishing a working manual checker for
+the temporary transition workflow.
 
 ## Environment and scope
 
@@ -65,6 +66,34 @@ Local logs, screenshots, native smoke-test sources and private test copies are
 kept in ignored `output/runtime-test`. Vendor binaries, sample photos, runtime
 prefixes, remote-connection identifiers and activation information are not Git
 artifacts. The temporary containers were stopped after the evaluation.
+
+## Activated Windows application check
+
+With the user's authorization, the working shop computer was accessed through
+its existing remote-control service. Photomatic opened through the station's
+normal IDStation launcher. Its initial photo screen was empty, with United
+Kingdom Passport selected. The supplied SampleData JPEG was opened through the
+ordinary file dialog.
+
+The application displayed No irregularities detected and green image-quality,
+face-size/position and background categories. The detailed measurement screen
+contained numerical outputs including confidence 90, general quality 83,
+sharpness 64, motion blur 80 and lighting uniformity 87. These are observed vendor
+outputs, not independently validated accuracy estimates or our own scores.
+One passing sample establishes operation, not full standard coverage.
+
+No registration or online-service activation fields were edited. No printer job,
+photo save/export, email or provider-code submission was initiated. The displayed
+upload-credit count remained unchanged. Photomatic was closed after the sample
+review, the print station's main screen remained running, and the remote session
+was disconnected. Credentials and remote identifiers are excluded from this
+record.
+
+The user reports having previously installed Photomatic on another Windows PC,
+where local features worked but online codes did not. They also identified a
+second Windows computer at home as a potential test installation. Neither report
+establishes the vendor's activation-transfer policy. Do not reassign the working
+station's online activation as part of a local-checking installation test.
 
 ## Transition acceptance criteria
 
