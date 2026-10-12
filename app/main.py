@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import contextlib
+import hashlib
 import json
 import logging
 import re
@@ -19,7 +20,7 @@ from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing, photomatic
+from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -33,6 +34,11 @@ templates.env.filters["fromjson"] = json.loads
 CODE_RE = re.compile(r"^[A-Za-z0-9]{6,8}$")
 ID_RE = re.compile(r"^[A-Za-z0-9_-]{10,40}$")
 AGE_GROUPS = {"adult": "Adult / 6+", "child": "Child 1–5", "baby": "Baby under 1"}
+EXCEPTION_CATEGORIES = {"child": "Child / baby", "disability": "Disability", "health": "Health / medical", "other": "Other documented allowance"}
+# These concern presentation/biometrics that staff can assess against a genuine
+# document allowance. Technical file, resolution, focus, background and exposure
+# failures must be corrected and cannot be waived by this form.
+EXCEPTION_KEYS = {"eyes", "expression", "tilt", "facing", "headsize", "eyeposition", "facewidth", "glare", "glasses"}
 
 
 # ---------------------------------------------------------------- helpers
@@ -40,6 +46,35 @@ def _photo_path(pid, preview=False):
     if not ID_RE.match(pid):
         raise HTTPException(404)
     return config.PHOTO_DIR / (f"{pid}_prev.jpg" if preview else f"{pid}.jpg")
+
+
+@contextlib.contextmanager
+def _edit_job(pid, pending_only=True):
+    if not ID_RE.fullmatch(pid):
+        raise HTTPException(404)
+    try:
+        token = db.claim_edit(pid, pending_only=pending_only)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    try:
+        yield token
+    finally:
+        db.release_edit(pid, token)
+
+
+def _clear_candidate(pid):
+    for suffix in ("_ai_source", "_ai.jpg", "_ai_prev.jpg", "_ai_before.jpg"):
+        (config.PHOTO_DIR / f"{pid}{suffix}").unlink(missing_ok=True)
+
+
+def _store_result(pid, result):
+    for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
+        (config.PHOTO_DIR / f"{pid}{suffix}").unlink(missing_ok=True)
+    if result.jpeg:
+        _photo_path(pid).write_bytes(result.jpeg)
+        _photo_path(pid, True).write_bytes(result.preview_jpeg)
+        if result.before_jpeg:
+            (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
 
 
 def _client_ip(request):
@@ -129,9 +164,10 @@ def _crop_options(form=None):
     try:
         zoom, x, y = float(form.get("zoom", 1)), float(form.get("x", 0)), float(form.get("y", 0))
         rotation = int(form.get("rotation", 0))
-        if not (0.5 <= zoom <= 2 and -30 <= x <= 30 and -30 <= y <= 30 and rotation in (0, 90, 180, 270)):
+        angle = float(form.get("angle", 0))
+        if not (0.5 <= zoom <= 2 and -30 <= x <= 30 and -30 <= y <= 30 and -15 <= angle <= 15 and rotation in (0, 90, 180, 270)):
             raise ValueError()
-        return dict(zoom=zoom, x=x, y=y, rotation=rotation)
+        return dict(zoom=zoom, x=x, y=y, rotation=rotation, angle=angle)
     except (ValueError, TypeError):
         raise HTTPException(400, "Invalid crop adjustment")
 
@@ -198,14 +234,21 @@ async def code_fetch(request):
         db.log_fetch(code, False, reason, ip)
         log.info("Rejected fetch %s from %s: %s", code, ip, reason)
         return Response(status_code=404)
-    path = _photo_path(row["id"])
+    path = config.PHOTO_DIR / f"{row['id']}_code.jpg"
+    recorded_hash = json.loads(row["issue_review"]).get("photo_sha256")
+    if not path.exists() and not recorded_hash:  # Preserve legacy codes only.
+        path = _photo_path(row["id"])
     if not path.exists():
         db.log_fetch(code, False, "file missing", ip)
+        return Response(status_code=404)
+    photo = path.read_bytes()
+    if recorded_hash and hashlib.sha256(photo).hexdigest() != recorded_hash:
+        db.log_fetch(code, False, "issued photo hash mismatch", ip)
         return Response(status_code=404)
     db.mark_fetched(code)
     db.log_fetch(code, True, "ok", ip)
     return Response(
-        path.read_bytes(),
+        photo,
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
@@ -286,8 +329,14 @@ async def admin_new(request):
             "ages": AGE_GROUPS, "row": None, "profile": profile, "layout": photomatic.default_print(profile),
             "choices": photomatic.print_choices(profile), "checks": [], "groups": [], "options": _opts(),
             "crop": _crop_options(), "has_photo": False, "editable": True,
+            "measurement_sections": [], "ai_status": {},
         })
     form, data, age = await _read_upload(request)
+    if form.get("use_ai") == "on":
+        if not config.OPENAI_API_KEY:
+            raise HTTPException(503, "Configure the OpenAI connection before using AI preparation")
+        if form.get("ai_consent") != "on":
+            raise HTTPException(400, "Confirm customer permission for OpenAI photo processing")
     profile, layout = _selection(form)
     pid, _ = await _process_and_store(
         data, age, "shop", dict(_opts(form), crop=_crop_options(form)), profile, layout,
@@ -295,6 +344,8 @@ async def admin_new(request):
         email=(form.get("email") or "").strip() or None,
         phone=(form.get("phone") or "").strip() or None,
     )
+    if form.get("use_ai") == "on":
+        await _prepare_candidate(pid, lighting=True, colour=True)
     return RedirectResponse(f"/admin/p/{pid}", status_code=303)
 
 
@@ -307,12 +358,25 @@ async def admin_photo(request):
     layout = photomatic.PRINTS.get(row["print_template_id"]) or photomatic.default_print(profile)
     checks = json.loads(row["checks"])
     options = json.loads(row["options"])
+    ai_status = json.loads(row["ai_state"])
+    stored_measurements = json.loads(row["measurements"])
+    review = json.loads(row["issue_review"])
+    last_validation = stored_measurements.get("code_validation", {})
+    final_values = review.get("final_measurements") or last_validation.get("measurements")
+    metric_checks = review.get("final_checks") or last_validation.get("checks") or checks
     return templates.TemplateResponse(request, "station.html", {
         "row": row, "checks": checks, "groups": photomatic.summary(checks), "ages": AGE_GROUPS,
         "profile": profile, "layout": layout, "choices": photomatic.print_choices(profile, layout["printer"]),
         "options": options, "crop": options.get("crop", _crop_options()),
         "has_photo": _photo_path(row["id"]).exists(),
-        "editable": row["status"] == "pending" and (config.PHOTO_DIR / f"{row['id']}_source").exists(),
+        "editable": row["status"] == "pending" and not row["edit_token"] and (config.PHOTO_DIR / f"{row['id']}_source").exists(),
+        "measurement_sections": measurements.report(final_values or stored_measurements, metric_checks, profile),
+        "measurement_title": "Final code JPEG measurements" if final_values else "Photo measurements",
+        "ai_measurement_sections": measurements.report(ai_status.get("measurements", {}), ai_status.get("checks", []), profile),
+        "ai_status": ai_status,
+        "exception_categories": EXCEPTION_CATEGORIES,
+        "exception_checks": [c for c in checks if c["status"] == "fail" and c["key"] in EXCEPTION_KEYS],
+        "nonwaivable_checks": [c for c in checks if c["status"] == "fail" and c["key"] not in EXCEPTION_KEYS],
         "emailed": request.query_params.get("emailed"),
     })
 
@@ -320,29 +384,164 @@ async def admin_photo(request):
 async def admin_reprocess(request):
     _require_admin(request)
     pid = request.path_params["pid"]
-    row = db.get(pid)
-    if not row or row["status"] != "pending":
-        raise HTTPException(409, "Only pending photos can be recropped")
-    source = config.PHOTO_DIR / f"{pid}_source"
-    if not source.exists():
-        raise HTTPException(409, "Upload a new photo to change this crop")
     form = await request.form()
     profile, layout = _selection(form)
     options = dict(_opts(form), crop=_crop_options(form))
-    original = source.read_bytes()
-    result = await run_in_threadpool(lambda: processing.process(original, row["age_group"], country_id=profile["id"], **options))
-    current = db.get(pid)
-    if not current or current["status"] != "pending":
-        raise HTTPException(409, "This photo has already been issued or rejected")
-    # Clear any previous usable crop when the new crop fails framing.
-    for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
-        (config.PHOTO_DIR / f"{pid}{suffix}").unlink(missing_ok=True)
-    if result.jpeg:
-        _photo_path(pid).write_bytes(result.jpeg)
-        _photo_path(pid, True).write_bytes(result.preview_jpeg)
-        (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
-    db.update_processing(pid, profile["id"], layout["id"], options, result)
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        source = config.PHOTO_DIR / f"{pid}_working_source"
+        if not source.exists():
+            source = config.PHOTO_DIR / f"{pid}_source"
+        if not source.exists():
+            raise HTTPException(409, "Upload a new photo to change this crop")
+        result = await run_in_threadpool(lambda: processing.process(source.read_bytes(), row["age_group"], country_id=profile["id"], **options))
+        db.assert_edit(pid, token)
+        previous = json.loads(row["options"])
+        if previous.get("ai"):
+            options["ai"] = previous["ai"]
+        _store_result(pid, result)
+        _clear_candidate(pid)
+        db.update_processing(pid, profile["id"], layout["id"], options, result, token)
     return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+
+
+async def _prepare_candidate(pid, *, lighting, colour):
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        options = json.loads(row["options"])
+        _clear_candidate(pid)
+        db.set_ai_state(pid, token, {"status": "running", "started": time.time()})
+        try:
+            original = (config.PHOTO_DIR / f"{pid}_source").read_bytes()
+            # Check the original's real detail and framing before enhancement.
+            local_options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                                 crop=options.get("crop", _crop_options()))
+            original_result = await run_in_threadpool(lambda: processing.process(
+                original, row["age_group"], country_id=row["country_id"], **local_options))
+            if any(c.status == "fail" and c.key in ("file", "face", "resolution", "framing") for c in original_result.checks):
+                raise ai_prepare.PreparationError("Adjust the original framing or retake the photo before AI preparation. AI must not invent missing image detail.")
+            prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour)
+            result = await run_in_threadpool(lambda: processing.process(
+                prepared.image, row["age_group"], country_id=row["country_id"], **local_options))
+            if not result.jpeg:
+                raise ai_prepare.PreparationError("The AI result could not be framed safely. Keep the original or prepare again.")
+            db.assert_edit(pid, token)
+            (config.PHOTO_DIR / f"{pid}_ai_source").write_bytes(prepared.image)
+            (config.PHOTO_DIR / f"{pid}_ai.jpg").write_bytes(result.jpeg)
+            (config.PHOTO_DIR / f"{pid}_ai_prev.jpg").write_bytes(result.preview_jpeg)
+            state = {
+                "status": "ready", "candidate_id": secrets.token_urlsafe(16), "revision": row["revision"], "country_id": row["country_id"],
+                "options": local_options, "checks": result.as_dict()["checks"], "ok": result.ok,
+                "measurements": result.measurements, "model": prepared.model,
+                "request_id": prepared.request_id, "prompt_version": prepared.prompt_version,
+                "lighting": lighting, "colour": colour, "permission_recorded": time.time(),
+                "original_sha256": hashlib.sha256(original).hexdigest(),
+                "edited_source_sha256": hashlib.sha256(prepared.image).hexdigest(),
+            }
+            db.set_ai_state(pid, token, state)
+            return state
+        except Exception as exc:
+            message = str(exc) if isinstance(exc, ai_prepare.PreparationError) else "Photo preparation failed. No edit was applied; keep the original or retry."
+            state = {"status": "error", "message": message}
+            try:
+                db.assert_edit(pid, token)
+                _clear_candidate(pid)
+                db.set_ai_state(pid, token, state)
+            except ValueError:
+                pass  # The job expired/deleted while the remote call was running.
+            return state
+
+
+async def admin_ai_prepare(request):
+    _require_admin(request)
+    form = await request.form()
+    if not config.OPENAI_API_KEY:
+        raise HTTPException(503, "Configure OPENAI_API_KEY on the server")
+    if form.get("ai_consent") != "on":
+        raise HTTPException(400, "Confirm customer permission for OpenAI photo processing")
+    state = await _prepare_candidate(request.path_params["pid"], lighting=form.get("lighting") == "on", colour=form.get("colour") == "on")
+    return Response(json.dumps({"status": state["status"], "message": state.get("message", "")}),
+                    status_code=200 if state["status"] == "ready" else 400, media_type="application/json")
+
+
+async def admin_ai_accept(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    form = await request.form()
+    if form.get("review_likeness") != "on":
+        raise HTTPException(400, "Compare the original and AI photo and confirm the person's appearance")
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        state = json.loads(row["ai_state"])
+        if state.get("status") != "ready" or state.get("revision") != row["revision"]:
+            raise HTTPException(409, "Prepare a new AI preview for the current photo version")
+        if form.get("candidate_id") != state.get("candidate_id"):
+            raise HTTPException(409, "The AI preview changed. Review the current preview before accepting it")
+        source = (config.PHOTO_DIR / f"{pid}_ai_source").read_bytes()
+        options = state["options"]
+        # Run the checks again on the exact accepted source, rather than trusting
+        # values submitted by a browser or an AI-written verdict.
+        result = await run_in_threadpool(lambda: processing.process(source, row["age_group"], country_id=row["country_id"], **options))
+        db.assert_edit(pid, token)
+        (config.PHOTO_DIR / f"{pid}_working_source").write_bytes(source)
+        options["ai"] = {k: state[k] for k in (
+            "model", "request_id", "prompt_version", "lighting", "colour", "permission_recorded",
+            "original_sha256", "edited_source_sha256")}
+        options["ai"].update(reviewed_at=time.time(), reviewed_by=config.ADMIN_USER)
+        _store_result(pid, result)
+        db.update_processing(pid, row["country_id"], row["print_template_id"], options, result, token)
+        _clear_candidate(pid)
+    return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+
+
+async def admin_ai_discard(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    with _edit_job(pid) as token:
+        _clear_candidate(pid)
+        db.set_ai_state(pid, token, {})
+    return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+
+
+async def admin_restore_original(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                       crop=json.loads(row["options"]).get("crop", _crop_options()))
+        data = (config.PHOTO_DIR / f"{pid}_source").read_bytes()
+        result = await run_in_threadpool(lambda: processing.process(data, row["age_group"], country_id=row["country_id"], **options))
+        db.assert_edit(pid, token)
+        _store_result(pid, result)
+        (config.PHOTO_DIR / f"{pid}_working_source").unlink(missing_ok=True)
+        _clear_candidate(pid)
+        db.update_processing(pid, row["country_id"], row["print_template_id"], options, result, token)
+    return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+
+
+async def admin_original(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    if not ID_RE.fullmatch(pid):
+        raise HTTPException(404)
+    source = config.PHOTO_DIR / f"{pid}_source"
+    if not source.exists():
+        raise HTTPException(404)
+    photo = await run_in_threadpool(lambda: processing._small_jpeg(processing.load_image(source.read_bytes()), bounds=(1600, 1600), quality=95))
+    return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+async def admin_ai_preview(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    if not ID_RE.fullmatch(pid):
+        raise HTTPException(404)
+    row = db.get(pid)
+    if not row or json.loads(row["ai_state"]).get("status") != "ready":
+        raise HTTPException(404)
+    path = config.PHOTO_DIR / f"{pid}_ai.jpg"
+    return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 async def admin_issue(request):
@@ -356,20 +555,81 @@ async def admin_issue(request):
         raise HTTPException(409, "Photo is rejected or expired")
     profile = photomatic.country(row["country_id"])
     if profile["code_service"] == "ie":
-        raise HTTPException(503, "Irish photo codes need the Irish Passport Online provider connection. Print, save and email are available.")
+        raise HTTPException(503, "Irish codes are handled by your external provider. Save this photo and submit it through that provider.")
     if profile["code_service"] != "uk":
         raise HTTPException(400, "Online photo codes are only for UK and Irish passports. Other templates can be printed, saved or emailed.")
-    if not row["ok"] and form.get("override") != "on":
-        raise HTTPException(400, "Photo failed checks. Tick override to issue anyway.")
-    code = db.issue(pid)
-    (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
+    if row["code"]:
+        return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        state = json.loads(row["ai_state"])
+        if str(form.get("review_revision")) != str(row["revision"]):
+            raise HTTPException(409, "The photo changed since this review screen opened. Refresh and review the current photo")
+        if state.get("status") in ("ready", "running"):
+            raise HTTPException(409, "Review and accept or discard the AI preview before issuing a code")
+        failed = {c["key"] for c in json.loads(row["checks"]) if c["status"] == "fail"}
+        exception = None
+        if failed:
+            category = form.get("exception_category")
+            reason = (form.get("exception_reason") or "").strip()[:1000]
+            covered = set(form.getlist("exception_checks"))
+            if failed - EXCEPTION_KEYS:
+                raise HTTPException(400, "Technical or image quality checks failed. Correct the photo or retake it; these failures cannot be waived.")
+            if category not in EXCEPTION_CATEGORIES or len(reason) < 15 or covered != failed:
+                raise HTTPException(400, "Record the exception category, a specific reason and every failed check covered by the document allowance")
+            if category == "child" and row["age_group"] == "adult":
+                raise HTTPException(400, "A child exception requires a child or baby job")
+            if form.get("exception_confirmed") != "on":
+                raise HTTPException(400, "Confirm that the selected document allows this exception")
+            exception = {"category": category, "reason": reason, "checks": sorted(covered)}
+        required = ("review_likeness", "review_visibility", "customer_permission")
+        if any(form.get(k) != "on" for k in required):
+            raise HTTPException(400, "Complete the staff photo review and customer permission before issuing a code")
+        try:
+            final = await run_in_threadpool(processing.code_photo, _photo_path(pid).read_bytes(), row["country_id"])
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
+        final_result = await run_in_threadpool(processing.check_code_photo, final, row["country_id"], row["age_group"])
+        final_failed = {c.key for c in final_result.checks if c.status == "fail"}
+        allowed = set(exception["checks"]) if exception else set()
+        if final_failed - allowed:
+            # Surface failures discovered on the encoded/resized deliverable so
+            # staff can correct them or record a genuinely applicable allowance.
+            combined = {c["key"]: c for c in json.loads(row["checks"])}
+            for check in final_result.as_dict()["checks"]:
+                if check["status"] == "fail":
+                    combined[check["key"]] = dict(check, detail="Final code JPEG: " + check["detail"])
+            with db.conn() as connection:
+                recorded = json.loads(row["measurements"])
+                recorded["code_validation"] = final_result.as_dict()
+                connection.execute("UPDATE photos SET checks=?,ok=0,measurements=?,revision=revision+1 WHERE id=? AND edit_token=?",
+                                   (json.dumps(list(combined.values())), json.dumps(recorded), pid, token))
+            raise HTTPException(400, "The final code JPEG failed checks: " + ", ".join(sorted(final_failed - allowed)) + ". Refresh the review screen and correct the photo or record an applicable allowance.")
+        db.assert_edit(pid, token)
+        (config.PHOTO_DIR / f"{pid}_code.jpg").write_bytes(final)
+        options = json.loads(row["options"])
+        age_allowances = [c["key"] for c in json.loads(row["checks"]) if c.get("detail", "").startswith("Not required")]
+        review = dict(staff=config.ADMIN_USER, reviewed_at=time.time(), revision=row["revision"],
+                      country_id=row["country_id"], photo_sha256=hashlib.sha256(final).hexdigest(),
+                      confirmations=list(required), ai=options.get("ai"), exception=exception,
+                      processing_options=options,
+                      final_checks=final_result.as_dict()["checks"], final_measurements=final_result.measurements,
+                      age_group=row["age_group"], age_allowances=age_allowances,
+                      decision="approved_with_exception" if exception else "approved_with_age_allowance" if age_allowances else "checks_passed_and_reviewed")
+        code = db.issue(pid, review, token)
+        # Keep an AI job's original for comparison until the code expires.
+        if not options.get("ai"):
+            (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
+        (config.PHOTO_DIR / f"{pid}_working_source").unlink(missing_ok=True)
+        _clear_candidate(pid)
     emailed = await run_in_threadpool(_send_code_email, db.get(pid), code)
     return RedirectResponse(f"/admin/p/{pid}?emailed={int(emailed)}", status_code=303)
 
 
 async def admin_reject(request):
     _require_admin(request)
-    db.reject(request.path_params["pid"])
+    with _edit_job(request.path_params["pid"], pending_only=False):
+        db.reject(request.path_params["pid"])
     db.purge_expired()
     return RedirectResponse("/admin", status_code=303)
 
@@ -520,6 +780,12 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}", admin_photo),
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
     Route("/admin/p/{pid}/reprocess", admin_reprocess, methods=["POST"]),
+    Route("/admin/p/{pid}/ai/prepare", admin_ai_prepare, methods=["POST"]),
+    Route("/admin/p/{pid}/ai/accept", admin_ai_accept, methods=["POST"]),
+    Route("/admin/p/{pid}/ai/discard", admin_ai_discard, methods=["POST"]),
+    Route("/admin/p/{pid}/restore-original", admin_restore_original, methods=["POST"]),
+    Route("/admin/p/{pid}/original.jpg", admin_original),
+    Route("/admin/p/{pid}/ai-preview.jpg", admin_ai_preview),
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
     Route("/admin/p/{pid}/before.jpg", admin_before),

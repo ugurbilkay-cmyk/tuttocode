@@ -5,10 +5,11 @@
 <div class="card">
 <p>{{ cfg.SHOP_NAME }} processes your photo to produce the passport, visa or ID photo you select, and a passport photo code where supported.</p>
 <ul class="tips">
-  <li>The original shop photo is kept temporarily so staff can adjust the crop. It is deleted when a code is issued or the pending photo expires. Original public uploads are not retained.</li>
+  <li>The original shop photo is kept so staff can adjust the crop and compare AI preparation. For an AI-prepared issued photo, the original is kept until the code expires or you request deletion. Otherwise it is deleted when a code is issued or the pending photo expires. Original public uploads are not retained.</li>
+  <li>With your permission, staff may send your photo to OpenAI for lighting and colour preparation. This uses an external service; staff review the result before using it. Your contact details are not sent with the preparation request.</li>
   <li>Staff can print, save or email your photo. UK code retrieval requires an HM Passport Office signed request we verify.</li>
   <li>Photos without a code are deleted after {{ cfg.PENDING_RETENTION_HOURS }} hours (the hourly cleanup may take up to one additional hour). Photos with a code expire after {{ cfg.RETENTION_DAYS }} days.</li>
-  <li>Your name and contact details are used only to send your code and are deleted with the photo.</li>
+  <li>Your name and contact details are used to deliver your photo or code and are deleted with the photo. Preparation and review records are deleted with the job.</li>
 </ul>
 <p>Questions or deletion requests: {{ cfg.SHOP_CONTACT }}</p>
 </div>

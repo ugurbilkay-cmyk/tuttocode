@@ -53,6 +53,12 @@ def init():
             "country_id": "TEXT NOT NULL DEFAULT 'united-kingdom-passport'",
             "print_template_id": "TEXT",
             "options": "TEXT NOT NULL DEFAULT '{}'",
+            "measurements": "TEXT NOT NULL DEFAULT '{}'",
+            "revision": "INTEGER NOT NULL DEFAULT 0",
+            "edit_token": "TEXT",
+            "edit_started": "REAL",
+            "ai_state": "TEXT NOT NULL DEFAULT '{}'",
+            "issue_review": "TEXT NOT NULL DEFAULT '{}'",
         }.items():
             if name not in columns:
                 c.execute(f"ALTER TABLE photos ADD COLUMN {name} {definition}")
@@ -80,15 +86,51 @@ def create(photo_id, source, age_group, result, name=None, email=None, phone=Non
              json.dumps(result.as_dict()["checks"]), int(result.ok), now,
              now + config.PENDING_RETENTION_HOURS * 3600),
         )
-        c.execute("UPDATE photos SET country_id=?, print_template_id=?, options=? WHERE id=?",
-                  (country_id, print_template_id, json.dumps(options or {}), photo_id))
+        c.execute("UPDATE photos SET country_id=?, print_template_id=?, options=?, measurements=? WHERE id=?",
+                  (country_id, print_template_id, json.dumps(options or {}), json.dumps(result.measurements), photo_id))
 
 
-def update_processing(photo_id, country_id, print_template_id, options, result):
+def update_processing(photo_id, country_id, print_template_id, options, result, token=None):
     with conn() as c:
-        c.execute("UPDATE photos SET country_id=?,print_template_id=?,options=?,checks=?,ok=? WHERE id=? AND status='pending'",
+        c.execute("UPDATE photos SET country_id=?,print_template_id=?,options=?,checks=?,ok=?,measurements=?,revision=revision+1,ai_state='{}' WHERE id=? AND status='pending' AND edit_token IS ?",
                   (country_id, print_template_id, json.dumps(options), json.dumps(result.as_dict()['checks']),
-                   int(result.ok), photo_id))
+                   int(result.ok), json.dumps(result.measurements), photo_id, token))
+
+
+def claim_edit(photo_id, *, pending_only=True):
+    """One editor per photo across processes, including slow external API calls."""
+    token, now = secrets.token_urlsafe(24), time.time()
+    with conn() as c:
+        c.execute("BEGIN IMMEDIATE")
+        row = c.execute("SELECT * FROM photos WHERE id=?", (photo_id,)).fetchone()
+        if not row or row["expires"] <= now or row["status"] == "rejected":
+            raise ValueError("Photo is missing or expired")
+        if pending_only and row["status"] != "pending":
+            raise ValueError("Issued photos cannot be edited")
+        if row["edit_token"] and row["edit_started"] > now - max(900, config.OPENAI_TIMEOUT_SECONDS + 120):
+            raise ValueError("This photo is being processed. Wait for it to finish.")
+        c.execute("UPDATE photos SET edit_token=?,edit_started=? WHERE id=?", (token, now, photo_id))
+    return token
+
+
+def release_edit(photo_id, token):
+    with conn() as c:
+        c.execute("UPDATE photos SET edit_token=NULL,edit_started=NULL WHERE id=? AND edit_token=?", (photo_id, token))
+
+
+def set_ai_state(photo_id, token, state):
+    with conn() as c:
+        changed = c.execute("UPDATE photos SET ai_state=? WHERE id=? AND edit_token=? AND status='pending' AND expires>?",
+                            (json.dumps(state), photo_id, token, time.time())).rowcount
+        if changed != 1:
+            raise ValueError("The photo changed or expired during preparation")
+
+
+def assert_edit(photo_id, token):
+    row = get(photo_id)
+    if not row or row["edit_token"] != token or row["expires"] <= time.time():
+        raise ValueError("The photo changed or expired during preparation")
+    return row
 
 
 def update_contact(photo_id, name, email, phone):
@@ -96,18 +138,21 @@ def update_contact(photo_id, name, email, phone):
         c.execute("UPDATE photos SET name=?, email=?, phone=? WHERE id=?", (name, email, phone, photo_id))
 
 
-def issue(photo_id):
+def issue(photo_id, review=None, token=None):
     now = time.time()
     with conn() as c:
+        c.execute("BEGIN IMMEDIATE")
         row = c.execute("SELECT * FROM photos WHERE id=?", (photo_id,)).fetchone()
         if not row:
             return None
         if row["code"]:
             return row["code"]
+        if row["status"] != "pending" or row["expires"] <= now or row["edit_token"] != token:
+            raise ValueError("Photo cannot be issued in its current state")
         code = new_code(c)
         c.execute(
-            "UPDATE photos SET code=?, status='issued', issued=?, expires=? WHERE id=?",
-            (code, now, now + config.RETENTION_DAYS * 86400, photo_id),
+            "UPDATE photos SET code=?, status='issued', issued=?, expires=?, issue_review=?, ai_state='{}' WHERE id=?",
+            (code, now, now + config.RETENTION_DAYS * 86400, json.dumps(review or {}), photo_id),
         )
         return code
 
@@ -153,8 +198,12 @@ def purge_expired():
     with conn() as c:
         rows = c.execute("SELECT id FROM photos WHERE expires<=? OR status='rejected'", (now,)).fetchall()
         for r in rows:
-            for suffix in (".jpg", "_prev.jpg", "_before.jpg", "_source"):
+            for suffix in PHOTO_SUFFIXES:
                 (config.PHOTO_DIR / f"{r['id']}{suffix}").unlink(missing_ok=True)
         c.execute("DELETE FROM photos WHERE expires<=? OR status='rejected'", (now,))
         c.execute("DELETE FROM fetch_log WHERE ts<?", (now - 90 * 86400,))
         return len(rows)
+
+
+PHOTO_SUFFIXES = (".jpg", "_prev.jpg", "_before.jpg", "_source", "_working_source", "_code.jpg",
+                  "_ai_source", "_ai.jpg", "_ai_prev.jpg", "_ai_before.jpg")

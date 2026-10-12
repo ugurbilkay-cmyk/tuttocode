@@ -53,7 +53,7 @@ def summary(checks):
     groups = {"Image quality": [], "Face size and position": [], "Background": []}
     for c in checks:
         group = "Background" if c["key"] in ("background", "bgshadow") else (
-            "Face size and position" if c["key"] in ("face", "tilt", "facing", "framing", "resolution", "headsize", "eyeposition", "facewidth")
+            "Face size and position" if c["key"] in ("face", "tilt", "facing", "framing", "resolution", "headsize", "eyeposition", "facewidth", "eyedistance")
             else "Image quality")
         groups[group].append(c)
     return [{"name": name, "status": "fail" if any(c["status"] == "fail" for c in rows) else

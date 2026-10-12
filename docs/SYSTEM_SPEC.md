@@ -11,8 +11,9 @@ the supplied installation defines reference behaviour and settings.
 The user confirmed **file upload and printing on a Fujifilm DE100-XD**. Camera
 control, card readers and wireless camera transfer are not required for this
 workflow. All supplied country/document profiles must be available. Online
-passport codes are limited to UK and Irish passports. Irish code integration is
-unfinished. The current branch is a prototype, not a complete replacement.
+passport codes are limited to UK and Irish passports. Irish codes are outsourced for now; an external provider owns their
+issuance. OpenAI lighting/colour preparation precedes local measurement and staff
+review for our UK code workflow. See [AI preparation](AI_WORKFLOW.md). The current branch is a prototype, not a complete replacement.
 
 ## What matching the software means
 
@@ -156,8 +157,10 @@ clothing edges even when a flat background colour passes a numerical check.
 
 Editing policy must depend on document and output purpose. UK guidance requires
 photos unaltered by software; Irish guidance prohibits digital enhancement or
-changes. AI should locate, measure, frame and flag problems; unsupported face or
-background alteration must not silently enter a passport-code output. General ID
+changes. The user has explicitly chosen OpenAI lighting and colour preparation. It now
+uses a separate preview, staff likeness review and local rechecks before a UK code.
+That product decision does not establish government acceptance of enhanced photos;
+face/appearance preservation remains an edit instruction and staff review obligation. General ID
 editing and printer colour management should remain separate operations.
 Sources: [UK printed photo rules](https://www.gov.uk/photos-for-passports/photo-requirements),
 [Irish photo guidelines](https://api.ireland.ie/en/dfa/passports/photo-guidelines/).
@@ -232,10 +235,10 @@ retrieval test are still required to validate a changed deployment.
 Source: [HMPO supplier protocol](https://www.passport.service.gov.uk/help/photo-codes).
 
 Irish Passport Online uses participating providers. The current codebase has no
-Irish issuance/retrieval adapter. An independently generated UK-style URL is not
-evidence of Irish acceptance. Establish the Irish provider/onboarding protocol,
-authorization and end-to-end retrieval before enabling its button. Until then,
-Irish photo Save/Email is distinct from an Irish code.
+Irish issuance/retrieval adapter. Irish issuance is outsourced for now. Staff Save the photo and submit it through
+the chosen external provider. An independently generated UK-style URL is not
+evidence of Irish acceptance. Our app does not generate Irish codes; provider
+selection and their actual handoff remain to be validated.
 Source: [Irish photo code options](https://api.ireland.ie/en/dfa/passports/photo-guidelines/).
 See [the integration research](IRISH_CODES.md).
 
@@ -260,21 +263,21 @@ software behaviours only; they do not establish complete parity or printer outpu
 | Selector and defaults | Search exists; reference views/default management missing | Country/size/online/all views work and changing shop default does not rewrite a job |
 | File upload | Exists, including EXIF orientation and optional HEIC decoder | Landscape/portrait/HEIC, unreadable input, oversized file and multiple faces tested |
 | Automatic crop | AI landmarks/mask plus imported targets | Paired reference photos across document sizes and different hair/head shapes match agreed framing tolerances |
-| Fine crop adjustment | Zoom/move and quarter turns exist | Visible controls, ±1° rotation, reset and apply/cancel recheck geometry without repeated JPEG degradation |
-| Final geometry checks | Out-of-range head/eye values currently warnings | Active violations are shown consistently; output policy distinguishes override from a passing check |
-| Quality measurements | Heuristics exist; only MaxAngle uses imported quality settings | Defined units/methods, profile-specific switches and meaningful measured/unmeasured results; no copied proprietary score scale |
+| Fine crop adjustment | Zoom/move, quarter turns and ±1° steps now exist; rotation edges fail framing | Visible controls, ±1° rotation, reset and apply/cancel recheck geometry without repeated JPEG degradation |
+| Final geometry checks | Active head/eye/width violations now fail; eligible exceptions require a recorded document allowance | Active violations are shown consistently; output policy distinguishes override from a passing check |
+| Quality measurements | Detailed inspector records actual values and untested fields; eye angle and source distance use imported thresholds; proprietary score parity remains incomplete | Defined units/methods, profile-specific switches and meaningful measured/unmeasured results; no copied proprietary score scale |
 | Children/babies | UK-style relaxations applied globally; facing check still enforced | Exceptions follow the selected country's policy and staff age selection |
-| Background workflow | Automatic replacement/evening exist | Manual preview/undo/test/save/cancel; blocked tools respected; edited passport-code output prevented by policy |
+| Background workflow | Local tools exist; OpenAI preview/review is separate and requested lighting edits may be issued after checks/review | Manual background preview/undo/test/save/cancel; blocked tools respected; no unsupported acceptance claims |
 | Country change after processing | Client changes label/guides before server reprocess | Export/issue cannot use stale photo/checks under a newly selected profile |
 | Print layout compatibility | Size-format matching exists; force-country/compliance rules incomplete | Restrict layouts using all active rules; no country-specific layout offered incorrectly |
 | DE100-XD output | Generic JPEG/browser preview only | Correct roll/cut dimensions, 100% scale, orientation and physical measurement on the actual printer |
 | Print copies, calibration and DUO | Missing | Copies/layout options, two-photo sheet, own artwork and independent print colour settings verified |
 | Save and Email | Profile dimensions; download and configured SMTP exist | Recipient/name/size controls, min/max bytes checked on final deliverable, digital framing rechecked, visible actual delivery outcome |
-| Final file byte validation | Processing checks a candidate; Save re-encodes without enforcing minimum | The exact bytes served/downloaded/emailed meet that deliverable's own limits; declared units and boundary cases tested |
-| UK code | Own generator and signed retrieval exist | Required review/consent stored server-side, immutable exact issued bytes, expiry and real HMPO retrieval after deployment |
-| Irish code | Explicitly disabled | Actual Irish provider authorization, protocol and successful Passport Online retrieval |
-| Code review and exceptions | Visual review only browser-required; override lacks reason/history | Direct POST cannot bypass consent/review; staff identity, reason and photo version recorded |
-| Job lifecycle and concurrency | Retention and issued-crop lock exist | Atomic issue/edit/reject transitions, idempotent retries and file/DB consistency under concurrent requests |
+| Final file byte validation | UK code validates exact bytes and reruns checks without recropping; general Save/Email minimum-size validation remains incomplete | The exact bytes served/downloaded/emailed meet that deliverable's own limits; declared units and boundary cases tested |
+| UK code | Own generator and signed retrieval; exact code JPEG, review revision, consent, staff identity and SHA-256 are now stored | Required review/consent stored server-side, immutable exact issued bytes, expiry and real HMPO retrieval after deployment |
+| Irish code | Outsourced; Save and optional provider link, no own issuance | Select provider and validate manual handoff and returned code |
+| Code review and exceptions | Server-required review/permission; specific named exceptions and reason stored, generic override removed | Direct POST cannot bypass consent/review; staff identity, reason and photo version recorded |
+| Job lifecycle and concurrency | Per-job edit lease covers preparation, recrop, acceptance, rejection and issue; stale reviews/previews blocked | Atomic issue/edit/reject transitions, idempotent retries and file/DB consistency under concurrent requests |
 | Job history, reprints and privacy | Basic staff history/deletion exists | Output events and failures recorded; accurate access controls, retention and deletion behaviour |
 | Configuration/template maintenance | Importer, JSON and environment settings | Own versioned profile/layout editor, safe validation, rollback and official-rule provenance/date |
 
@@ -286,8 +289,8 @@ software behaviours only; they do not establish complete parity or printer outpu
    measurement/background inspectors and save/email/code dialogs.
 3. Implement and calibrate DE100-XD output for the actual paper configuration;
    replace provider-specific sheet artwork with Tuttoprint artwork.
-4. Validate UK issuance through the existing own service and establish the Irish
-   connection. Release each code service only after its real retrieval succeeds.
+4. Validate UK issuance through the existing own service and validate the outsourced
+   Irish handoff. Complete real retrieval before a shop release.
 5. Run paired photo jobs and print/export comparisons covering paper/online UK,
    Irish paper/online, US square, Canada, Finland, a blue-background document,
    free-style, DFAT and NSW TAXI. Include tilted/blurred/low-resolution images,

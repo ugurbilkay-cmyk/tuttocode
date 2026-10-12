@@ -10,12 +10,19 @@ profiles and 169 print layouts. `/admin` opens the studio workspace;
 browser camera, review the AI crop, then Print, Save or Email. Pending shop photos
 can be moved, zoomed, rotated and processed again. These imported layout families
 are reference settings, not connected devices or a calibrated DE100-XD profile.
-Fine rotation, full template-policy handling, detailed inspectors and DE100-XD
-calibration remain incomplete.
+Fine rotation and a detailed measurements inspector are now available. Full native
+quality-score parity, template-policy handling and DE100-XD calibration remain
+incomplete.
 
 The existing UK HMPO code service is retained. Irish passport templates are available
-for photo export, but Irish **code issuance is disabled** until a provider connection
-is established. No other country can be issued an online passport code.
+for photo export; Irish codes are **outsourced for now**. Save the photo and
+submit it through your chosen external provider. No other country can be issued an online passport code.
+
+OpenAI lighting/colour preparation has a separate preview, staff likeness review
+and local rechecks before code issuance. Configure `OPENAI_API_KEY` on the server
+to enable it. Failed checks block UK issuance except specifically recorded
+applicable allowances; technical failures cannot be waived. Read the
+[AI workflow and validation limits](docs/AI_WORKFLOW.md).
 
 Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
 this prototype as a replacement for the current shop software. See also
@@ -50,6 +57,8 @@ Reverse proxy must pass the original `Host` header.
 
 ## Test
 ```
+pip install -r requirements-dev.txt
 python3 tests/test_photomatic.py
+python3 tests/test_ai_preparation.py
 python3 tests/test_e2e.py
 ```

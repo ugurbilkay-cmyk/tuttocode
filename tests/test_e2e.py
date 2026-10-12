@@ -137,6 +137,12 @@ opener = urllib.request.build_opener(NoRedirect)
 
 
 def req(path, method="GET", data=None, headers=None, host=None):
+    if path.endswith("/issue") and method == "POST":
+        fields = dict(urllib.parse.parse_qsl((data or b"").decode()))
+        fields.update(review_likeness="on", review_visibility="on", customer_permission="on")
+        photo_id = path.split("/p/")[1].split("/")[0]
+        fields["review_revision"] = str(main.db.get(photo_id)["revision"])
+        data = urllib.parse.urlencode(fields).encode()
     h = dict(headers or {})
     if host:
         h["Host"] = host
@@ -250,7 +256,9 @@ hdr["Authorization"] = AUTH
 s, h, _ = req("/admin/new", "POST", body, hdr)
 pid2 = h["location"].split("/admin/p/")[1]
 s, _, _ = req(f"/admin/p/{pid2}/issue", "POST", b"", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
-check("failed photo can't be issued without override", s == 400)
+check("failed photo cannot be issued", s == 400)
+s, _, _ = req(f"/admin/p/{pid2}/issue", "POST", b"override=on", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("generic override cannot bypass failed quality checks", s == 400)
 
 # Photomatic station: source retained while pending, recrop, then delete it on issue.
 P._analyzer = Fake(an)

@@ -1,5 +1,9 @@
 # Irish passport photo-code integration
 
+**Current decision (12 October 2026): Irish codes are outsourced. The studio
+exports the photo for a chosen external provider; independent Irish issuance is
+not part of the present release. The research below records options for later.**
+
 Research checked 12 October 2026. Irish code issuance is not yet implemented.
 Irish passport photos can already be cropped, printed, saved and emailed using
 the imported templates; other countries cannot receive online passport codes.

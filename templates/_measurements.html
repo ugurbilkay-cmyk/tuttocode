@@ -1,0 +1,21 @@
+{% macro measurement_section(section) %}
+  <fieldset>
+    <legend>{{ section.name }}</legend>
+    <table class="measurements">
+      <thead><tr><th>Measurement</th><th>Value</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in section.rows %}
+        <tr>
+          <td>{{ item.label }}{% if item.limits %}<small>{{ item.limits }}</small>{% endif %}</td>
+          <td>{{ item.value }} <small>{{ item.unit }}</small></td>
+          <td><span class="measurement-status {{ item.status }}" aria-label="{{ item.status }}" title="{{ item.status }}">{{ '✓' if item.status == 'pass' else '!' if item.status in ['fail','warn'] else '—' }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </fieldset>
+{% endmacro %}
+<div class="measurement-grid">
+  <div class="measurement-column">{% for section in measurement_sections[:2] %}{{ measurement_section(section) }}{% endfor %}</div>
+  <div class="measurement-column">{% for section in measurement_sections[2:] %}{{ measurement_section(section) }}{% endfor %}</div>
+</div>

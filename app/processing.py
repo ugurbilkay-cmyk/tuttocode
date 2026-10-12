@@ -6,6 +6,7 @@ replacement. Facial features are never reshaped.
 from __future__ import annotations
 
 import io
+import threading
 from dataclasses import dataclass, field
 
 import cv2
@@ -65,11 +66,13 @@ class Result:
     jpeg: bytes | None = None
     preview_jpeg: bytes | None = None
     before_jpeg: bytes | None = None
+    measurements: dict = field(default_factory=dict)
 
     def as_dict(self):
         return {
             "ok": self.ok,
             "checks": [c.__dict__ for c in self.checks],
+            "measurements": self.measurements,
         }
 
 
@@ -87,6 +90,7 @@ class MediaPipeAnalyzer:
         from mediapipe.tasks.python.core.base_options import BaseOptions
 
         self.mp = mp
+        self.lock = threading.RLock()
         lm_path = model_dir / "face_landmarker.task"
         seg_path = model_dir / "selfie_segmenter.tflite"
         if not lm_path.exists():
@@ -108,6 +112,11 @@ class MediaPipeAnalyzer:
             )
 
     def analyze(self, rgb: np.ndarray) -> Analysis:
+        # The shared MediaPipe Tasks instance must not process two jobs at once.
+        with self.lock:
+            return self._analyze(rgb)
+
+    def _analyze(self, rgb: np.ndarray) -> Analysis:
         h, w = rgb.shape[:2]
         img = self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
         res = self.landmarker.detect(img)
@@ -157,11 +166,11 @@ def _encode_jpeg(rgb: np.ndarray, min_kb=60, max_kb=9500) -> bytes:
     return buf.getvalue()
 
 
-def _small_jpeg(rgb):
+def _small_jpeg(rgb, bounds=(350, 450), quality=85):
     buf = io.BytesIO()
     im = Image.fromarray(rgb)
-    im.thumbnail((350, 450), Image.LANCZOS)
-    im.save(buf, "JPEG", quality=85)
+    im.thumbnail(bounds, Image.LANCZOS)
+    im.save(buf, "JPEG", quality=quality)
     return buf.getvalue()
 
 
@@ -377,12 +386,13 @@ def _crown_y(points, person_mask):
 def process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
-            country_id: str | None = None, crop=None) -> Result:
+            country_id: str | None = None, crop=None, framed=False) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     profile = photomatic.country(country_id)
     out_w, out_h = photomatic.output_size(profile)
     crop = crop or {"zoom": 1, "x": 0, "y": 0, "rotation": 0}
     checks: list[Check] = []
+    measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
 
     def add(key, label, status, detail=""):
         checks.append(Check(key, label, status, detail))
@@ -391,28 +401,45 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         rgb = load_image(data)
     except Exception:
         add("file", "Image file", "fail", "Not a readable image. Use JPEG or PNG.")
-        return Result(False, checks)
+        return Result(False, checks, measurements=measurements)
 
     h, w = rgb.shape[:2]
+    measurements["input_size"] = [w, h]
     rotation = int(crop.get("rotation", 0)) % 360
     if rotation:
         rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
         h, w = rgb.shape[:2]
+    angle = float(crop.get("angle", 0))
+    if angle:
+        # Rotate into an expanded canvas so original edges are not cropped off.
+        # Added borders are excluded by the framing check below.
+        original_bounds = np.ones((h, w), dtype=np.uint8)
+        matrix = cv2.getRotationMatrix2D((w / 2, h / 2), -angle, 1)
+        nw = int(np.ceil(h * abs(matrix[0, 1]) + w * abs(matrix[0, 0])))
+        nh = int(np.ceil(h * abs(matrix[0, 0]) + w * abs(matrix[0, 1])))
+        matrix[:, 2] += [(nw - w) / 2, (nh - h) / 2]
+        rgb = cv2.warpAffine(rgb, matrix, (nw, nh), borderValue=(0, 0, 0))
+        valid_pixels = cv2.warpAffine(original_bounds, matrix, (nw, nh), flags=cv2.INTER_NEAREST)
+        h, w = rgb.shape[:2]
+    else:
+        valid_pixels = None
+    measurements["analysis_size"] = [w, h]
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
         out = np.asarray(im)
         add("framing", "Free-style crop", "pass", "No face-size target in this template")
-        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), _small_jpeg(out))
+        measurements["output_size"] = [out_w, out_h]
+        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), _small_jpeg(out), measurements)
     analyzer = analyzer or get_analyzer()
     an = analyzer.analyze(rgb)
 
     if len(an.faces) == 0:
         add("face", "Face found", "fail", "No face detected.")
-        return Result(False, checks)
+        return Result(False, checks, measurements=measurements)
     if len(an.faces) > 1:
         add("face", "Face found", "fail", "More than one face in the photo.")
-        return Result(False, checks)
+        return Result(False, checks, measurements=measurements)
     add("face", "Face found", "pass")
 
     f = an.faces[0]
@@ -432,6 +459,14 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     face_cx = (face_l[0] + face_r[0]) / 2
     yaw_ratio = abs(p[NOSE][0] - face_cx) / max(face_w, 1)
     max_angle = float(photomatic.CATALOG["quality"].get("MaxAngle", 6))
+    measurements.update(eye_angle=round(float(roll), 3), max_eye_angle=max_angle,
+                        source_eye_distance=round(float(np.linalg.norm(ri - li)), 2),
+                        yaw_ratio=round(float(yaw_ratio), 4))
+    min_eye_distance = float(photomatic.CATALOG["quality"].get("MineyeDistance", 90))
+    measurements["min_source_eye_distance"] = min_eye_distance
+    if photomatic.CATALOG["quality"].get("CheckEyeDistance", "false").lower() == "true":
+        add("eyedistance", "Source detail between eyes", "pass" if measurements["source_eye_distance"] >= min_eye_distance else "fail",
+            f"{measurements['source_eye_distance']:g} px; minimum {min_eye_distance:g} px in the analysis image.")
     if abs(roll) > max_angle:
         add("tilt", "Head straight", "fail", f"Head tilted {abs(roll):.0f}°. Keep eyes level.")
     elif abs(roll) > 4:
@@ -451,6 +486,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         blink = max(bs.get("eyeBlinkLeft", 0), bs.get("eyeBlinkRight", 0))
         jaw = bs.get("jawOpen", 0)
         smile = max(bs.get("mouthSmileLeft", 0), bs.get("mouthSmileRight", 0))
+        measurements.update(blink=round(float(blink), 4), jaw_open=round(float(jaw), 4),
+                            smile=round(float(smile), 4))
         if age_group == "baby":
             add("eyes", "Eyes open", "pass", "Not required under 1.")
         elif blink > 0.55:
@@ -487,16 +524,20 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     left = eye_mid[0] - crop_w / 2
     left += float(crop.get("x", 0)) / 100 * crop_w
     top += float(crop.get("y", 0)) / 100 * crop_h
+    if framed:
+        # Validate an already framed deliverable without moving/zooming it again.
+        crop_w, crop_h, left, top = float(w), float(h), 0., 0.
     x0, y0, x1, y1 = left, top, left + crop_w, top + crop_h
+    measurements["source_crop_size"] = [round(float(crop_w), 2), round(float(crop_h), 2)]
 
     if x0 < 0 or y0 < 0 or x1 > w or y1 > h:
         add("framing", "Head and shoulders in frame", "fail",
             "Not enough space around the head. Step back so head and shoulders fit with space above.")
-        return Result(False, checks)
+        return Result(False, checks, measurements=measurements)
     if crop_w < min(MIN_SRC_W, out_w) or crop_h < min(MIN_SRC_H, out_h):
         add("resolution", "Resolution", "fail",
             f"Face area too small ({int(crop_w)}x{int(crop_h)}px). Move closer or use a better camera.")
-        return Result(False, checks)
+        return Result(False, checks, measurements=measurements)
     add("framing", "Head and shoulders in frame", "pass")
     add("resolution", "Resolution", "pass", f"{int(crop_w)}x{int(crop_h)}px source")
 
@@ -504,11 +545,20 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
                   [0, out_h / crop_h, -y0 * out_h / crop_h]], dtype=np.float32)
     out = cv2.warpAffine(rgb, M, (out_w, out_h), flags=cv2.INTER_AREA,
                          borderMode=cv2.BORDER_REPLICATE)
+    if valid_pixels is not None:
+        coverage = cv2.warpAffine(valid_pixels, M, (out_w, out_h), flags=cv2.INTER_NEAREST)
+        if not coverage.all():
+            add("framing", "Rotation edges", "fail", "Rotation exposes areas outside the camera photo. Reduce rotation or adjust the crop.")
+            return Result(False, checks, measurements=measurements)
     mask = None
     if an.person_mask is not None:
         mask = cv2.warpAffine(an.person_mask, M, (out_w, out_h), flags=cv2.INTER_LINEAR,
                               borderMode=cv2.BORDER_REPLICATE)
     tp = np.c_[p, np.ones(len(p))] @ M.T  # landmarks in output space
+    measurements.update(output_size=[out_w, out_h],
+                        eye1=[round(float(v), 2) for v in tp[L_IRIS]],
+                        eye2=[round(float(v), 2) for v in tp[R_IRIS]],
+                        output_eye_distance=round(float(np.linalg.norm(tp[R_IRIS] - tp[L_IRIS])), 2))
 
     raw = out.copy()  # unadjusted crop, used for glare detection
     before = _small_jpeg(out)
@@ -540,6 +590,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     gray = cv2.cvtColor(face_rgb, cv2.COLOR_RGB2GRAY)
     g = cv2.resize(gray, (300, int(300 * gray.shape[0] / max(gray.shape[1], 1))))
     sharp = cv2.Laplacian(g, cv2.CV_64F).var()
+    measurements["sharpness"] = round(float(sharp), 2)
     if sharp < 25:
         add("sharp", "In focus", "fail", "Photo is blurred.")
     elif sharp < 50:
@@ -548,6 +599,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         add("sharp", "In focus", "pass")
 
     fmean = float(face_region.mean())
+    measurements.update(face_lightness=round(fmean, 2), contrast=round(float(face_region.std()), 2))
     if fmean < 30:
         add("exposure", "Lighting", "fail", "Face too dark.")
     elif fmean > 88:
@@ -558,6 +610,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     mid = face_region.shape[1] // 2
     lmean, rmean = face_region[:, :mid].mean(), face_region[:, mid:].mean()
     shadow = abs(lmean - rmean) / max(fmean, 1)
+    measurements["lighting_imbalance"] = round(float(shadow) * 100, 2)
     if shadow > 0.30:
         add("shadow", "No shadows on face", "fail", "One side of the face is in shadow. This can't be corrected: fix the lights and retake.")
     elif shadow > 0.18:
@@ -590,6 +643,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
             glare_px += int(bright.sum())
             total_px += roi.shape[0] * roi.shape[1]
     glare = glare_px / max(total_px, 1)
+    measurements["glare_area"] = round(glare * 100, 3)
     if glare > 0.04:
         add("glare", "No glare on glasses", "fail", "Reflection near the eyes.")
     elif glare > 0.015:
@@ -614,6 +668,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         bl = lum[bg]
         bmean, bstd = float(bl.mean()), float(bl.std())
         bg_rgb = np.median(out[bg], axis=0)
+        measurements.update(background_rgb=[round(float(v), 1) for v in bg_rgb],
+                            background_lightness=round(bmean, 2), background_variation=round(bstd, 2))
         lower = np.array(profile["background_min"])
         upper = np.array(profile["background_max"])
         if (bg_rgb < lower - 3).any() or (bg_rgb > upper + 3).any():
@@ -638,14 +694,17 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     # --- head size sanity (after crop) ---------------------------------
     head_frac = (chin[1] - crown_y) / crop_h
     if profile["use_head"] and not (profile["head"][1] / 100 <= head_frac <= profile["head"][2] / 100):
-        add("headsize", "Head size", "warn", f"Head is {head_frac*100:.0f}% of height.")
+        add("headsize", "Head size", "fail", f"Head is {head_frac*100:.0f}% of height; template range {profile['head'][1]:g}–{profile['head'][2]:g}%.")
     eyes_frac = (tp[L_IRIS][1] + tp[R_IRIS][1]) / 2 / out_h * 100
     if not profile["eyes"][1] <= eyes_frac <= profile["eyes"][2]:
-        add("eyeposition", "Eye position", "warn", f"Eyes at {eyes_frac:.0f}%; template range {profile['eyes'][1]:g}–{profile['eyes'][2]:g}%.")
+        add("eyeposition", "Eye position", "fail", f"Eyes at {eyes_frac:.0f}%; template range {profile['eyes'][1]:g}–{profile['eyes'][2]:g}%.")
     if profile["use_width"]:
         width_frac = np.linalg.norm(tp[FACE_R] - tp[FACE_L]) / out_w * 100
         if not profile["face_width"][1] <= width_frac <= profile["face_width"][2]:
-            add("facewidth", "Face width", "warn", f"Face width {width_frac:.0f}%.")
+            add("facewidth", "Face width", "fail", f"Face width {width_frac:.0f}%.")
+    measurements.update(head_percent=round(float(head_frac) * 100, 3),
+                        eye_height_percent=round(float(eyes_frac), 3),
+                        face_width_percent=round(float(np.linalg.norm(tp[FACE_R] - tp[FACE_L]) / out_w * 100), 3))
     if profile["glasses_forbidden"]:
         add("glasses", "Glasses removed", "warn", "This template forbids glasses. Staff must check; AI glare detection does not detect all glasses.")
     if profile["special_mode"]:
@@ -664,7 +723,32 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if size_kb < min_kb or size_kb > max_kb:
         add("filesize", "Digital file size", "fail", f"{size_kb:.0f} KB; template requires {min_kb:g}–{max_kb:g} KB.")
         ok = False
-    return Result(ok, checks, jpeg, _small_jpeg(out), before)
+    measurements["digital_size"] = list(photomatic.save_size(profile))
+    measurements["digital_kib"] = round(size_kb, 2)
+    return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements)
+
+
+def code_photo(jpeg, country_id):
+    """Freeze and validate the exact UK JPEG served to HMPO, without stretching."""
+    profile = photomatic.country(country_id)
+    if profile["code_service"] != "uk":
+        raise ValueError("Only UK code photos can be generated by this service")
+    with Image.open(io.BytesIO(jpeg)) as image:
+        size = tuple(profile["digital_size"]) if all(v > 0 for v in profile["digital_size"]) else image.size
+        # Online templates with a different digital aspect need a fresh framing
+        # implementation; never silently crop a second time after checks passed.
+        if abs((size[0] / size[1]) / (image.width / image.height) - 1) > .005:
+            raise ValueError("Digital aspect ratio differs from the checked crop. Use the UK Online Renewal template.")
+        output = _encode_jpeg(np.asarray(image.convert("RGB").resize(size, Image.Resampling.LANCZOS)),
+                              min_kb=50, max_kb=10_000_000 / 1024)
+    if size[0] < 600 or size[1] < 750 or not 50_000 <= len(output) <= 10_000_000:
+        raise ValueError("The exact code JPEG must be at least 600 × 750 pixels and 50 KB–10 MB")
+    return output
+
+
+def check_code_photo(jpeg, country_id, age_group):
+    return process(jpeg, age_group, country_id=country_id, framed=True,
+                   auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False)
 
 
 # --- print and save ------------------------------------------------------

@@ -64,4 +64,21 @@ class Fake:
         self.a = analysis
 
     def analyze(self, rgb):
-        return self.a
+        if self.a.person_mask is None or rgb.shape[:2] == self.a.person_mask.shape:
+            return self.a
+        # A code JPEG has been cropped/resized. Locate the two known synthetic
+        # white eye ellipses to map test landmarks into that actual image frame.
+        bright = (rgb.min(axis=2) > 242).astype(np.uint8)
+        count, _, stats, centers = cv2.connectedComponentsWithStats(bright)
+        largest = sorted(range(1, count), key=lambda i: stats[i, cv2.CC_STAT_AREA], reverse=True)[:2]
+        if len(largest) != 2:
+            return P.Analysis([], None)
+        eyes = sorted((centers[i] for i in largest), key=lambda c: c[0])
+        points = self.a.faces[0].points
+        previous = [points[P.L_IRIS], points[P.R_IRIS]]
+        scale = np.linalg.norm(eyes[1] - eyes[0]) / np.linalg.norm(previous[1] - previous[0])
+        offset = (eyes[0] + eyes[1]) / 2 - scale * (previous[0] + previous[1]) / 2
+        matrix = np.array([[scale, 0, offset[0]], [0, scale, offset[1]]], np.float32)
+        h, w = rgb.shape[:2]
+        mask = cv2.warpAffine(self.a.person_mask, matrix, (w, h))
+        return P.Analysis([P.FaceData(points * scale + offset, self.a.faces[0].blendshapes)], mask)
