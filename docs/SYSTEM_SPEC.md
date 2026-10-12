@@ -39,6 +39,10 @@ definitions, uncertainty, exceptions and validation gates. Full coverage and
 measured decision accuracy are release requirements; the prototype does not yet
 meet those gates.
 
+The [runtime evaluation](RUNTIME_EVALUATION.md) records an actual local installer
+test, successful native component loading and the unresolved setup/licence state.
+The user selected the activated Windows shop installation for transitional checks.
+
 ## Reference evidence
 
 The machine-readable [reference audit](reference-audit.json) records allowlisted
