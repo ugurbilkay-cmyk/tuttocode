@@ -32,6 +32,13 @@ OpenCV results. A score of 100 in the old program cannot be recreated by assigni
 calibration and measured outcomes. Unknown results must remain unknown. Government
 acceptance remains a separate event from passing a local check.
 
+The industrial release requirements and proposed MediaPipe/OpenCV/OFIQ stack
+are specified in [Passport photo measurement](QUALITY_ENGINE.md), including all
+50 recovered quality switches, the implicit input-format default, measurement
+definitions, uncertainty, exceptions and validation gates. Full coverage and
+measured decision accuracy are release requirements; the prototype does not yet
+meet those gates.
+
 ## Reference evidence
 
 The machine-readable [reference audit](reference-audit.json) records allowlisted

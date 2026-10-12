@@ -1,0 +1,88 @@
+{
+  "review_date": "2026-10-12",
+  "scope": "Licence text inspection only; models were not loaded or executed. Verify complete archive and individual model hashes before release.",
+  "archive_url": "https://standards.iso.org/iso-iec/29794/-5/ed-1/en/OFIQ-MODELS.zip",
+  "archive_bytes": 422400019,
+  "archive_sha256": null,
+  "engine_release_to_evaluate": "v1.2.0",
+  "engine_commit": "d9beef8220c3829661d11e2aa3a96aef9a94a5f3",
+  "version_resolution_required": "Archive README references an ed-2 endpoint; inspected endpoint was ed-1. Resolve release/bundle compatibility before deployment.",
+  "licences": [
+    {
+      "path": "models/expression_neutrality/grimmer/LICENSE.md",
+      "licence_text_sha256": "5fbe40b862ee4171d7c813c0d8f08740c25bd19e4230bc7ef971114ba1fa8724",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/expression_neutrality/hsemotion/LICENSE.md",
+      "licence_text_sha256": "c8502e3d871cb19c570beedd9c96974fb5e3dd5ddad9c64ea50cd642cca61627",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "Apache-2.0"
+      ]
+    },
+    {
+      "path": "models/face_detection/LICENSE.md",
+      "licence_text_sha256": "c76d4a30a8d773eef0ad7677e6b47259241470627f7e3a0eba71b38f0e286dc6",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/face_landmark_estimation/LICENSE.md",
+      "licence_text_sha256": "a61b71ef5797df85574eb8b582a3b1a9af4238c32f69d05dc54edbd3a410edf5",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/face_occlusion_segmentation/LICENSE.md",
+      "licence_text_sha256": "b5a216197f625b0d0150526a0245319f81d9e2a9da0a1506735d98a49c332795",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/face_parsing/LICENSE.md",
+      "licence_text_sha256": "66a8761d67a1bddb6caaa987380311e846521384bc3ce539dced5a798e49a54c",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/head_pose_estimation/LICENSE.md",
+      "licence_text_sha256": "61e836cef5dd4ab2447ab9a07e8fa1fe33ba1e3f60bfb91065e1fb1a7108e75d",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "MIT"
+      ]
+    },
+    {
+      "path": "models/no_compression_artifacts/LICENSE.md",
+      "licence_text_sha256": "33513236c4fc0c583dbb169efe4a9331ced156c802608ddaceef93081d4ab9ff",
+      "ofiq_grant": "MIT",
+      "original_licence_references": []
+    },
+    {
+      "path": "models/sharpness/LICENSE.md",
+      "licence_text_sha256": "c3508cf77d43db675ead73d8e68908588e97bfb4da3d6f4f8a446cc16fdfb5f9",
+      "ofiq_grant": "MIT",
+      "original_licence_references": []
+    },
+    {
+      "path": "models/unified_quality_score/LICENSE.md",
+      "licence_text_sha256": "225e378aae237bdb7e6614e36cc23d1655648368dd4b21d516c84966f93ddb95",
+      "ofiq_grant": "MIT",
+      "original_licence_references": [
+        "Apache-2.0"
+      ]
+    }
+  ]
+}
