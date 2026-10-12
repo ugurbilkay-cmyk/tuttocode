@@ -108,3 +108,49 @@ preserves the approved JPEG and links review evidence to its SHA-256. Our curren
 pipeline can recrop/re-encode imports; it is not yet that transfer path. Code
 hosting and real HMPO retrieval must be verified separately. Photomatic's local
 check is not an authority acceptance certificate.
+
+## Proposed companion app for our UK codes
+
+The initial integration is an independent TuttoCode companion application and
+an authenticated reviewed-file import, with staff using Photomatic's normal
+Open file and Save controls. Photomatic continues to assess and frame photos;
+TuttoCode records review evidence, hosts the final JPEG, generates our UK code
+and produces our branded code slip. Its existing IDstation.online action remains
+the vendor's separate route. No replacement of that button or undocumented
+binary modification is part of this design.
+
+The workflow is: our job and optional AI candidate, Photomatic document-specific
+check, final digital portrait export, staff review of that export, immutable
+TuttoCode import, technical file validation, and our UK code. Preparation occurs
+before the Photomatic review. Changes after review invalidate it. Verify export
+framing, resolution and encoding before deployment; an export is not necessarily
+the same byte sequence as the picture assessed before Save. A print sheet from
+Backup is not the digital portrait deliverable.
+
+The import must preserve the original exported JPEG bytes. Preview rendering and
+branded print layout can use separate derivatives; neither can replace the
+issued file. Record staff identity, document, software/version when available,
+image SHA-256, review time, observed results and any specific permitted allowance.
+Label manual evidence as staff-attested Photomatic review. Missing, failed and
+untested required checks cannot be silently converted to machine-verified passes.
+
+The reviewed import requires a new server path. Current uploads invoke our own
+processing, and issuance may resize/re-encode the JPEG. Those paths must not be
+used unchanged for an externally reviewed deliverable. Validate JPEG decode,
+dimensions and file bytes without editing the delivered image, and require
+review of the current hash before issuance. An edit, replacement or country
+change cancels prior approval; technical failures still block issuance.
+
+A later Windows helper can exchange per-job files through dedicated folders,
+wait for export writes to complete and upload through an authenticated HTTPS
+API. It must not infer a pass from file presence, a filename or a green status
+colour. The supplied settings allow Save even after failed checks. Automatic
+quality approval requires a verified structured result interface and a proven
+link between its assessed image and the final JPEG; that interface and licence
+conditions have not been established. File handoff can be automated while staff
+review remains mandatory.
+
+Before shop use, verify the second Windows installation independently, final
+export behaviour, review/byte-change failure cases, public HTTPS hosting, signed
+HMPO retrieval, expiry and code-slip printing. This companion/import workflow
+is a proposed integration, not an implemented bridge.
