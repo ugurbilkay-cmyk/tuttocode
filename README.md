@@ -22,6 +22,11 @@ this prototype as a replacement for the current shop software. See also
 [reference template implementation notes](docs/PHOTOMATIC.md) and
 [Irish code integration research](docs/IRISH_CODES.md).
 
+The [standards decoding notes](docs/STANDARDS_DECODING.md) and generated
+[field guide](docs/standards/FIELD_GUIDE.md) document individual settings, defaults
+and verified application comparisons. They distinguish stored thresholds from
+native engine algorithms and current government requirements.
+
 ## Run
 Requires Python 3.10 or later (Ubuntu 24.04 uses Python 3.12).
 ```

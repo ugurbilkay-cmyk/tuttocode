@@ -140,6 +140,12 @@ required digital aspect ratios. A second centre-fit after the print crop can
 change eye/head placement. Each digital deliverable needs its own final geometry
 validation, not just a correct pixel count.
 
+Further static inspection found width-first framing in the supplied `AutoCrop7`
+and `AutoCrop7N` routines. Both Irish online profiles enable width and height;
+the prototype currently chooses height first. See the
+[standards decoding notes](STANDARDS_DECODING.md) for this discrepancy and the
+verified default/check comparison logic.
+
 ## Background and editing
 
 Background review must compare the selected profile's permitted colour range,
