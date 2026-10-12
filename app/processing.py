@@ -649,7 +649,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if profile["glasses_forbidden"]:
         add("glasses", "Glasses removed", "warn", "This template forbids glasses. Staff must check; AI glare detection does not detect all glasses.")
     if profile["special_mode"]:
-        add("special", "Additional document workflow", "warn", "This Photomatic template uses an external application. Its submission/signature step is separate from this photo.")
+        add("special", "Additional document workflow", "warn", "This document requires an external submission/signature step in addition to the photo.")
 
     ok = not any(c.status == "fail" for c in checks)
     max_kb = profile["digital_kb"][1] if profile["digital_kb"][1] > 0 else 9500

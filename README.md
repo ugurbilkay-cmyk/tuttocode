@@ -1,18 +1,25 @@
-# Photomatic AI + Tuttoprint passport photo codes
+# Tuttoprint Photo Studio and passport photo codes
 
-See **REPORT.md** for the full project report.
+Tuttoprint's independent studio uses TuttoCode for photo processing and its own
+UK code service. The confirmed shop workflow is file upload, document selection,
+photo review/correction, and printing on a **Fujifilm DE100-XD**.
 
-The station now imports the supplied Photomatic installation's 208 country/document
-templates and 169 printer layouts. `/admin` opens the Photomatic-style workspace;
+The prototype imports the supplied reference installation's 208 country/document
+profiles and 169 print layouts. `/admin` opens the studio workspace;
 `/admin/history` shows previous photos. Select a country, open a photo or use a
 browser camera, review the AI crop, then Print, Save or Email. Pending shop photos
-can be moved, zoomed, rotated and processed again.
+can be moved, zoomed, rotated and processed again. These imported layout families
+are reference settings, not connected devices or a calibrated DE100-XD profile.
+Fine rotation, full template-policy handling, detailed inspectors and DE100-XD
+calibration remain incomplete.
 
 The existing UK HMPO code service is retained. Irish passport templates are available
 for photo export, but Irish **code issuance is disabled** until a provider connection
 is established. No other country can be issued an online passport code.
 
-See [Photomatic implementation notes](docs/PHOTOMATIC.md) and
+Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
+this prototype as a replacement for the current shop software. See also
+[reference template implementation notes](docs/PHOTOMATIC.md) and
 [Irish code integration research](docs/IRISH_CODES.md).
 
 ## Run

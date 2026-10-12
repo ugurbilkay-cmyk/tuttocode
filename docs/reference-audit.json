@@ -1,0 +1,2368 @@
+{
+  "scope": "Reference inventory; presence is not proof of installed device support or functional parity",
+  "confirmed_user_workflow": {
+    "input": "File upload",
+    "printer": "FUJIFILM DE100-XD",
+    "code_countries": [
+      "United Kingdom",
+      "Ireland"
+    ]
+  },
+  "counts": {
+    "country_document_profiles": 208,
+    "print_layouts": 169,
+    "save_templates": 7,
+    "email_templates": 12,
+    "quality_profiles": 3,
+    "supplied_screenshots": 8
+  },
+  "saved_settings": {
+    "DefaultCountry": "United Kingdom Passport",
+    "SelectedCountry": "United Kingdom Passport",
+    "DefaultPrinter": "Print2Hotfolder",
+    "SelectedPrinter": "Print2Hotfolder",
+    "DefaultICAOfile": "DefaultISOlevels",
+    "SelectedICAOfile": "DefaultISOlevels",
+    "bAutoCrop": "true",
+    "bMakeEyesHorizontal": "false",
+    "bDoBackgroundTest": "true",
+    "bDoGeoTest": "true",
+    "bAutoBackground": "false",
+    "p_bAutoedit": "false",
+    "o_bAutoedit": "false",
+    "s_bAutoedit": "false",
+    "bPPblockatSave": "false",
+    "bPPBlockatPrint": "false",
+    "bBlockonICAO": "false",
+    "bBlockonGEO": "false",
+    "bBlockonBACK": "false",
+    "bAutoArchive": "false",
+    "bSaveafterPrint": "false",
+    "bAlwaysPrintICAO": "false",
+    "bDefaultOversizedPrinting": "false"
+  },
+  "print_layout_families": {
+    "FUJIFILM ASK-300": 45,
+    "Installed templates": 48,
+    "Print2Hotfolder": 36,
+    "Sinfonia CHC-S6145": 40
+  },
+  "country_exceptions": {
+    "bUseISOtemplate": [
+      "NSW TAXI"
+    ],
+    "bBlockBGtool": [
+      "Australia Passport DFAT"
+    ],
+    "bUseZoomFactor": [],
+    "bForceCutmarks": [
+      "Andorra Passport",
+      "Australia AAA IDP online",
+      "Australia Passport DFAT",
+      "Australia Passport",
+      "India Passport online",
+      "Ireland Passport",
+      "New Zealand AAA IDP online",
+      "Saudi Arabia Passport",
+      "Saudi Arabia Visa",
+      "USA Visa"
+    ],
+    "bSpecialMode": [
+      "France ANTS online",
+      "Germany Fuhrerschein online",
+      "SpecialMode"
+    ]
+  },
+  "print_compliance_modes": {
+    "0": 12,
+    "1": 97,
+    "2": 51,
+    "absent": 9
+  },
+  "required_digital_exports": [
+    {
+      "profile": "36x47 generic",
+      "width": 500,
+      "height": 653,
+      "minimum_kb": "10",
+      "maximum_kb": "250"
+    },
+    {
+      "profile": "Australia AAA IDP online",
+      "width": 600,
+      "height": 800,
+      "minimum_kb": "10",
+      "maximum_kb": "2000"
+    },
+    {
+      "profile": "Australia WWC online",
+      "width": 406,
+      "height": 521,
+      "minimum_kb": "10",
+      "maximum_kb": "2000"
+    },
+    {
+      "profile": "Brasil Visa",
+      "width": 413,
+      "height": 531,
+      "minimum_kb": "-1",
+      "maximum_kb": "-1"
+    },
+    {
+      "profile": "Brasil eVisa online",
+      "width": 413,
+      "height": 531,
+      "minimum_kb": "50",
+      "maximum_kb": "300"
+    },
+    {
+      "profile": "Cambodia eVisa online",
+      "width": 400,
+      "height": 514,
+      "minimum_kb": "0",
+      "maximum_kb": "500"
+    },
+    {
+      "profile": "Canada Citizenship online",
+      "width": 840,
+      "height": 1080,
+      "minimum_kb": "240",
+      "maximum_kb": "4048"
+    },
+    {
+      "profile": "Canada Firearms online 3x4",
+      "width": 825,
+      "height": 1045,
+      "minimum_kb": "250",
+      "maximum_kb": "1000"
+    },
+    {
+      "profile": "Canada Firearms online",
+      "width": 825,
+      "height": 1045,
+      "minimum_kb": "250",
+      "maximum_kb": "1000"
+    },
+    {
+      "profile": "Canada HandyDART online",
+      "width": 600,
+      "height": 600,
+      "minimum_kb": "10",
+      "maximum_kb": "240"
+    },
+    {
+      "profile": "Canada Passport online",
+      "width": 1200,
+      "height": 1800,
+      "minimum_kb": "200",
+      "maximum_kb": "4000"
+    },
+    {
+      "profile": "Canada Perm Residence online",
+      "width": 1200,
+      "height": 1600,
+      "minimum_kb": "500",
+      "maximum_kb": "5000"
+    },
+    {
+      "profile": "Canada eVisa online",
+      "width": 840,
+      "height": 1080,
+      "minimum_kb": "60",
+      "maximum_kb": "240"
+    },
+    {
+      "profile": "China Passport Online",
+      "width": 250,
+      "height": 363,
+      "minimum_kb": "30",
+      "maximum_kb": "80"
+    },
+    {
+      "profile": "China eVISA online",
+      "width": 359,
+      "height": 478,
+      "minimum_kb": "40",
+      "maximum_kb": "120"
+    },
+    {
+      "profile": "DVA online",
+      "width": 800,
+      "height": 1150,
+      "minimum_kb": "50",
+      "maximum_kb": "100000"
+    },
+    {
+      "profile": "Estonia Passport online",
+      "width": 1600,
+      "height": 2000,
+      "minimum_kb": "1000",
+      "maximum_kb": "1600"
+    },
+    {
+      "profile": "Estonia Passport",
+      "width": 1320,
+      "height": 1650,
+      "minimum_kb": "1000",
+      "maximum_kb": "1600"
+    },
+    {
+      "profile": "Finland Passport",
+      "width": 500,
+      "height": 653,
+      "minimum_kb": "10",
+      "maximum_kb": "250"
+    },
+    {
+      "profile": "Germany Fuhrerschein online",
+      "width": 1200,
+      "height": 1600,
+      "minimum_kb": "-1",
+      "maximum_kb": "-1"
+    },
+    {
+      "profile": "Greece ID online 40x50",
+      "width": 1280,
+      "height": 1600,
+      "minimum_kb": "100",
+      "maximum_kb": "3000"
+    },
+    {
+      "profile": "Hongkong Passport online",
+      "width": 1200,
+      "height": 1600,
+      "minimum_kb": "1",
+      "maximum_kb": "5000"
+    },
+    {
+      "profile": "Hongkong VISA online",
+      "width": 1200,
+      "height": 1600,
+      "minimum_kb": "1",
+      "maximum_kb": "5000"
+    },
+    {
+      "profile": "India Passport online",
+      "width": 630,
+      "height": 810,
+      "minimum_kb": "54",
+      "maximum_kb": "-1"
+    },
+    {
+      "profile": "India eVisa online",
+      "width": 500,
+      "height": 500,
+      "minimum_kb": "10",
+      "maximum_kb": "300"
+    },
+    {
+      "profile": "Indonesia eVisa online",
+      "width": 400,
+      "height": 600,
+      "minimum_kb": "10",
+      "maximum_kb": "1400"
+    },
+    {
+      "profile": "Iran e-Visa online",
+      "width": 400,
+      "height": 600,
+      "minimum_kb": "10",
+      "maximum_kb": "500"
+    },
+    {
+      "profile": "Ireland Passport online",
+      "width": 715,
+      "height": 951,
+      "minimum_kb": "10",
+      "maximum_kb": "9000"
+    },
+    {
+      "profile": "Ireland Public Services Card online",
+      "width": 715,
+      "height": 951,
+      "minimum_kb": "10",
+      "maximum_kb": "9000"
+    },
+    {
+      "profile": "Israel Passport",
+      "width": 600,
+      "height": 600,
+      "minimum_kb": "-1",
+      "maximum_kb": "-1"
+    },
+    {
+      "profile": "Japan e-Visa online",
+      "width": 700,
+      "height": 900,
+      "minimum_kb": "10",
+      "maximum_kb": "500"
+    },
+    {
+      "profile": "Malaysia eVISA online",
+      "width": 350,
+      "height": 500,
+      "minimum_kb": "10",
+      "maximum_kb": "350"
+    },
+    {
+      "profile": "New Zealand AAA IDP online",
+      "width": 600,
+      "height": 800,
+      "minimum_kb": "10",
+      "maximum_kb": "2000"
+    },
+    {
+      "profile": "New Zealand Passport online",
+      "width": 1200,
+      "height": 1600,
+      "minimum_kb": "250",
+      "maximum_kb": "5000"
+    },
+    {
+      "profile": "Singapore Passport online",
+      "width": 400,
+      "height": 514,
+      "minimum_kb": "10",
+      "maximum_kb": "150"
+    },
+    {
+      "profile": "Singapore eVisa online",
+      "width": 400,
+      "height": 514,
+      "minimum_kb": "10",
+      "maximum_kb": "150"
+    },
+    {
+      "profile": "UAE eVisa online",
+      "width": 300,
+      "height": 396,
+      "minimum_kb": "10",
+      "maximum_kb": "40"
+    },
+    {
+      "profile": "UK online",
+      "width": 800,
+      "height": 1150,
+      "minimum_kb": "50",
+      "maximum_kb": "100000"
+    },
+    {
+      "profile": "USA Greencard online",
+      "width": 600,
+      "height": 600,
+      "minimum_kb": "10",
+      "maximum_kb": "240"
+    },
+    {
+      "profile": "USA passport online",
+      "width": 600,
+      "height": 600,
+      "minimum_kb": "10",
+      "maximum_kb": "240"
+    },
+    {
+      "profile": "United Kingdom Online Renewal",
+      "width": 800,
+      "height": 1120,
+      "minimum_kb": "50",
+      "maximum_kb": "10000"
+    }
+  ],
+  "quality_profiles": {
+    "DefaultISOlevels.XML": {
+      "CheckInputSize": "true",
+      "MinInputWidth": "300",
+      "MinInputHeight": "400",
+      "CheckFace": "true",
+      "CheckEyes": "true",
+      "CheckConfidence": "true",
+      "MinConfidence": "30",
+      "CheckGenQuality": "true",
+      "MinGenQuality": "30",
+      "CheckEyeAngle": "true",
+      "MaxAngle": "6",
+      "CheckEyeDistance": "true",
+      "MineyeDistance": "90",
+      "CheckPose": "true",
+      "MinPose": "22",
+      "CheckFaceFree": "true",
+      "MinFacefree": "30",
+      "CheckSuitable": "true",
+      "MinSuitable": "30",
+      "CheckEyesClear": "true",
+      "MinEyesclear": "30",
+      "CheckEyesOpen": "true",
+      "MinEyesOpen": "39",
+      "CheckSunGlases": "true",
+      "MinSunglases": "30",
+      "CheckGlare": "true",
+      "MinGlarefree": "30",
+      "CheckExpression": "true",
+      "MinNeutralExpression": "30",
+      "CheckHat": "false",
+      "MinHat": "30",
+      "CheckMouthClosed": "true",
+      "MouthClosed": "30",
+      "CheckSmiling": "true",
+      "MinSmiling": "30",
+      "CheckGlasses": "true",
+      "MinGlasses": "30",
+      "CheckRedEyes": "true",
+      "MinRedEyes": "30",
+      "CheckAge": "true",
+      "CheckGender": "true",
+      "CheckRealface": "true",
+      "CheckMultipleFaces": "true",
+      "CheckFaceNotFacingCamera": "false",
+      "MinFaceNotFacingCamera": "30",
+      "CheckEyesNotFacingCamera": "true",
+      "MinEyesNotFacingCamera": "30",
+      "CheckOverexposed": "true",
+      "MinOverexposed": "36",
+      "CheckUnderexposed": "true",
+      "MinUnderexposed": "30",
+      "CheckSkinColor": "true",
+      "MinSkinColor": "30",
+      "CheckHotspots": "true",
+      "MinHotspots": "36",
+      "CheckUniform": "true",
+      "MinUniform": "30",
+      "CheckShadowInEyes": "true",
+      "ShadowInEyes": "30",
+      "CheckShadowInFace": "true",
+      "ShadowInFace": "30",
+      "CheckFaceLarge": "true",
+      "MinFaceLarge": "30",
+      "CheckFaceSmall": "true",
+      "MinFaceSmall": "30",
+      "CheckFacePositionLeft": "true",
+      "MinFacePositionLeft": "30",
+      "CheckFacePositionRight": "true",
+      "MinFacePositionRight": "30",
+      "CheckFacePositionHigh": "true",
+      "MinFacePositionHigh": "30",
+      "CheckFacePositionLow": "true",
+      "MinFacePositionLow": "30",
+      "CheckSharpness": "true",
+      "MinSharpness": "18",
+      "CheckMotionblur": "true",
+      "MinMotionblur": "30",
+      "CheckContrast": "true",
+      "MinContrast": "30",
+      "CheckArtefacts": "true",
+      "MinArtefacts": "30",
+      "CheckNoise": "true",
+      "MinNoise": "18",
+      "CheckInterlaced": "true",
+      "MinInterlaced": "30",
+      "CheckCompressed": "true",
+      "MinCompressed": "30",
+      "CheckBackUniform": "true",
+      "MinBackUniform": "30",
+      "CheckBackBright": "true",
+      "MinBackBright": "30",
+      "CheckBackShadows": "true",
+      "MinBackShadows": "30",
+      "CheckBackColor": "true",
+      "MinBackColor": "30",
+      "RefBackColorRed": "230",
+      "RefBackColorGreen": "230",
+      "RefBackColorBlue": "230"
+    },
+    "ExampleISOLevels.XML": {
+      "CheckInputSize": "true",
+      "MinInputWidth": "300",
+      "MinInputHeight": "400",
+      "CheckFace": "true",
+      "CheckEyes": "true",
+      "CheckConfidence": "false",
+      "MinConfidence": "30",
+      "CheckGenQuality": "true",
+      "MinGenQuality": "30",
+      "CheckEyeAngle": "true",
+      "MaxAngle": "6",
+      "CheckEyeDistance": "false",
+      "MineyeDistance": "100",
+      "CheckPose": "true",
+      "MinPose": "30",
+      "CheckFaceFree": "true",
+      "MinFacefree": "30",
+      "CheckSuitable": "true",
+      "MinSuitable": "30",
+      "CheckEyesClear": "true",
+      "MinEyesclear": "30",
+      "CheckEyesOpen": "true",
+      "MinEyesOpen": "30",
+      "CheckSunGlases": "true",
+      "MinSunglases": "30",
+      "CheckGlare": "true",
+      "MinGlarefree": "30",
+      "CheckExpression": "false",
+      "MinNeutralExpression": "30",
+      "CheckHat": "false",
+      "MinHat": "30",
+      "CheckMouthClosed": "true",
+      "MouthClosed": "30",
+      "CheckSmiling": "false",
+      "MinSmiling": "30",
+      "CheckOverexposed": "true",
+      "MinOverexposed": "30",
+      "CheckUnderexposed": "true",
+      "MinUnderexposed": "30",
+      "CheckSkinColor": "true",
+      "MinSkinColor": "30",
+      "CheckHotspots": "true",
+      "MinHotspots": "30",
+      "CheckUniform": "true",
+      "MinUniform": "30",
+      "CheckShadowInEyes": "true",
+      "ShadowInEyes": "30",
+      "CheckShadowInFace": "true",
+      "ShadowInFace": "30",
+      "CheckFaceLarge": "true",
+      "MinFaceLarge": "30",
+      "CheckFaceSmall": "true",
+      "MinFaceSmall": "30",
+      "CheckFacePositionLeft": "true",
+      "MinFacePositionLeft": "30",
+      "CheckFacePositionRight": "true",
+      "MinFacePositionRight": "30",
+      "CheckFacePositionHigh": "true",
+      "MinFacePositionHigh": "30",
+      "CheckFacePositionLow": "true",
+      "MinFacePositionLow": "30",
+      "CheckSharpness": "false",
+      "MinSharpness": "30",
+      "CheckMotionblur": "true",
+      "MinMotionblur": "30",
+      "CheckContrast": "true",
+      "MinContrast": "30",
+      "CheckArtefacts": "true",
+      "MinArtefacts": "30",
+      "CheckNoise": "false",
+      "MinNoise": "30",
+      "CheckInterlaced": "true",
+      "MinInterlaced": "30",
+      "CheckCompressed": "true",
+      "MinCompressed": "30",
+      "CheckBackUniform": "false",
+      "MinBackUniform": "30",
+      "CheckBackBright": "false",
+      "MinBackBright": "30",
+      "CheckBackShadows": "false",
+      "MinBackShadows": "30",
+      "CheckBackColor": "true",
+      "MinBackColor": "30",
+      "RefBackColorRed": "230",
+      "RefBackColorGreen": "230",
+      "RefBackColorBlue": "230"
+    },
+    "NOlevels.XML": {
+      "CheckInputSize": "false",
+      "MinInputWidth": "600",
+      "MinInputHeight": "800",
+      "CheckFace": "false",
+      "CheckEyes": "false",
+      "CheckConfidence": "false",
+      "MinConfidence": "30",
+      "CheckGenQuality": "false",
+      "MinGenQuality": "30",
+      "CheckEyeAngle": "false",
+      "MaxAngle": "5",
+      "CheckEyeDistance": "false",
+      "MineyeDistance": "100",
+      "CheckPose": "false",
+      "MinPose": "7",
+      "CheckFaceFree": "false",
+      "MinFacefree": "30",
+      "CheckSuitable": "false",
+      "MinSuitable": "30",
+      "CheckEyesClear": "false",
+      "MinEyesclear": "30",
+      "CheckEyesOpen": "false",
+      "MinEyesOpen": "30",
+      "CheckSunGlases": "false",
+      "MinSunglases": "30",
+      "CheckGlare": "false",
+      "MinGlarefree": "30",
+      "CheckExpression": "false",
+      "MinNeutralExpression": "30",
+      "CheckHat": "false",
+      "MinHat": "30",
+      "CheckMouthClosed": "false",
+      "MouthClosed": "30",
+      "CheckSmiling": "false",
+      "MinSmiling": "30",
+      "CheckOverexposed": "false",
+      "MinOverexposed": "36",
+      "CheckUnderexposed": "false",
+      "MinUnderexposed": "30",
+      "CheckSkinColor": "false",
+      "MinSkinColor": "30",
+      "CheckHotspots": "false",
+      "MinHotspots": "36",
+      "CheckUniform": "false",
+      "MinUniform": "30",
+      "CheckShadowInEyes": "false",
+      "ShadowInEyes": "30",
+      "CheckShadowInFace": "false",
+      "ShadowInFace": "30",
+      "CheckFaceLarge": "false",
+      "MinFaceLarge": "30",
+      "CheckFaceSmall": "false",
+      "MinFaceSmall": "30",
+      "CheckFacePositionLeft": "false",
+      "MinFacePositionLeft": "30",
+      "CheckFacePositionRight": "false",
+      "MinFacePositionRight": "30",
+      "CheckFacePositionHigh": "false",
+      "MinFacePositionHigh": "30",
+      "CheckFacePositionLow": "false",
+      "MinFacePositionLow": "30",
+      "CheckSharpness": "false",
+      "MinSharpness": "18",
+      "CheckMotionblur": "false",
+      "MinMotionblur": "30",
+      "CheckContrast": "false",
+      "MinContrast": "30",
+      "CheckArtefacts": "false",
+      "MinArtefacts": "30",
+      "CheckNoise": "false",
+      "MinNoise": "18",
+      "CheckInterlaced": "true",
+      "MinInterlaced": "30",
+      "CheckCompressed": "false",
+      "MinCompressed": "30",
+      "CheckBackUniform": "false",
+      "MinBackUniform": "30",
+      "CheckBackBright": "false",
+      "MinBackBright": "30",
+      "CheckBackShadows": "false",
+      "MinBackShadows": "30",
+      "CheckBackColor": "false",
+      "MinBackColor": "30",
+      "RefBackColorRed": "230",
+      "RefBackColorGreen": "230",
+      "RefBackColorBlue": "230"
+    }
+  },
+  "ui_forms": [
+    "Form_GettingStarted",
+    "FormSelfieD",
+    "FormFaceSizePos",
+    "FormCountrySelectTool",
+    "FormCountryAddTool",
+    "Form_ConfigTool",
+    "Form_AutoProcessTool",
+    "Form_Main",
+    "Form_PrinterTemplateTool",
+    "Form_ScanFolderTool",
+    "Form_EditTool",
+    "Form_BackgroundTool",
+    "Form_ScanFolderSettings",
+    "Form_ICAOSettings",
+    "Form_ICAOTools",
+    "Form_OpenFileSettings",
+    "Form_SaveFileSettings",
+    "Form_GUISettings",
+    "Form_AdminTool",
+    "Form_RegTool",
+    "Form_LoggingTool",
+    "Form_PrintTool",
+    "Form_PrintMode",
+    "Form_UploadMode",
+    "Form_EmailMode",
+    "Form_SaveMode",
+    "Form_UploadEmailSaveMode",
+    "Form_DemoLicense",
+    "Form_APS",
+    "Form_PhotoMatic",
+    "Form_EosSettings",
+    "Form_Email",
+    "Form_Save",
+    "Form_BasicCode",
+    "Form_APS7",
+    "Form_Upload2ServerMode",
+    "Form_Connect2Server",
+    "Form_WiFiSetup",
+    "Form_FlashAir"
+  ],
+  "sources": [
+    {
+      "file": "Config/Photomatic7.xml",
+      "sha256": "99456b7ead36369cf297e6cfcc40040d8f67c7c75503826ca8aa2cab639c3aed"
+    },
+    {
+      "file": "Images/en/languagedata.XML",
+      "sha256": "b7740f178249f3ed9c1209bc3aa0644ea14504870b18151bac08edb5b01fbb40"
+    },
+    {
+      "file": "Packages/Countries/25x33 generic.XML",
+      "sha256": "1a20c91f96e0386fea68d467390fad7e57376da2be1790ac2ecb026124f6b552"
+    },
+    {
+      "file": "Packages/Countries/25x35 generic.XML",
+      "sha256": "60d526946a3f309155960ac88fa3cbe5afae1d7dc95ad142cf11e55a27450784"
+    },
+    {
+      "file": "Packages/Countries/26x32 generic.XML",
+      "sha256": "23c95448e57fb96d2190d0e4e86eb69884f7570eda10c39cfa3492daff02b019"
+    },
+    {
+      "file": "Packages/Countries/30x30 generic.XML",
+      "sha256": "28a37abcf7e72fe8026b81a5d1eac671d19b83ab445a7aa09d51524a07db3fd6"
+    },
+    {
+      "file": "Packages/Countries/30x35 generic.XML",
+      "sha256": "b87a014604ef243a5dae04de0a56ac699844f5ede763666f48ebd232e96cd9fa"
+    },
+    {
+      "file": "Packages/Countries/30x40 generic.XML",
+      "sha256": "180f2367dfe1de29a65b9cad2bbb8cec37df8053acf201337257260dfb770d93"
+    },
+    {
+      "file": "Packages/Countries/30x45 generic.XML",
+      "sha256": "a8a3a0ecba6341e2601d44732799ad82f978bb1f1011515ab853768114435139"
+    },
+    {
+      "file": "Packages/Countries/35x35 generic.XML",
+      "sha256": "dfd2e4da7d61e19277ad4459fae80831f290a5e81b5ecddd37b95655974fd0b8"
+    },
+    {
+      "file": "Packages/Countries/35x40 generic.XML",
+      "sha256": "b2d2e0db8f9fbfd927567b4624dfdaaf8eeceadd51c81e7368da651cad96691e"
+    },
+    {
+      "file": "Packages/Countries/35x45 generic.XML",
+      "sha256": "305d909a9c213fb404f97fb7a3781ec6cdb1d58598e574339d09bb1e211c304f"
+    },
+    {
+      "file": "Packages/Countries/35x50 generic.XML",
+      "sha256": "d8a5ba6c51c73a4ee0be4c6e1d38a219276a12071a6f81a890f49b06b2480de9"
+    },
+    {
+      "file": "Packages/Countries/36x47 generic.XML",
+      "sha256": "0eed523d8015b16213686255146ec279c111d2b85939f670b757b2bdb7c4a363"
+    },
+    {
+      "file": "Packages/Countries/40x40 generic.XML",
+      "sha256": "1bf97df3b0e925c5c352b3f871267a29e7d39b0cad804c1cd214fe627c59ff40"
+    },
+    {
+      "file": "Packages/Countries/40x45 generic.XML",
+      "sha256": "39a8626e488b4e9206249902accb7feb5add50500be4d535e0fe29b8311b065c"
+    },
+    {
+      "file": "Packages/Countries/40x50 generic.XML",
+      "sha256": "5fd50ba203bb25f550223ec9ffc30d9364f4d3d103f9a7b8b0b642cc4a188164"
+    },
+    {
+      "file": "Packages/Countries/40x55 generic.XML",
+      "sha256": "dac43edce6358385cf33c41afe8e7bdb5861d5b1f83b3d5f24bfde9d81408def"
+    },
+    {
+      "file": "Packages/Countries/40x60 generic.XML",
+      "sha256": "ae46beca446fb4391bc45c3ffa7c15eab670c81e21c6108c91cdbf299afe4af5"
+    },
+    {
+      "file": "Packages/Countries/45x45 generic.XML",
+      "sha256": "8d36239dee9c5b3b3c9e40aeedabee7d0947fe12cd2a4d3f5768c20e317bab3d"
+    },
+    {
+      "file": "Packages/Countries/45x55 generic.XML",
+      "sha256": "f19966e2bb3e45a925463f483ea5dc9bc56a9b64b694ca3ad1dda9eecf3cc71b"
+    },
+    {
+      "file": "Packages/Countries/50x60 generic.XML",
+      "sha256": "96ca4f2443b2991040fae23f233a3cf326182cdc0e3c7316996603b1921a0f08"
+    },
+    {
+      "file": "Packages/Countries/51x51 generic.XML",
+      "sha256": "e7f9dd47de3848ba22f88b67ce9553b1625395a5d456bef5fdf5b3f8ae9725e0"
+    },
+    {
+      "file": "Packages/Countries/Afghanistan Passport.XML",
+      "sha256": "209383c6f95204205429f425f35b1cc2f115ad071791165d847f8a0aaf9f907a"
+    },
+    {
+      "file": "Packages/Countries/Albania Passport.XML",
+      "sha256": "fd7aed07e3c98b506b1092e4a507588e51b03c8e19286b07409cc0dcafb815b9"
+    },
+    {
+      "file": "Packages/Countries/Algeria Passport.XML",
+      "sha256": "b38dab097d06c3bec02b1ce3387c21d6676c26ec01617901febf14598fcdc42a"
+    },
+    {
+      "file": "Packages/Countries/Andorra Passport.XML",
+      "sha256": "f325b197a22bf49a2fcd96a0c4aad9923b73f1d19eb76665fbf9a6263a17a268"
+    },
+    {
+      "file": "Packages/Countries/Angola Passport.XML",
+      "sha256": "1c3793b2668a503f6971d6a0197cbfd6bf596455edabd1bd6057c6e02672acd7"
+    },
+    {
+      "file": "Packages/Countries/Argentina Passport.XML",
+      "sha256": "97da7802085c0e071730f1ab0c8721c625b1345c0e0f2bd61838f35feea872a0"
+    },
+    {
+      "file": "Packages/Countries/Armenia Passport.XML",
+      "sha256": "13cbb64322a059f3071f0536d0b83347e30dbf848fe8aa4fd96abf3adb2c2e10"
+    },
+    {
+      "file": "Packages/Countries/Australia AAA IDP online.XML",
+      "sha256": "bbdff7b5100b24943ed0489d517606657735f21a106b38d75c24d94850480834"
+    },
+    {
+      "file": "Packages/Countries/Australia Passport DFAT.XML",
+      "sha256": "b222bb9c3507c9f1754d84728252009a1005ae0943d4906c3771f501eef6f0f5"
+    },
+    {
+      "file": "Packages/Countries/Australia Passport.XML",
+      "sha256": "5708028533a0122d56e4de9e3fd5a1e2c0e7c1f20e1183064ecbd1530e87f2b7"
+    },
+    {
+      "file": "Packages/Countries/Australia VISA.XML",
+      "sha256": "efb074309bb4e09af898a1c518dd0ff56ef7bce2744dec1031f83b0fac4934c7"
+    },
+    {
+      "file": "Packages/Countries/Australia WWC online.XML",
+      "sha256": "baf7d5c303bbb94301d17583c690563677a0c39043042e43624af50607b37239"
+    },
+    {
+      "file": "Packages/Countries/Austria Passport.XML",
+      "sha256": "3498b875fca0f8579a1f8c85f548fd9d401321959a5c9d15ad70703394f548ab"
+    },
+    {
+      "file": "Packages/Countries/Austria VISA.XML",
+      "sha256": "3498b875fca0f8579a1f8c85f548fd9d401321959a5c9d15ad70703394f548ab"
+    },
+    {
+      "file": "Packages/Countries/Bahrein Passport.XML",
+      "sha256": "aca3475c92bf3abb9c08b9bd6609b540490e21e80e834e4ee4e21496079dacde"
+    },
+    {
+      "file": "Packages/Countries/Bahrein Visa.XML",
+      "sha256": "aca3475c92bf3abb9c08b9bd6609b540490e21e80e834e4ee4e21496079dacde"
+    },
+    {
+      "file": "Packages/Countries/Belarus Passport.XML",
+      "sha256": "efd6696e2d53c1c5651bc6b040673d665bfcef42262f8a03269851cd11c65217"
+    },
+    {
+      "file": "Packages/Countries/Belarus VISA.XML",
+      "sha256": "efd6696e2d53c1c5651bc6b040673d665bfcef42262f8a03269851cd11c65217"
+    },
+    {
+      "file": "Packages/Countries/Belgium Passport.XML",
+      "sha256": "423602e7262bac2ad5bd8e54a08d5c1e2fd18a2a1fe850e19b887f5dbdc2ed29"
+    },
+    {
+      "file": "Packages/Countries/Bhutan Passport.XML",
+      "sha256": "cb1145203e0f7c7c0f0d34610a46b6f51d3cf244cf3504a34e680556f842dbbe"
+    },
+    {
+      "file": "Packages/Countries/Bhutan VISA.XML",
+      "sha256": "cb1145203e0f7c7c0f0d34610a46b6f51d3cf244cf3504a34e680556f842dbbe"
+    },
+    {
+      "file": "Packages/Countries/Bosnia Herzegovina Passport.XML",
+      "sha256": "d91fed50d7fe60fbeb08a73c02ff7f34b8d10b635757284c76511945ba0e275a"
+    },
+    {
+      "file": "Packages/Countries/Brasil Passport.XML",
+      "sha256": "7dd2a197ae87e01cc6a520c26e1438a226213f8c8c28a49f8ef230b89ed1372a"
+    },
+    {
+      "file": "Packages/Countries/Brasil Visa.XML",
+      "sha256": "23f9926f2c3f0d93703065eecbb8470022b5836da3d6dc78691987a5ecd22ea9"
+    },
+    {
+      "file": "Packages/Countries/Brasil eVisa online.XML",
+      "sha256": "5b2bba66619e3c7ef0f165d2db4efdf640146ef4c94ed592b26fd7767987d715"
+    },
+    {
+      "file": "Packages/Countries/Bulgaria Passport.XML",
+      "sha256": "f2baf44e4bddd84d7c92c486c4639fffc9d140139ab666c987b7cede0edabb46"
+    },
+    {
+      "file": "Packages/Countries/Bulgaria VISA.XML",
+      "sha256": "f2baf44e4bddd84d7c92c486c4639fffc9d140139ab666c987b7cede0edabb46"
+    },
+    {
+      "file": "Packages/Countries/Cambodia Passport.XML",
+      "sha256": "34cd99f23f918e835dc3b209fa06581cf2165d9fdd608074a79148b6f0efff28"
+    },
+    {
+      "file": "Packages/Countries/Cambodia VISA.XML",
+      "sha256": "7a5a7713afcf6d436443637d007c7793d164fd01eabbf337edf1e30797499537"
+    },
+    {
+      "file": "Packages/Countries/Cambodia eVisa online.XML",
+      "sha256": "294a2036dac50740b8bbb8dd6c20bbe28202bcaaaef3ec3e72fa913e2d6bef10"
+    },
+    {
+      "file": "Packages/Countries/Canada Citizenship online.XML",
+      "sha256": "681d7acc6d75e68dd23dd094caec9beda45c1ef4ab3a061bcc1b8038726fd62c"
+    },
+    {
+      "file": "Packages/Countries/Canada Citizenship.XML",
+      "sha256": "40678e6ca3deebb9f77c484d191027d8253c3f2bd73906e75f44aca67fe8736a"
+    },
+    {
+      "file": "Packages/Countries/Canada Firearms online 3x4.XML",
+      "sha256": "b5370a9b209ddfcdb59c6869d3a8c425886fe6751e65700ebd0aabcd8e135ff7"
+    },
+    {
+      "file": "Packages/Countries/Canada Firearms online.XML",
+      "sha256": "2bcf57e9f0957d55ce2f9c80bb7ea71647c817a179305e66558b9d588730b014"
+    },
+    {
+      "file": "Packages/Countries/Canada Firearms.XML",
+      "sha256": "9f8a2296fb7fad35c02918f842d2fb2d0cad43647cab766b5dfc533416ae7000"
+    },
+    {
+      "file": "Packages/Countries/Canada HandyDART online.XML",
+      "sha256": "d7b96a552eb54bc297db1fdbe6562842984b0c3f47b7a0bac315210885b62cf2"
+    },
+    {
+      "file": "Packages/Countries/Canada Passport online.XML",
+      "sha256": "619e791e935697fe2102984294ead40c95860b08159c1a274e4a20da74e68d58"
+    },
+    {
+      "file": "Packages/Countries/Canada Passport.XML",
+      "sha256": "ea2a3f922c971f323856a62fa7ae6c2c2f27bf86fb1e316d839e20fc06a72391"
+    },
+    {
+      "file": "Packages/Countries/Canada Perm Residence online.XML",
+      "sha256": "819dcc23ff45344791dbd2122122120c2b8bde37004e837114b0191179e0d24d"
+    },
+    {
+      "file": "Packages/Countries/Canada Perm Residence.XML",
+      "sha256": "c3dc91fd06b46358e861ede07ac77a34b296ccf48b711913f1a5118aa91c77a6"
+    },
+    {
+      "file": "Packages/Countries/Canada VISA.XML",
+      "sha256": "9c67a49c02cd18dcf1d291e91df664c51c26cc5a816cf228f1e336b3b0a4a4f7"
+    },
+    {
+      "file": "Packages/Countries/Canada eVisa online.XML",
+      "sha256": "1a15ed8d2e976d139b0e7fbfe4db8ed05fb5c2d8e1fd882b7a027ac777159a52"
+    },
+    {
+      "file": "Packages/Countries/China Passport Online.XML",
+      "sha256": "9310429254095a07992b1db8f2d340590a7adc294caaf29271ab9e7201c00863"
+    },
+    {
+      "file": "Packages/Countries/China Passport.XML",
+      "sha256": "081f40c1ee3d74da5adc1beba265c3823dbed9b4e074340af9721cdc9c418bd8"
+    },
+    {
+      "file": "Packages/Countries/China VISA.XML",
+      "sha256": "27f1f09ad7d2b6146575ecceafd2a3108d7e3cb9b926dcced412a9cd7226b66d"
+    },
+    {
+      "file": "Packages/Countries/China eVISA online.XML",
+      "sha256": "a8c710a02654754034525b0ddc8f520474b9bdf3edb842a44d3777a7c6fffc8f"
+    },
+    {
+      "file": "Packages/Countries/Colombia VISA.XML",
+      "sha256": "a0f53aac70e1d194e1c819d6b6af4da460ef1c151df8a336b4e3f393e419fb99"
+    },
+    {
+      "file": "Packages/Countries/Croatia Passport.XML",
+      "sha256": "e1ec3885c0059cb88fa561a9247b4ed4594a86c759d5d83d7dcaa3807328900e"
+    },
+    {
+      "file": "Packages/Countries/Cyprus Passport.XML",
+      "sha256": "e5bbe95aa7d10a677b8cebc4d2a992ff830d37c0ad405ad3c95c99397fbc4a09"
+    },
+    {
+      "file": "Packages/Countries/Czech Passport.XML",
+      "sha256": "e8f4e99e441b0eff9a28646192114c584ec6c9aff9a8adf7a5550905799f376a"
+    },
+    {
+      "file": "Packages/Countries/DVA online.XML",
+      "sha256": "c628ee0552b01038637446e8a6a9078530dbf5cb93587c24f5c5d1c396400c51"
+    },
+    {
+      "file": "Packages/Countries/Denmark Passport.XML",
+      "sha256": "7a15b06de5549d8e992d809f04226643d027fda894b44d539ac9b01db5448cf4"
+    },
+    {
+      "file": "Packages/Countries/Egypt Passport.XML",
+      "sha256": "bd3085b5017e19841b3fc5786aaf4d5adcef94ff3f51f88fc626b14eb62e3a01"
+    },
+    {
+      "file": "Packages/Countries/Egypt Visa.XML",
+      "sha256": "bd3085b5017e19841b3fc5786aaf4d5adcef94ff3f51f88fc626b14eb62e3a01"
+    },
+    {
+      "file": "Packages/Countries/Estonia Passport online.XML",
+      "sha256": "d3eaad50123b32295bc3c4a6a732437dfc49964928163ebb9ad641f335ec7a7f"
+    },
+    {
+      "file": "Packages/Countries/Estonia Passport.XML",
+      "sha256": "ecc92a54da6d6a96df5f4f871024a473b196b1788aaa877a6498261d294d7046"
+    },
+    {
+      "file": "Packages/Countries/Estonia VISA.XML",
+      "sha256": "b81f31e7b8a70f4ed5e6d49eee2d663e266b88d0fe2bd393586fc73af13df9c1"
+    },
+    {
+      "file": "Packages/Countries/Finland Passport.XML",
+      "sha256": "8049a5ab307400ac5490620d7a834a1f992c7b53b612264c5ec61f35236aa942"
+    },
+    {
+      "file": "Packages/Countries/Finland VISA.XML",
+      "sha256": "f51265f692b55d76866c8b2c5aad114f10b486a3685df356fc2fc5f9e9ff6f25"
+    },
+    {
+      "file": "Packages/Countries/France ANTS online.XML",
+      "sha256": "d9e21885a4c56a639008b263f69d11be8b71074db138ee275d57fe442020d17f"
+    },
+    {
+      "file": "Packages/Countries/France Passport.XML",
+      "sha256": "7e35c8fd3714758683e1d313b94c3da2b48304e401b8806ae2f802fdaafa870b"
+    },
+    {
+      "file": "Packages/Countries/Free Style 35x45.XML",
+      "sha256": "a1747b3f3495f7570d2a95c889df5fe7ae8a34d7676741bbf2177f7af5e88433"
+    },
+    {
+      "file": "Packages/Countries/Free Style 50x70.XML",
+      "sha256": "2d414c30db0e163043543df60feab6043ad882352b2f035429a6423d78ecba22"
+    },
+    {
+      "file": "Packages/Countries/Free Style.XML",
+      "sha256": "dd10c0393f91319589b0f435c12fb5a0c45377a9302c741051bc60279506b45f"
+    },
+    {
+      "file": "Packages/Countries/Germany Fuhrerschein online.XML",
+      "sha256": "a206be792d446bfad62767148cc6357116a99eefd733c831aaa324f359e532b7"
+    },
+    {
+      "file": "Packages/Countries/Germany Passport BW.XML",
+      "sha256": "70f2e0c626ce326903009b3f1ab368edb93488a795a4be09a960cfac95352ade"
+    },
+    {
+      "file": "Packages/Countries/Germany Passport.XML",
+      "sha256": "6399e8d8d00eca93a62b492534cedd97d80e01c8eeda1ca811f75720a116c887"
+    },
+    {
+      "file": "Packages/Countries/Germany VISA.XML",
+      "sha256": "472ef6565af1b4dc31059c52b5708ea392e1ecadce91820f6bf08b388806c6d8"
+    },
+    {
+      "file": "Packages/Countries/Ghana Passport.XML",
+      "sha256": "cd7c16ba75d2af5b2ac3c9f2508b8ce07f32e8e14bd5699605e72e0307539e0c"
+    },
+    {
+      "file": "Packages/Countries/Greece ID online 40x50.XML",
+      "sha256": "6f363e065751f6bd92a1777aae18fce965c4ce083620f2a8b609020d4bdc55a3"
+    },
+    {
+      "file": "Packages/Countries/Greece Passport.XML",
+      "sha256": "1b77a7df9870eea2cec812189ca57575ed6e6c48c38596133b852379db62d2a0"
+    },
+    {
+      "file": "Packages/Countries/Hongkong Passport online.XML",
+      "sha256": "f8910a046de484eaf06df0ccf8bbafd0fcd7a40554e7eabdc1aa64ec05e799e7"
+    },
+    {
+      "file": "Packages/Countries/Hongkong Passport.XML",
+      "sha256": "63665c24f324b305583400587d34d2b099785ef2dcddbb0039391dc12034c8a1"
+    },
+    {
+      "file": "Packages/Countries/Hongkong VISA online.XML",
+      "sha256": "f8910a046de484eaf06df0ccf8bbafd0fcd7a40554e7eabdc1aa64ec05e799e7"
+    },
+    {
+      "file": "Packages/Countries/Hongkong VISA.XML",
+      "sha256": "3a29aaaf3ae7a3d0141d17f6f22aac4ecadd8a3d4da3b8f014c731997dcd886d"
+    },
+    {
+      "file": "Packages/Countries/Hungary Passport.XML",
+      "sha256": "efc1efbb592c8d3f2900d2a4f751f39d2aee966795854b9af20c4b46de44a71c"
+    },
+    {
+      "file": "Packages/Countries/Iceland Passport.XML",
+      "sha256": "0753d0ce091e127e62b5665a5a69ccc7040b14ba8c1d3ec1f3066cab5b590914"
+    },
+    {
+      "file": "Packages/Countries/India PAN card.XML",
+      "sha256": "25677ee5cb25ca6fcc0d15a1bd61f34e4bc84ee24ee9043deb48f831e4bf1a6f"
+    },
+    {
+      "file": "Packages/Countries/India Passport online.XML",
+      "sha256": "fdad901bb5690e0d3a7e5ff47483e2c99e57d4478941acb62493edcd6f156c64"
+    },
+    {
+      "file": "Packages/Countries/India Passport.XML",
+      "sha256": "2cbfc2db2cfc169bd405c7523d50e8d7ba815c9c73462714a10bc0526474a3b3"
+    },
+    {
+      "file": "Packages/Countries/India VISA.XML",
+      "sha256": "59767a39a622a382b77137a95a1d80380586e50a75e417cbac519fbb230aa1fa"
+    },
+    {
+      "file": "Packages/Countries/India eVisa online.XML",
+      "sha256": "56a38aa4c7fba44094c7bec41ba9c7671d932f310c068e49a83c5a4e9c0b239d"
+    },
+    {
+      "file": "Packages/Countries/Indonesia Passport.XML",
+      "sha256": "05cffac652794a63cfb384a3d28615b02bed8000c3b260647e0472208eb44428"
+    },
+    {
+      "file": "Packages/Countries/Indonesia VISA.XML",
+      "sha256": "05cffac652794a63cfb384a3d28615b02bed8000c3b260647e0472208eb44428"
+    },
+    {
+      "file": "Packages/Countries/Indonesia eVisa online.XML",
+      "sha256": "568935ee923667c63d7be964ff3b765df189093b1ae14fe841d77348fae74f12"
+    },
+    {
+      "file": "Packages/Countries/Iran Passport.XML",
+      "sha256": "8dac8192af2c2d49d4cdc0f7fa7b47b950664d02355d85cdc74ae0fcc96efcb4"
+    },
+    {
+      "file": "Packages/Countries/Iran e-Visa online.XML",
+      "sha256": "ad3ee1e7bed2f9907f3efe196c6227324b2887ed733b8c6052d1fc387111e779"
+    },
+    {
+      "file": "Packages/Countries/Iraq Passport.XML",
+      "sha256": "72edce0d7b12f52271b6ae220f91b45e4687680295a2aaf6f1772ffc7d35da38"
+    },
+    {
+      "file": "Packages/Countries/Iraq Visa.XML",
+      "sha256": "72edce0d7b12f52271b6ae220f91b45e4687680295a2aaf6f1772ffc7d35da38"
+    },
+    {
+      "file": "Packages/Countries/Ireland Passport online.XML",
+      "sha256": "311149c0163b329e2f26958be98e5a4c8c2547eb492c8d8a8bc052c687bcc9ac"
+    },
+    {
+      "file": "Packages/Countries/Ireland Passport.XML",
+      "sha256": "e0843f99a936dab4e09c329b8009fc0f55716495285343d2d047b346ca2440c9"
+    },
+    {
+      "file": "Packages/Countries/Ireland Public Services Card online.XML",
+      "sha256": "9821dbb3a4c52ceafdfd49ae9ef2b1da9fcd3a608952a7890f843d667d742d19"
+    },
+    {
+      "file": "Packages/Countries/Ireland VISA.XML",
+      "sha256": "facc9cf5c3740ad81f9b666e5c7c12dbe7b86aaa0205a99c16d3aefe812f63e5"
+    },
+    {
+      "file": "Packages/Countries/Irish TAXI.XML",
+      "sha256": "504e17c5b803d0883d672cabc08d04d9a6dfbdcc178b58ee26122d1b8a1c2192"
+    },
+    {
+      "file": "Packages/Countries/Israel Passport.XML",
+      "sha256": "38a70063726847f1c1dfbc1fdaf4bcc8edd1fc6daa8ab15e9c497d8c07976478"
+    },
+    {
+      "file": "Packages/Countries/Italia Passport.XML",
+      "sha256": "ff7cfaa5682e62f7241a8c21374fe3ead2a904a671532ceedb1bb5ed465499e8"
+    },
+    {
+      "file": "Packages/Countries/Jamaica Passport.XML",
+      "sha256": "a0b0b33eedb537b596a00db0972600989aad9d99ece7a19724bce8e85136fcd1"
+    },
+    {
+      "file": "Packages/Countries/Japan Passport.XML",
+      "sha256": "dc033a20e230bc3ebc8bafb81408685994bd8b78b5318b7049ec469fb4d51d2c"
+    },
+    {
+      "file": "Packages/Countries/Japan VISA 45x45.XML",
+      "sha256": "4a86f0ff176125ccd514db2605c9596aed1c343dbcc9da4a05a741a550c66776"
+    },
+    {
+      "file": "Packages/Countries/Japan VISA 51x51.XML",
+      "sha256": "610e4efe8c0399fa3ff62b3a0099d0ab0c2a3b337dfc5c28c7676e58a4152fdf"
+    },
+    {
+      "file": "Packages/Countries/Japan Visa.XML",
+      "sha256": "0d082a85009011f0b39f6709e1357135db543160e148d7fedafd35f44d62a99e"
+    },
+    {
+      "file": "Packages/Countries/Japan e-Visa online.XML",
+      "sha256": "e63b40f18abc3ef844244a9001fcf140a92aac658543f0170ad5e40577a0e400"
+    },
+    {
+      "file": "Packages/Countries/Kenya Passport.XML",
+      "sha256": "2adcc3292f03d4a893cbd42f015a5e006612ac2755f429bb67570e0f56c96556"
+    },
+    {
+      "file": "Packages/Countries/Korea Passport.XML",
+      "sha256": "94f888057c5f90db9aa459340128b1a66d1ce5c20d255e268916f638206121a7"
+    },
+    {
+      "file": "Packages/Countries/Korea VISA.XML",
+      "sha256": "c2914ac128b1e1b39f893ca115ccc786245577931a668adecbf1ac0fb3aec6c8"
+    },
+    {
+      "file": "Packages/Countries/Kosovo Passport.XML",
+      "sha256": "1625bad8aad567259f7ea49b7519bcb8a2534631d9f64a37fbd7ce9746361e19"
+    },
+    {
+      "file": "Packages/Countries/Kuwait Passport 40x50.XML",
+      "sha256": "1f3338195f17da28c682753b67e169b0d82b32fc48f30588fb18c81f2759b6c7"
+    },
+    {
+      "file": "Packages/Countries/Kuwait Passport Renewal.XML",
+      "sha256": "f98a1b85a9dbae1bc9aae9b1797793542e2a62f150801a7bd26c4f416e444f86"
+    },
+    {
+      "file": "Packages/Countries/Kuwait Visa.XML",
+      "sha256": "d0f60761d08ba8971ac761d4c53593a50bb4296b988a05be62a1976203cb0eef"
+    },
+    {
+      "file": "Packages/Countries/Laos Passport.XML",
+      "sha256": "11c16082521156151ce0a3a653d6cb6640d3771ac38347a28861528c4068c40b"
+    },
+    {
+      "file": "Packages/Countries/Latvia Passport.XML",
+      "sha256": "b4e425cfe39519bfebda63a6fb82b3a91236858ee7171285dec6322eeb17ef30"
+    },
+    {
+      "file": "Packages/Countries/Lithuania Passport.XML",
+      "sha256": "7d70766a13676e15415615569fdeb0b0aa7e1ea134323b0226429dfa17af44ed"
+    },
+    {
+      "file": "Packages/Countries/Luxembourgh Passport.XML",
+      "sha256": "02349dab69a6c3fc45d46e906a81bcb0fc18f59dcbf6c2f76c89303eff2d6d89"
+    },
+    {
+      "file": "Packages/Countries/Malaysia Passport.XML",
+      "sha256": "da8464ea0e82565b95566fce9d03b24e152158270518c94185492b8ce2c98725"
+    },
+    {
+      "file": "Packages/Countries/Malaysia VISA.XML",
+      "sha256": "c6ba150cefee7551828a7af66f3d5af1a00c229fe57ff9facafa35fe6e924e28"
+    },
+    {
+      "file": "Packages/Countries/Malaysia eVISA online.XML",
+      "sha256": "b6b4e208e9fb8d195ac89899b0921f52bffbd51465e01b640dce0ec3804dfc28"
+    },
+    {
+      "file": "Packages/Countries/Malta Passport.XML",
+      "sha256": "5827306ad668cb96ef5556c983b25838abd8446c256110c5be164e40d258fa62"
+    },
+    {
+      "file": "Packages/Countries/Mexico Passport.XML",
+      "sha256": "0d9d966af7821bd117993452498fbdb3e7b28dffc5c48e5f0686a0b33de03053"
+    },
+    {
+      "file": "Packages/Countries/Mexico Permanent Resident.XML",
+      "sha256": "f2dd6a53e9654d309510e2c1407670f0b195fada1c95408b105177e9c3ca0a70"
+    },
+    {
+      "file": "Packages/Countries/Mexico VISA.XML",
+      "sha256": "0d9d966af7821bd117993452498fbdb3e7b28dffc5c48e5f0686a0b33de03053"
+    },
+    {
+      "file": "Packages/Countries/Montenegro Passport.XML",
+      "sha256": "3161f26fd2902804ce83d5ad224fe33891c16c630189e9c924a23272e2a5de94"
+    },
+    {
+      "file": "Packages/Countries/Morocco Passport.XML",
+      "sha256": "06eda5258f45ba6a524de1fffea03c2bf6613055361ca25e81d4b4602e7ec594"
+    },
+    {
+      "file": "Packages/Countries/Myanmar Visa.XML",
+      "sha256": "de1d24b55ed94e7d788f4a9dc34dc14ae92f30dd26296501cb49b9e3cda5f76b"
+    },
+    {
+      "file": "Packages/Countries/NSW TAXI.XML",
+      "sha256": "8ce8683909bdc011e8acf4fb05368c975d37f9cabccbe6e4b837481dd88bfc67"
+    },
+    {
+      "file": "Packages/Countries/Namibia Passport.XML",
+      "sha256": "6878f6683ed1aafdfaa20edaa30a198ab84021bc3e11364ced924b0576f3911f"
+    },
+    {
+      "file": "Packages/Countries/Namibia Visa.XML",
+      "sha256": "6878f6683ed1aafdfaa20edaa30a198ab84021bc3e11364ced924b0576f3911f"
+    },
+    {
+      "file": "Packages/Countries/Nederland Passport.XML",
+      "sha256": "83bdc9e9a740cf835ad3cf2cac4dec11a5c69c70f917cf78b2d3043ae967af95"
+    },
+    {
+      "file": "Packages/Countries/New Zealand AAA IDP online.XML",
+      "sha256": "a2f3d33294db5e068b9b5d35c2aeae690cfa50efb872ae2e2b8dc9edf9b22cbe"
+    },
+    {
+      "file": "Packages/Countries/New Zealand Passport online.XML",
+      "sha256": "169c0d997343e7840cfda3d199dc77d2865d2453be906804809ef90b71af46da"
+    },
+    {
+      "file": "Packages/Countries/New Zealand VISA.XML",
+      "sha256": "71fb284a63a8c78db9a9e27e4ee49f7262c646ccadb27f14b2effb533262a773"
+    },
+    {
+      "file": "Packages/Countries/Nigeria Passport.XML",
+      "sha256": "0764517c3dfab97ad16567ec7c81aa830da795fcca28d943676780dc0d404296"
+    },
+    {
+      "file": "Packages/Countries/Norway Passport.XML",
+      "sha256": "f565578b3148533b735271c74f95d485d0df1c2402e2b78d0665f5cf89b06cb1"
+    },
+    {
+      "file": "Packages/Countries/Oman Passport.XML",
+      "sha256": "140ca8fc8fb0d82a8e28760ba2b129063e97752590c145ac740c182c73c0beb2"
+    },
+    {
+      "file": "Packages/Countries/Oman Visa.XML",
+      "sha256": "140ca8fc8fb0d82a8e28760ba2b129063e97752590c145ac740c182c73c0beb2"
+    },
+    {
+      "file": "Packages/Countries/Pakistan Passport.XML",
+      "sha256": "98290c056c34f0a76df72495d713366c7666653c31c74f56148558f4f3c7971c"
+    },
+    {
+      "file": "Packages/Countries/Pakistan eServices online.XML",
+      "sha256": "385f78bba537096a1215c12c0cd0654d55982b0fce571c75ce8b48a2a7220659"
+    },
+    {
+      "file": "Packages/Countries/Panama Maritime.XML",
+      "sha256": "8bc43642359d449bff55060bf229f3667a4b8e78b6801f13b89622cd12747de4"
+    },
+    {
+      "file": "Packages/Countries/Philippines Passport.XML",
+      "sha256": "f99a954e9599f5cbcb9e2412ce6887479e51f8acf9ebf03a932360eb89aa4fa9"
+    },
+    {
+      "file": "Packages/Countries/Philippines Visa.XML",
+      "sha256": "f99a954e9599f5cbcb9e2412ce6887479e51f8acf9ebf03a932360eb89aa4fa9"
+    },
+    {
+      "file": "Packages/Countries/Poland Passport.XML",
+      "sha256": "5f1abc73bad1093a96da6933f7c415e0252c7d9c7b391d66060b3d0ab00e5bb4"
+    },
+    {
+      "file": "Packages/Countries/Portugal Passport.XML",
+      "sha256": "01921888de5e03470cd21400be64335640d97a0171fb860f84273021f92d7460"
+    },
+    {
+      "file": "Packages/Countries/Romania Citizenship.XML",
+      "sha256": "fbc18195a8cfe306f53bde1b4ca731e61e4f59210cd390e474e1bf03f3f2bfb3"
+    },
+    {
+      "file": "Packages/Countries/Romania Passport.XML",
+      "sha256": "ddc7c58491e1f82f5f48f68f5aea38519928b0e408ecc531949b3b8f080c18a5"
+    },
+    {
+      "file": "Packages/Countries/Romania VISA.XML",
+      "sha256": "ddc7c58491e1f82f5f48f68f5aea38519928b0e408ecc531949b3b8f080c18a5"
+    },
+    {
+      "file": "Packages/Countries/Russia Passport.XML",
+      "sha256": "4db52b9275aa23511d568f1916a610b925f90b8c13171627a0702ef729ca328e"
+    },
+    {
+      "file": "Packages/Countries/Russia VISA.XML",
+      "sha256": "2879785bfa7980f873a037387e6757ebb2c54b7ffb9cc3a5b0dcc98761650e9d"
+    },
+    {
+      "file": "Packages/Countries/Sante Quebec.XML",
+      "sha256": "244e0617d1504f1bd6da245e359baea532649f4511ca549a6217d3267a65dec1"
+    },
+    {
+      "file": "Packages/Countries/Saudi Arabia Passport.XML",
+      "sha256": "408fda95b12851d8b8e57b16398323736ebda9d1269e8a3967e5503c54a9d710"
+    },
+    {
+      "file": "Packages/Countries/Saudi Arabia Visa.XML",
+      "sha256": "e6daf848dc78c24538065725eed4a8e6712b22d321b0589c2ae8ceaca9d0e9fc"
+    },
+    {
+      "file": "Packages/Countries/Singapore  Passport.XML",
+      "sha256": "4bf3d10543a90df722a9277d559344f8813b1a021f3b9fb1de88223b61149a7e"
+    },
+    {
+      "file": "Packages/Countries/Singapore Passport online.XML",
+      "sha256": "90bee501060c14b4f706447eeedce6d6551a8ebe6237a776a90f6535b97c9510"
+    },
+    {
+      "file": "Packages/Countries/Singapore VISA.XML",
+      "sha256": "4bf3d10543a90df722a9277d559344f8813b1a021f3b9fb1de88223b61149a7e"
+    },
+    {
+      "file": "Packages/Countries/Singapore eVisa online.XML",
+      "sha256": "90bee501060c14b4f706447eeedce6d6551a8ebe6237a776a90f6535b97c9510"
+    },
+    {
+      "file": "Packages/Countries/Slovakia Passport.XML",
+      "sha256": "a275e3aa485c6485d048027c5d5a3afcf027d3e590a43b3ce59fd901915eb4b5"
+    },
+    {
+      "file": "Packages/Countries/Slovenia Passport.XML",
+      "sha256": "5d16aad30fd79c426ccb1cac989e1828130cb4f1fb90ab9175bf03d71ef3fcbe"
+    },
+    {
+      "file": "Packages/Countries/South Africa Passport.XML",
+      "sha256": "0ef6111b9eba36df9ed7ee38bd154b307a953fa87098144736f9ece1de1d308a"
+    },
+    {
+      "file": "Packages/Countries/South Africa VISA.XML",
+      "sha256": "0ef6111b9eba36df9ed7ee38bd154b307a953fa87098144736f9ece1de1d308a"
+    },
+    {
+      "file": "Packages/Countries/Spain ID 26x32.XML",
+      "sha256": "4dfc2186b923dcf430733ede30d83b0e61f562725b0314d60442a7d6432bc827"
+    },
+    {
+      "file": "Packages/Countries/Spain Passport.XML",
+      "sha256": "1b899741b8bd9f43936b950c93a4ebfe35cc7d2d818d79ceed178ae3eb3dfebc"
+    },
+    {
+      "file": "Packages/Countries/Spain VISA.XML",
+      "sha256": "1ad57eb1754e48e34ccac3bbdfc9dba60c8f3dc9761a340db2fc17546ad097bf"
+    },
+    {
+      "file": "Packages/Countries/SpecialMode.XML",
+      "sha256": "c5e90cf12de71222e12fdc1b63f334ac59d6c7b75b4dfa269f1842ec588cf384"
+    },
+    {
+      "file": "Packages/Countries/Sri Lanka Passport.XML",
+      "sha256": "fd5c9a542ae00dc1fc7b6891d0ed02a4995aafddfedb7d053a04708625253cbb"
+    },
+    {
+      "file": "Packages/Countries/Sri Lanka VISA.XML",
+      "sha256": "fd5c9a542ae00dc1fc7b6891d0ed02a4995aafddfedb7d053a04708625253cbb"
+    },
+    {
+      "file": "Packages/Countries/Sudan Passport.XML",
+      "sha256": "988a7f99c1b1683a5cbb7b788ceb041e44256f910cb0bbc917b6813ccfad9998"
+    },
+    {
+      "file": "Packages/Countries/Sweden Passport.XML",
+      "sha256": "30325647b96192b321fd42e6f8d97f7b963af6c9a337c2c0fcdf74355037ca81"
+    },
+    {
+      "file": "Packages/Countries/Sweden VISA.XML",
+      "sha256": "30325647b96192b321fd42e6f8d97f7b963af6c9a337c2c0fcdf74355037ca81"
+    },
+    {
+      "file": "Packages/Countries/Switzerland  Passport.XML",
+      "sha256": "a9bdfa34a387a02835c89454be6480a29fdd75f696b97a9cf4edb7b1df62283b"
+    },
+    {
+      "file": "Packages/Countries/Switzerland VISA.XML",
+      "sha256": "a9bdfa34a387a02835c89454be6480a29fdd75f696b97a9cf4edb7b1df62283b"
+    },
+    {
+      "file": "Packages/Countries/Syria Passport.XML",
+      "sha256": "066fd63ed6138b3de2b40e79372308ac67ece315d29fb5dd8a66600486ca8d28"
+    },
+    {
+      "file": "Packages/Countries/Thailand Passport.XML",
+      "sha256": "0f3f4cf0ae84dc8fbda6cb5e9121d0971661e048219f491db6f73cebc8e50db5"
+    },
+    {
+      "file": "Packages/Countries/Thailand VISA.XML",
+      "sha256": "943f52f4373970ce915e02e720e591931699dbd12300b3e96b6a9462f6e9bf21"
+    },
+    {
+      "file": "Packages/Countries/Turkey Passport.XML",
+      "sha256": "1b588022b890265563874c94f0ffdde66795b766fd5b3d33713b35ccb2e99c99"
+    },
+    {
+      "file": "Packages/Countries/Turkey Visa.XML",
+      "sha256": "4b1fdcc9e3fd975b4b15c4e38d0dbc8ab209b5cdf9c56597799c872705bada26"
+    },
+    {
+      "file": "Packages/Countries/UAE Passport.XML",
+      "sha256": "db585788c25cfc8a07510e6f888bb000a48f2849f11b433215158b0b93bfde81"
+    },
+    {
+      "file": "Packages/Countries/UAE VISA.XML",
+      "sha256": "db585788c25cfc8a07510e6f888bb000a48f2849f11b433215158b0b93bfde81"
+    },
+    {
+      "file": "Packages/Countries/UAE eVisa online.XML",
+      "sha256": "30fbe7129b747997ea435e788315fb2d6668e51cd5bae1344303ee4ce757e435"
+    },
+    {
+      "file": "Packages/Countries/UK online.XML",
+      "sha256": "056745a93680e4a92724269b0bc93adfbdf9fc3d32660174c80825041cb20042"
+    },
+    {
+      "file": "Packages/Countries/USA Greencard online.XML",
+      "sha256": "9875e6f26030006a9e1fb876543b816ad9af7f0968b41984722e9b7eb9207683"
+    },
+    {
+      "file": "Packages/Countries/USA Passport.XML",
+      "sha256": "535c613c92a9c250bf0fd502de069e1bab7d788c806467ae5ff16e0cb70ab57c"
+    },
+    {
+      "file": "Packages/Countries/USA Visa.XML",
+      "sha256": "517a9f039fc7ba4c9e4352605b400c10786a8150a6cf3bf6ab39bf0cfbee7fdf"
+    },
+    {
+      "file": "Packages/Countries/USA passport online.XML",
+      "sha256": "9875e6f26030006a9e1fb876543b816ad9af7f0968b41984722e9b7eb9207683"
+    },
+    {
+      "file": "Packages/Countries/Ukraine Passport.XML",
+      "sha256": "a5427ebe78719a90e22800fb2a0a0506a0609fa5b1ce75db753a592dda4767bd"
+    },
+    {
+      "file": "Packages/Countries/United Kingdom Online Renewal.XML",
+      "sha256": "ca8760ef1fc10e42018a32c8deee4194c294642a442c9564ad52cf41fcae11af"
+    },
+    {
+      "file": "Packages/Countries/United Kingdom Passport.XML",
+      "sha256": "3f4d69ada8b0136a4beec522d25d23b64411c329cf82491ee7d3605dbb8bf039"
+    },
+    {
+      "file": "Packages/Countries/United Kingdom Visa.XML",
+      "sha256": "6cf93e482a1a70f56fb5f96048a22fe1afdf4d50e5811b7b5c371146aabefcfe"
+    },
+    {
+      "file": "Packages/Countries/Vietnam Passport.XML",
+      "sha256": "8547ea8f023402c014409d3164ff47187159853251276e2551c3fc68adc61824"
+    },
+    {
+      "file": "Packages/Countries/Vietnam VISA.XML",
+      "sha256": "8547ea8f023402c014409d3164ff47187159853251276e2551c3fc68adc61824"
+    },
+    {
+      "file": "Packages/Printer/1 Portrait.XML",
+      "sha256": "9c68b617f6672c4f1536f810af31e0d06b0d0f4bb006d45336483233d7243b3d"
+    },
+    {
+      "file": "Packages/Printer/2 Portraits.XML",
+      "sha256": "a54b17c2a30447a5e1ec4ae5b1bddf869d20cb3e6b01ac6d6280e72417573b9a"
+    },
+    {
+      "file": "Packages/Printer/2-up.XML",
+      "sha256": "bd788e54c84e00b9ab0b7c4b1779bce5a88c7022e870775acb089818e7687765"
+    },
+    {
+      "file": "Packages/Printer/25x33 6-up.XML",
+      "sha256": "ba5af44b65bb37d30e45e79150afd7c3d08fc82380e3b10e7a96770a8f982611"
+    },
+    {
+      "file": "Packages/Printer/25x35 6-up.XML",
+      "sha256": "d360e73c1606934883490179003776242759c627098498f9ec48ca40645cf5f4"
+    },
+    {
+      "file": "Packages/Printer/26x32 6-up.XML",
+      "sha256": "b85fea63114f3efa148c729aaa26795be6102ade3756cb704c9661daaa76ca41"
+    },
+    {
+      "file": "Packages/Printer/2x2 2 inch cut on 4x4 paper.XML",
+      "sha256": "ac8e9b4a3cf2203be77e633129cf9c58e373a10a50ee12c67d0e90a004d7b1a6"
+    },
+    {
+      "file": "Packages/Printer/30x30 6-up.XML",
+      "sha256": "54758f4bee19b88f9b32022582451b547381045dbe6a38c66c39bbec8c26aa71"
+    },
+    {
+      "file": "Packages/Printer/30x35 6-up.XML",
+      "sha256": "1f0f80a9371d56e4a06b3ab83fa57cc0e00f347d4c8fdf860e111d81d72bd957"
+    },
+    {
+      "file": "Packages/Printer/30x40 6-up Rom.XML",
+      "sha256": "8481c2e86542248a330e55e940cea9e983c9b7c15bcf1cb70620a339c112deb8"
+    },
+    {
+      "file": "Packages/Printer/30x40 6-up.XML",
+      "sha256": "8aed207fda2bdf34d69305cd6d5bc1ac7de9df038f858b18643f9f68b98e6a59"
+    },
+    {
+      "file": "Packages/Printer/31x39 2-up.XML",
+      "sha256": "29e599ba62b480bd62488a4c294427a79eaa9c21243bbeb9daf6e11613893c5c"
+    },
+    {
+      "file": "Packages/Printer/32x32 2-up.XML",
+      "sha256": "1fcef521be3d79780880d6f8d79a84f89a2ea65a44d1584a4022d6469142ee8b"
+    },
+    {
+      "file": "Packages/Printer/35x40 4-up.XML",
+      "sha256": "4c5cf6b413f1dd6664f268920c1ceb421d138df6f8ec579e837e61d18ffcdf04"
+    },
+    {
+      "file": "Packages/Printer/35x45 2-up.XML",
+      "sha256": "b6bd369974f00ef7c7bb8988f1b486b72e45b0932914b8fb8a631f9259faf5ea"
+    },
+    {
+      "file": "Packages/Printer/35x45 4-up + portrait.XML",
+      "sha256": "fbe66e7d0d35f9a24d82b1ff454b673ce848904024205a12c078b6bfa0f9df53"
+    },
+    {
+      "file": "Packages/Printer/35x45 4-up gray.XML",
+      "sha256": "2ca3bad3e663763a0f1f2390b73c83859e6e4cfbb9dbb8ce976b13b8d269dda6"
+    },
+    {
+      "file": "Packages/Printer/35x45 4-up.XML",
+      "sha256": "e5b748c11619c6ea8227558ba94d7abe84bfd747bbbd21724e9a0892dcf16024"
+    },
+    {
+      "file": "Packages/Printer/35x45 4-up2.XML",
+      "sha256": "a2953977753bf86114306ac1daab8b7fe80c09c5d763d43f1e10a620d0860a7b"
+    },
+    {
+      "file": "Packages/Printer/35x45 6-up.XML",
+      "sha256": "fea0b3c43b5aac5979fb06e00dcf857c7baae01f791adf32aadb52c6fbc882f4"
+    },
+    {
+      "file": "Packages/Printer/35x45 8-up.XML",
+      "sha256": "f33934e9700d19df2b355bd26046cc401fb6b1574be4fd1dd378ff0393f97f2a"
+    },
+    {
+      "file": "Packages/Printer/36x47 6-up.XML",
+      "sha256": "a90acd5841ef4008245f531d135f1e2f34ddf9fa49abed19d06ba57241ace162"
+    },
+    {
+      "file": "Packages/Printer/38x38 2-up.XML",
+      "sha256": "66b2c3acfaf44b0320afe5418862f9b489002503519281faf8374a99cae49511"
+    },
+    {
+      "file": "Packages/Printer/38x46 2-up.XML",
+      "sha256": "5f9555fc425097fe25fc8c389d9e2206c43697196cf2ee7cf078f06b1ce07f58"
+    },
+    {
+      "file": "Packages/Printer/40x45 3-up.XML",
+      "sha256": "59eba42a0ed3bfb389d7e129c2fdc46816ddc9b364c9dace37eb9fa94b200068"
+    },
+    {
+      "file": "Packages/Printer/40x50 3-up Estonia.XML",
+      "sha256": "ca74cea9e8ce25b216ee60f3a1bde5a3699299f84058ed838c227c1a9f526d77"
+    },
+    {
+      "file": "Packages/Printer/40x50 4-up.XML",
+      "sha256": "bf0aa183efe3ef0a7c44ec85218b6d0d6b7c409180b08e2e6640e5f1049b84d7"
+    },
+    {
+      "file": "Packages/Printer/40x60 4-UP.XML",
+      "sha256": "ef07a78563f76a29a6a9c351db29f07bc073d37e00aa3a21cdd7b4984ddf0e11"
+    },
+    {
+      "file": "Packages/Printer/45x45 2-up.XML",
+      "sha256": "ce35fc7de930adbacc2bc949a058029137ed44bb2885ec96bb5c6c9b3a0ece55"
+    },
+    {
+      "file": "Packages/Printer/45x55 3-up.XML",
+      "sha256": "d9b21c0ebd8c3c931013c077b08acb9d8d308a19f42b7f24eca8df8b673e38e3"
+    },
+    {
+      "file": "Packages/Printer/45x60 4-UP.XML",
+      "sha256": "9b4b30a6517f7d50880c31bd9ed03e0272d8ae9a84de4df6f09bcccefc7f94d2"
+    },
+    {
+      "file": "Packages/Printer/50x70 4-UP.XML",
+      "sha256": "9a5e0becc021c9cded894e29d8d6153b74d6c76b92a53afaeac00cd116cab150"
+    },
+    {
+      "file": "Packages/Printer/5x7 2 inch cut on 4x4 paper.XML",
+      "sha256": "abc3f1aef79041d3cfdf31a11158294292a519265eca6865a2fe7b9bc46a9331"
+    },
+    {
+      "file": "Packages/Printer/Canada 45x57 2-up.XML",
+      "sha256": "318a45f6dfde8d409757e60efcef2e41e18efb26a1d4f9d0f7c4389b7f5d2255"
+    },
+    {
+      "file": "Packages/Printer/Canada 50x70 2-up.XML",
+      "sha256": "6043de54d012865582bca1258b1cb2526302c966b5a1d38269f9495b4a69ce53"
+    },
+    {
+      "file": "Packages/Printer/China 33x48 4-up.XML",
+      "sha256": "e747a5dc9238f29e11ce1f9ae8c332710d50ddb7ad264ed24b18340f48ca8516"
+    },
+    {
+      "file": "Packages/Printer/DVA online.XML",
+      "sha256": "489f17bdd9007f7ebcf6b687bf79e2abb46c39dc2d0d3deabf9b4a9e3f5ec134"
+    },
+    {
+      "file": "Packages/Printer/Hongkong 2-up.XML",
+      "sha256": "854841c0b9e82c3583e35828bc03f1dc55f3399e822f212ecde2cc7d2efc4060"
+    },
+    {
+      "file": "Packages/Printer/India 35x35 6-up.XML",
+      "sha256": "cec560c5255dc6b4af9c8c59e0b694dc107b90a971ee9e8426f6be6f78426b96"
+    },
+    {
+      "file": "Packages/Printer/IrelandonlineNew.XML",
+      "sha256": "ec291037e858bdb2712b36cf065572c705d202c9784f81b1ad0f8fb458d41d58"
+    },
+    {
+      "file": "Packages/Printer/Kenya 51x63 2-up.XML",
+      "sha256": "c466946f089f46bbf73b51d51a5a730edbedaa0a934e1361014b5c9de34c4210"
+    },
+    {
+      "file": "Packages/Printer/Malaysia 3-up.XML",
+      "sha256": "ed439e06fc6445556e319e5afdc696c8db37c888ea45116e063a4fe69d97b8c6"
+    },
+    {
+      "file": "Packages/Printer/NSW taxi.XML",
+      "sha256": "25d2c4666b72ca7121e959a5591db50fcaf43c3cfd7cec74721aaa2d5f8e2d33"
+    },
+    {
+      "file": "Packages/Printer/Turkey.XML",
+      "sha256": "3fed52da83986ae8dde5398576bd621962f5a6c2f288e7886d95a63e25b46b32"
+    },
+    {
+      "file": "Packages/Printer/UAE 43x55 3-up.XML",
+      "sha256": "e6b3e36f627d1cfeda3036f1577df17b7cd271159aa83d4d0608838674b07f31"
+    },
+    {
+      "file": "Packages/Printer/UK online renewal.XML",
+      "sha256": "d0fbbb661cf69962b63f928f7ab803624c7426ead5af5f7ae08827c9f8f86453"
+    },
+    {
+      "file": "Packages/Printer/USA 51x51 2-up.XML",
+      "sha256": "83ffda15a8cd14705c7d7b0649dc70ce2c6131298a6d9ae659a54562f6a22505"
+    },
+    {
+      "file": "Packages/Printer/USA 51x51 4-up.XML",
+      "sha256": "409dc815a68e57d7a50582b176774dfec5826c1b4067b96a6031be3a40c1ac3e"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/1 Portrait.XML",
+      "sha256": "9c68b617f6672c4f1536f810af31e0d06b0d0f4bb006d45336483233d7243b3d"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/2 Portrait2.XML",
+      "sha256": "f5d2e0b3b4b66fc412d3e0091ccb79dd5c0a9334209cfa93f31d10d194434331"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/2-up.XML",
+      "sha256": "f7f0c8e97450bfa5b78c56f5dbc20b7281ef825a5a059afca58520e710bb584d"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/25x33 6-up.XML",
+      "sha256": "ba5af44b65bb37d30e45e79150afd7c3d08fc82380e3b10e7a96770a8f982611"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/25x35 6-up.XML",
+      "sha256": "d360e73c1606934883490179003776242759c627098498f9ec48ca40645cf5f4"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/30x30 6-up.XML",
+      "sha256": "54758f4bee19b88f9b32022582451b547381045dbe6a38c66c39bbec8c26aa71"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/30x35 6-up.XML",
+      "sha256": "1f0f80a9371d56e4a06b3ab83fa57cc0e00f347d4c8fdf860e111d81d72bd957"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/30x40 6-up Rom.XML",
+      "sha256": "8481c2e86542248a330e55e940cea9e983c9b7c15bcf1cb70620a339c112deb8"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/30x40 6-up.XML",
+      "sha256": "8aed207fda2bdf34d69305cd6d5bc1ac7de9df038f858b18643f9f68b98e6a59"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/30x45 3-up.XML",
+      "sha256": "49ab8be8a483c138797a35f2638fd896b6a5171f2e061d00cd18e4886d87e233"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/32x32 2-up.XML",
+      "sha256": "7f49f1a343ecdefee838d204cd5093028ca86c7ba26b2f7830f61da868efc7f0"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x35 4-up.XML",
+      "sha256": "279cf7646bc6b4160a325ea36db3f88a993f04497728bc664e57972760b4fae0"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x40 4-up.XML",
+      "sha256": "4c5cf6b413f1dd6664f268920c1ceb421d138df6f8ec579e837e61d18ffcdf04"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 2-up.XML",
+      "sha256": "a3bf711a9e28e133406030f88a26c67272885216506d3ba0342c0495bac46577"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 4-up + Portrait.XML",
+      "sha256": "31690b34f3321fdcdf8c5b768e1ab8ee93b6868a85d0e6f62c967e19fc794393"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 4-up gray.XML",
+      "sha256": "e028245da00752a27ca46e41b99d748d739ee9c03aa43f44262166f0e5c43f77"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 4-up.XML",
+      "sha256": "5af54748dc016b5f46f4272f35b2f9c15b0ef5396af7a68d3475a885c67c2a86"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 4-up2.XML",
+      "sha256": "a2953977753bf86114306ac1daab8b7fe80c09c5d763d43f1e10a620d0860a7b"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 6-up.XML",
+      "sha256": "e5749b9fd8d3edeb956f2587279cb2bfd44d55d6060460b0394f07632d05be80"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x45 8-up.XML",
+      "sha256": "c0998772b7a303c6fb04b613caadb8333a168989b31de2e4835f1f45dbf6ab9f"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/35x50 3-up.XML",
+      "sha256": "c53d20e96e30516ec66fa1ae7354385b05dec5d70ccfbd612c26f40d961da0a0"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/36x47 6-up.XML",
+      "sha256": "2595723d4e9b7fbe4300161ae162b4b2f499bff1c4b9b70c4ca2a584ef55ab1f"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/38x38 2-up.XML",
+      "sha256": "962636115a8de64e1a8b140b1c9d942354f19072061339f5878007fcdf8491eb"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/40x40 4-UP.XML",
+      "sha256": "fd1961da55a2a6189c1000805e625b263f1a61e7c24be3ae66eb5d9a8ba7540a"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/40x50 3-up Estonia.XML",
+      "sha256": "ca74cea9e8ce25b216ee60f3a1bde5a3699299f84058ed838c227c1a9f526d77"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/40x50 4-up.XML",
+      "sha256": "9f72de7856225a12ab98e6c1c1867a9ac695ba7a412b6fc4b2b44669d328f93d"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/40x55 3-UP.XML",
+      "sha256": "cad74ee562548616b85d5a938ab4d462a97a16384839101a10e7aba3cc99e81f"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/40x60 4-UP.XML",
+      "sha256": "553a2c914c80d1e40ac8acc1eed0e7b4c2b155e6600ea62acc127c4d17b069f6"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/45x60 4-UP.XML",
+      "sha256": "aa0f5380450fec77441d94d3f8aa32e773ba37257b039a63862ce6c12e0d2589"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/50x70 4-UP.XML",
+      "sha256": "eb59dc9f833a0ff96245abe54662b18dc972fafc053231a0d6b4c25b54535019"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/5x7 4-UP.XML",
+      "sha256": "c3ffbaf1e1aaf7198188b2a923498982978b661ad83a3b3afd2eead5fbd9501c"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Canada 45x57 2-up.XML",
+      "sha256": "170bb8064f6b0fe2d811e975a0e7da3c2e49aa491bea538bd62cb31916415b97"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Canada 50x70 2-up.XML",
+      "sha256": "6043de54d012865582bca1258b1cb2526302c966b5a1d38269f9495b4a69ce53"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/China 33x48 4-up.XML",
+      "sha256": "34d8876c6ba0c49e07fc856b19ea2e7da736fcdf3e54fa5bcce391223027ca4c"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Hongkong 2-up.XML",
+      "sha256": "fd1f60c4ba3089c0090e7b068b4491c31452a6d284183d8b1596b71cb8e108af"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/India 35x35 6-up.XML",
+      "sha256": "aef41a53d82bec347fb651b611a16ac330531f3389eebeedff3e4d3bd3645a03"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Irish taxi.XML",
+      "sha256": "124e56645ada1a32450fa25942c60323f9ce790d4fece96fdfd74f167b1c54fc"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Malaysia 3-up.XML",
+      "sha256": "ed439e06fc6445556e319e5afdc696c8db37c888ea45116e063a4fe69d97b8c6"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/NSW taxi.XML",
+      "sha256": "5f85339c8fcc42d0ac5bfb42d2118a19d67015300f796f367635199299537db1"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/SelfieD 4-up.XML",
+      "sha256": "27c7a4b2ed2beda087149df025698e988794115f7365865f3bb153439be9bbe1"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/Turkey.XML",
+      "sha256": "3fed52da83986ae8dde5398576bd621962f5a6c2f288e7886d95a63e25b46b32"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/UAE 43x55 3-up.XML",
+      "sha256": "e6b3e36f627d1cfeda3036f1577df17b7cd271159aa83d4d0608838674b07f31"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/UK online renewal.XML",
+      "sha256": "d99b46c7044007b6b2ceb01d332f2cc9cc57e7899682572924f3eff339c8046a"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/USA 51x51 2-up.XML",
+      "sha256": "a00dc71d635b517eedb0139c5a61740bccecab16d2742ec1344fe4f34581b272"
+    },
+    {
+      "file": "Packages/Printer/printers/FUJIFILM ASK-300/USA 51x51 4-up.XML",
+      "sha256": "6df0294c2cbaa1cd9cd9689e9dfab2df65c6ec357f37e753b57b3d11e02566df"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/1 Portrait.XML",
+      "sha256": "92c3f10dd55cabbebdd7e0ea97067977ec799949e2186d664e6e5860dc078f81"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/2 Portraits.XML",
+      "sha256": "9a8df05d19c6283cb14e92390f7d35229a7047c40c5e0a8959ee13e32c156807"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/25x33 6-up.XML",
+      "sha256": "e8ae7017344ae2978e5c9b014452e807d9af13edda0e1178f2807fd67be3356c"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/25x35 6-up.XML",
+      "sha256": "93b20cdd02563667e9fbef85510c9fb2ab1aa64b80732777aa1f595ecf93f4d8"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/30x30 6-up.XML",
+      "sha256": "89f13ee1164a929d21f340d50906794e14aa4a7879cf9149ce78fa4f77cfd01a"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/30x35 6-up.XML",
+      "sha256": "020ca4419b533b9a00f81fda292aa2b6098df2b2018bc4d31036c6b7dad56821"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/30x40 6-up Rom.XML",
+      "sha256": "3b6a49845994b7271665ef80ff3450d8a555358becb1b12b54cf83f9e0dd4578"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/30x40 6-up.XML",
+      "sha256": "c84f8a7941e43a0add3ed74600206d2e9e1ec159b0579e627f29529ef26392b6"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/30x45 3-up.XML",
+      "sha256": "3707154a95087b0de8c1eceaf68b0b55236b473cf00a7c4581a644bb89c84784"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x35 4-up.XML",
+      "sha256": "8a1c63cdb9091da0c256f27433d176fd71a396f2c7036be167c40aff5a39def2"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x40 4-up.XML",
+      "sha256": "623935f3061eeceb519e95a3ab6b2b69caaa64175490f12d5e89a6162a33c625"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 2-up.XML",
+      "sha256": "8336b9e12b1cf2604fe9c5135c0923f9f365272d1577678918f2756482742c4c"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 4-up + portrait.XML",
+      "sha256": "67f3dad3a0e49125cffc36d66af168449bb7c29ad5617550cbc642716a6110a7"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 4-up.XML",
+      "sha256": "eac53beff8b8f5560f719e22b3987ba59816c121845edec7c9af1cce6af1a2f3"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 4-up2.XML",
+      "sha256": "28ed50ba833e99cc137a6962683073174e3553f6fd73481a3fcf0fa74e628a96"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 6-up.XML",
+      "sha256": "7148bdbb4cb7319571b0e65ba29dfe678ea921b8f010e968da81e1b8aa3f1e34"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x45 8-up.XML",
+      "sha256": "0a6b22dfc583c3b0e4e0a1461563acba090f50d9909768cd3d1c7c2b12375580"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/35x50 3-up.XML",
+      "sha256": "4b8a07b952e8a2c23cb378d7ff225c168dc13e465e544941c82ee92f5e1d24f2"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/36x47 6-up.XML",
+      "sha256": "e64cb409dc405fb21c7ebe15631326292fe53d7f1ea93548f324c21fbcbbd8cf"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/40x40 4-UP.XML",
+      "sha256": "9a0c41864032b514778a87da46bb03119b09d5e9ff6301fdc6038837e2dede7d"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/40x50 3-up Estonia.XML",
+      "sha256": "c05826e6de123b8254960b26fbaaddb0be1f9aa238f64127a72f49bfd5bbb458"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/40x50 4-up.XML",
+      "sha256": "0674744398efd07a18caf59caeb2ea6839d9d81b7cf340d45cb4d024e5d290b1"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/40x55 3-UP.XML",
+      "sha256": "aa3070c806afbd7ea3c19b0721156f1a2d87b1286067c530b9da069b7e11da9a"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/40x60 4-UP.XML",
+      "sha256": "88175311dd32a15ff5e4b7b8ad2e61df04d424cf603026a2f85d1e987919cf33"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/45x60 4-UP.XML",
+      "sha256": "f05a955f94656258acbaa7eb73bb792af76195ac2eb2d7b74e0f48fe6c5731e4"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/50x70 4-UP.XML",
+      "sha256": "76648e7d1c2d3dfe77c6cd2a9373e36d439f4252e1f770eb223350e29b75a1b7"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/Canada 50x70 2-up.XML",
+      "sha256": "a1fd037a40cf690f02427bd2732712692ca6dacdc8ca6877825404ec84a1f42f"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/China 33x48 4-up.XML",
+      "sha256": "e2c27ccdf3189b8bfc03339ae70d2b8e7addafe0b9cfbc3d2402d0133800a2f9"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/Hongkong 2-up.XML",
+      "sha256": "91b567b029457e33681f613aa7fbd5077c186e41956f53a602af4566ed0bc878"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/India 35x35 6-up.XML",
+      "sha256": "0b893fe58a3241714236b71d493ab50c69f7ee0b33380407fef8ce43d2aa1173"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/Malaysia 3-up.XML",
+      "sha256": "145173fbca7336ed1a8a325743d84603dd61ad8ab9d837c709233730b7284bc2"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/Turkey.XML",
+      "sha256": "b9292b0eec8cc9f472891927a9028b39dc8f596efa0fb2bea71301f4a0af0f25"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/UAE 43x55 3-up.XML",
+      "sha256": "7006660c4bb2da637234bbd0fa4aa2a5557cc57cd10e0494dce45df1d77eb1b8"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/UK online renewal.XML",
+      "sha256": "f7cfbda508c25bf4764c95ccc7fbc8548d6ae27f7ed3cd82e5dd780ab979f51d"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/USA 51x51 2-up.XML",
+      "sha256": "50f582c7e0ac67ebfbbd85db2c1664d386eef2d7975cc96af32071d0220877e3"
+    },
+    {
+      "file": "Packages/Printer/printers/Print2Hotfolder/USA 51x51 4-up.XML",
+      "sha256": "3869828e58f3517dbc680698f72a708251c50281a420a3589bfc3569728dfd59"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/1 Portrait.XML",
+      "sha256": "9c68b617f6672c4f1536f810af31e0d06b0d0f4bb006d45336483233d7243b3d"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/25x33 6-up.XML",
+      "sha256": "ba5af44b65bb37d30e45e79150afd7c3d08fc82380e3b10e7a96770a8f982611"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/25x35 6-up.XML",
+      "sha256": "d360e73c1606934883490179003776242759c627098498f9ec48ca40645cf5f4"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/30x30 6-up.XML",
+      "sha256": "54758f4bee19b88f9b32022582451b547381045dbe6a38c66c39bbec8c26aa71"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/30x35 6-up.XML",
+      "sha256": "1f0f80a9371d56e4a06b3ab83fa57cc0e00f347d4c8fdf860e111d81d72bd957"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/30x40 6-up Rom.XML",
+      "sha256": "8481c2e86542248a330e55e940cea9e983c9b7c15bcf1cb70620a339c112deb8"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/30x40 6-up.XML",
+      "sha256": "8aed207fda2bdf34d69305cd6d5bc1ac7de9df038f858b18643f9f68b98e6a59"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/30x45 3-up.XML",
+      "sha256": "49ab8be8a483c138797a35f2638fd896b6a5171f2e061d00cd18e4886d87e233"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/32x32 2-up.XML",
+      "sha256": "7f49f1a343ecdefee838d204cd5093028ca86c7ba26b2f7830f61da868efc7f0"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x35 4-up.XML",
+      "sha256": "279cf7646bc6b4160a325ea36db3f88a993f04497728bc664e57972760b4fae0"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x40 4-up.XML",
+      "sha256": "4c5cf6b413f1dd6664f268920c1ceb421d138df6f8ec579e837e61d18ffcdf04"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 2-up.XML",
+      "sha256": "a3bf711a9e28e133406030f88a26c67272885216506d3ba0342c0495bac46577"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 4-up + Portrait.XML",
+      "sha256": "31690b34f3321fdcdf8c5b768e1ab8ee93b6868a85d0e6f62c967e19fc794393"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 4-up gray.XML",
+      "sha256": "e028245da00752a27ca46e41b99d748d739ee9c03aa43f44262166f0e5c43f77"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 4-up.XML",
+      "sha256": "5af54748dc016b5f46f4272f35b2f9c15b0ef5396af7a68d3475a885c67c2a86"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 6-up.XML",
+      "sha256": "e5749b9fd8d3edeb956f2587279cb2bfd44d55d6060460b0394f07632d05be80"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x45 8-up.XML",
+      "sha256": "c0998772b7a303c6fb04b613caadb8333a168989b31de2e4835f1f45dbf6ab9f"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/35x50 3-up.XML",
+      "sha256": "c53d20e96e30516ec66fa1ae7354385b05dec5d70ccfbd612c26f40d961da0a0"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/36x47 6-up.XML",
+      "sha256": "2595723d4e9b7fbe4300161ae162b4b2f499bff1c4b9b70c4ca2a584ef55ab1f"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/38x38 2-up.XML",
+      "sha256": "962636115a8de64e1a8b140b1c9d942354f19072061339f5878007fcdf8491eb"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/40x40 4-UP.XML",
+      "sha256": "fd1961da55a2a6189c1000805e625b263f1a61e7c24be3ae66eb5d9a8ba7540a"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/40x50 3-up Estonia.XML",
+      "sha256": "ca74cea9e8ce25b216ee60f3a1bde5a3699299f84058ed838c227c1a9f526d77"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/40x50 4-up.XML",
+      "sha256": "9f72de7856225a12ab98e6c1c1867a9ac695ba7a412b6fc4b2b44669d328f93d"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/40x55 3-UP.XML",
+      "sha256": "cad74ee562548616b85d5a938ab4d462a97a16384839101a10e7aba3cc99e81f"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/40x60 4-UP.XML",
+      "sha256": "553a2c914c80d1e40ac8acc1eed0e7b4c2b155e6600ea62acc127c4d17b069f6"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/45x60 4-UP.XML",
+      "sha256": "aa0f5380450fec77441d94d3f8aa32e773ba37257b039a63862ce6c12e0d2589"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/50x70 4-UP.XML",
+      "sha256": "eb59dc9f833a0ff96245abe54662b18dc972fafc053231a0d6b4c25b54535019"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/5x7 4-UP.XML",
+      "sha256": "c3ffbaf1e1aaf7198188b2a923498982978b661ad83a3b3afd2eead5fbd9501c"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Canada 45x57 2-up.XML",
+      "sha256": "170bb8064f6b0fe2d811e975a0e7da3c2e49aa491bea538bd62cb31916415b97"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Canada 50x70 2-up.XML",
+      "sha256": "6043de54d012865582bca1258b1cb2526302c966b5a1d38269f9495b4a69ce53"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/China 33x48 4-up.XML",
+      "sha256": "34d8876c6ba0c49e07fc856b19ea2e7da736fcdf3e54fa5bcce391223027ca4c"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Hongkong 2-up.XML",
+      "sha256": "fd1f60c4ba3089c0090e7b068b4491c31452a6d284183d8b1596b71cb8e108af"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/India 35x35 6-up.XML",
+      "sha256": "aef41a53d82bec347fb651b611a16ac330531f3389eebeedff3e4d3bd3645a03"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Irish taxi.XML",
+      "sha256": "124e56645ada1a32450fa25942c60323f9ce790d4fece96fdfd74f167b1c54fc"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Malaysia 3-up.XML",
+      "sha256": "ed439e06fc6445556e319e5afdc696c8db37c888ea45116e063a4fe69d97b8c6"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/NSW taxi.XML",
+      "sha256": "5f85339c8fcc42d0ac5bfb42d2118a19d67015300f796f367635199299537db1"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/Turkey.XML",
+      "sha256": "3fed52da83986ae8dde5398576bd621962f5a6c2f288e7886d95a63e25b46b32"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/UAE 43x55 3-up.XML",
+      "sha256": "e6b3e36f627d1cfeda3036f1577df17b7cd271159aa83d4d0608838674b07f31"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/USA 51x51 2-up.XML",
+      "sha256": "a00dc71d635b517eedb0139c5a61740bccecab16d2742ec1344fe4f34581b272"
+    },
+    {
+      "file": "Packages/Printer/printers/Sinfonia CHC-S6145/USA 51x51 4-up.XML",
+      "sha256": "6df0294c2cbaa1cd9cd9689e9dfab2df65c6ec357f37e753b57b3d11e02566df"
+    },
+    {
+      "file": "Packages/Save/Canada Visa on-line.XML",
+      "sha256": "0a3572a9e213f9b6823a8f620442be42d3c37adbb5ba29d2b612a7070f98d0f9"
+    },
+    {
+      "file": "Packages/Save/DefaultSaveTemplate.xml",
+      "sha256": "e457c7a7c5a19c702e155b75d39e6b0d4ce15119b023226246555a3bbbaeae47"
+    },
+    {
+      "file": "Packages/Save/Facebook.XML",
+      "sha256": "83b186a142ffbe8917755568f2ea005e5452f47f778c011d487fea14b0ea04a1"
+    },
+    {
+      "file": "Packages/Save/Finland.XML",
+      "sha256": "8c0753bff1d92e874966952499636c9d24f7ad51e9aa2436c41c63bfe56de1c7"
+    },
+    {
+      "file": "Packages/Save/Ireland Passport on-line.XML",
+      "sha256": "27ebe00b71122ef2de2ac80016c4bc710261f4861620c0148e30316ed9cb52e3"
+    },
+    {
+      "file": "Packages/Save/PHOCS.XML",
+      "sha256": "8c9ab51c0fb42431c05ea2460c1ab51cfcdd4315cdd25ef2c384e1af42289f9d"
+    },
+    {
+      "file": "Packages/Save/USA Greencard.XML",
+      "sha256": "fc290eb3e92277ac43840517e0ec0927c3beaccf5e4aaa647c53401cb2caa126"
+    },
+    {
+      "file": "Packages/Email/Cambodia E-Visa.XML",
+      "sha256": "e1650a4198d0aec375f83e62bac68649f15b8832cc08d044ebfe153a383e478c"
+    },
+    {
+      "file": "Packages/Email/Canada PR card on-line.XML",
+      "sha256": "3425a58a2457cd401eecc5031ee26ad0a7cd5c177b0750f3adfa0db79f5dbf41"
+    },
+    {
+      "file": "Packages/Email/Canada Passport on-line.XML",
+      "sha256": "bb6e708b0a8fe14f054ad46dda92994ce417f0e4b94c5c742eba51320a703925"
+    },
+    {
+      "file": "Packages/Email/Canada Visa on-line.XML",
+      "sha256": "d87f2c052790282031927af5d1a361f41b3127b1d87f53cfbe0f1cbef27b0767"
+    },
+    {
+      "file": "Packages/Email/China Visa on-line.XML",
+      "sha256": "3191c4c350ea7857f1353cdfecc50630ad3254a31d67e630850918d109708139"
+    },
+    {
+      "file": "Packages/Email/DefaultEmailTemplate.XML",
+      "sha256": "bb9f8cf3ee16fef1d3d8dd59113d3f182b059c62b3aa01842aac3ab5b10b9455"
+    },
+    {
+      "file": "Packages/Email/Handi Dart.XML",
+      "sha256": "91373ad4320b7ec14a6e6f7c5f4da8bba5e4a46d96868f850e550aa3540e4aff"
+    },
+    {
+      "file": "Packages/Email/India Visum.XML",
+      "sha256": "b55a8e6b1ac4cc8158b94df14aa90a5ab8e7ab0fd181e80e7a865ec9d9001985"
+    },
+    {
+      "file": "Packages/Email/Ireland Passport on-line.XML",
+      "sha256": "9e73fe7c85d9fd9a26e3434f5c95a1fe7c6c4c5194908685b2f461115aa50598"
+    },
+    {
+      "file": "Packages/Email/Renewal NZ on-line.XML",
+      "sha256": "1e2c76713eaab4db7b7838a6346021aebbde950308d8584a4fcd17309d527106"
+    },
+    {
+      "file": "Packages/Email/USA greencard.XML",
+      "sha256": "38b3b48d6347f2308a8fe8cebba8d9f7f6bf970818a9e8f735ee56cbf3168720"
+    },
+    {
+      "file": "Packages/Email/US_600x600_EmailTemplate.XML",
+      "sha256": "46fd415edf4942a4c738750e90c9a1a027754dfbe4aba301e99511c96d1fca89"
+    },
+    {
+      "file": "Packages/ICAO/DefaultISOlevels.XML",
+      "sha256": "d32eddfb33affa7b932a4de70be92f436b1c18fcb4e2438f3ec26d58005b0145"
+    },
+    {
+      "file": "Packages/ICAO/ExampleISOLevels.XML",
+      "sha256": "b66793c4c75c3e2a4bbdf0c68f3dbf00244f27bdfdf8ac340eea6c5c2bd6fa46"
+    },
+    {
+      "file": "Packages/ICAO/NOlevels.XML",
+      "sha256": "95d4983c9578fdb1297c4ae21a79beeaa4c3dae2335a66515afc7975ff8e2f39"
+    },
+    {
+      "file": "Images/en/How to Country Templates.pdf",
+      "sha256": "817a625cabc104586f0070208827ebf50f198ae469b8cbac77eb1d97e09f6ae0"
+    },
+    {
+      "file": "Images/en/How to Email.pdf",
+      "sha256": "3660e793b86979e44d4368f0d87a36ab3a966e16539071923819034cf1910e13"
+    },
+    {
+      "file": "Images/en/How to Save.pdf",
+      "sha256": "aa9ac06d6b0d86d2ae0bca85f7bc7ded96682356b7c11c25c4ca86ef1cf81160"
+    },
+    {
+      "file": "Images/en/How to Use the background.pdf",
+      "sha256": "8ec8f2f4b91c37963bd731a5feb322078df3e6650e1f01234b4bbc4ec5ec74c5"
+    },
+    {
+      "file": "Images/en/How to Use the new 3 BIN files option.pdf",
+      "sha256": "e012b97a9528ed16e609840886cd619f929e31645a34f8d1749f9e2e72e404fd"
+    },
+    {
+      "file": "Images/en/How to edit the background.pdf",
+      "sha256": "3de50eaf2706d16d3f13679fce9893e2cdc9264b706e328954ac4169a467be27"
+    },
+    {
+      "file": "Images/en/How to load paper and ribbon.pdf",
+      "sha256": "a8ca2bca7b19b61a8e80532b8c4885698b8b22bb006ddaef16ea4e1a2b77851f"
+    },
+    {
+      "file": "Images/en/Trouble shoot Camfi ENG.pdf",
+      "sha256": "c3ae971cce6ec3fbe1cb457742d6f4f95e2cbbff2c1ea1ca94360252d291e818"
+    },
+    {
+      "file": "Images/en/User Manual IDstation.online.pdf",
+      "sha256": "d28a3e6803bd6808dc3494dec1925c8937b1b3c612241b4ae0f7f820aefc9eac"
+    },
+    {
+      "file": "Images/nl/Handleiding 7.3.pdf",
+      "sha256": "8fc94c0bc1919b4b4ddcdb7ec0c106a5e22493b56cabab91d6bfd9aa96d3765d"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.25.22.png",
+      "sha256": "b2af713227da3d1cb4b932387b6f6bdd7871614e7f1b51ca30df0ec69a1df13d"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.25.30.png",
+      "sha256": "d0c7838a8c5d3f86a707c61d1f2d32e713a4f8e723edbe2a3bff4b02ebac39d0"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.25.44.png",
+      "sha256": "d1878c31154427fc2279ee20b936b8ed2a30fa82a7122183de2aeb5ee8009efa"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.26.05.png",
+      "sha256": "a8da3ae1e68d7632bdaf8204a98b3747d710d0c6a3bebf512bc6f151fd7eed18"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.26.12.png",
+      "sha256": "5ee3a7436729a5b347e1dc44cd008244fd0932acaab4e34b524282861f678201"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.26.20.png",
+      "sha256": "0ca5960f71211b72fd9c9395d579c9128984091969fb16df9789f38927e02c33"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.26.30.png",
+      "sha256": "cc51e2cd3b3b76afa6573620b02aed6c3328dcb0e3aa4f5b430089944f15607b"
+    },
+    {
+      "file": "Screenshot 2026-10-12 at 18.26.41.png",
+      "sha256": "23704211258af99a8bd62784223cf978934cbcac8f418b34d2ddf39905f63b2b"
+    }
+  ]
+}

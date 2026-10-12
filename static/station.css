@@ -13,7 +13,7 @@
 }
 body{
   margin:0;
-  background:var(--bg) url('/static/photomatic/ui/backgroundv7.png') center/cover fixed;
+  background:var(--bg);
   font:14px/1.4 Arial,sans-serif;
   color:var(--ink)
 }

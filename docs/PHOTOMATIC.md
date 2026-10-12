@@ -1,4 +1,9 @@
-# Photomatic template implementation
+# Reference template implementation
+
+This documents the initial reference import into Tuttoprint Photo Studio. The
+[system specification](SYSTEM_SPEC.md) records the confirmed file-upload and
+DE100-XD workflow, missing template rules and acceptance checks. Import coverage
+does not establish complete functional parity or DE100-XD print calibration.
 
 ## Imported settings
 
@@ -84,7 +89,9 @@ source cleanup, signed retrieval and expiry. SMTP is mocked; no test email is se
 A real sample photo was also processed locally with the actual MediaPipe models
 and reviewed in Safari, including the crop guides and corrected curly-hair framing.
 
-This reproduces the imported settings and the main desktop workflow. It does not
+This implements the imported crop/export dimensions and an initial studio workflow.
+Some active template switches and print compliance rules still need implementation,
+as listed in the system specification. It does not
 reproduce Photomatic's proprietary FaceIt/ICAO scoring algorithm, native Canon
 tethering, printer-driver/device controls or the external France ANTS/German
 driving-licence submission applications. The three special-mode templates show
