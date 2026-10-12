@@ -209,6 +209,19 @@ photos and the code area. A proposed size tolerance is ±0.5 mm, subject to the
 document's actual rules. Loaded roll width, selected cut length and the shop print
 computer/driver are still to be established. Physical printing has not been tested.
 
+Further supplied Backup jobs and installer evidence establish a folder-based
+sheet/instruction handoff through an IDToPrint setup configured for Fujifilm MS.
+The finished JPEGs have 96-DPI tags; matching their placement requires checking
+the actual layout/conversion and downstream settings. The six-photo example
+matches a loose 300-DPI template rather than the 301-DPI printer-family default.
+See [the print pipeline evidence](PRINT_PIPELINE.md) before choosing the device
+adapter or treating template DPI as physical output calibration.
+
+The [official-rule comparisons](OFFICIAL_VALIDATION.md) also identify material
+printer constraints: Australian passport prints require dye sublimation, while
+the DE100-XD is inkjet. The country policy must include output-method restrictions
+in addition to image dimensions.
+
 ## Our code and delivery system
 
 The UK service already generates Tuttoprint's own short code and stores the photo

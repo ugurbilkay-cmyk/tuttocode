@@ -27,6 +27,11 @@ The [standards decoding notes](docs/STANDARDS_DECODING.md) and generated
 and verified application comparisons. They distinguish stored thresholds from
 native engine algorithms and current government requirements.
 
+[Official-rule comparisons](docs/OFFICIAL_VALIDATION.md) record the first country
+cross-checks. [Print pipeline evidence](docs/PRINT_PIPELINE.md) covers the Backup
+jobs, Frontier installer and DE100 colour data, including differences between
+saved templates and completed output.
+
 ## Run
 Requires Python 3.10 or later (Ubuntu 24.04 uses Python 3.12).
 ```
