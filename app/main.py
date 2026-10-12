@@ -140,6 +140,26 @@ def _send_code_email(row, code):
 
 
 # ---------------------------------------------------------- short domain
+def _log_request_details(request, code, ip):
+    """Record how an unrecognised client asked for a code (e.g. other passport
+    services). Logs headers and the token's unverified header/claims only."""
+    skip = {"cookie"}
+    hdrs = {k: v for k, v in request.headers.items() if k.lower() not in skip}
+    auth = hdrs.pop("authorization", None)
+    info = {"method": request.method, "headers": hdrs}
+    if auth:
+        tok = auth.split(" ", 1)[-1].strip()
+        info["auth_scheme"] = auth.split(" ", 1)[0] if " " in auth else None
+        try:
+            import jwt
+            info["token_header"] = jwt.get_unverified_header(tok)
+            info["token_claims"] = jwt.decode(tok, options={"verify_signature": False})
+        except Exception as e:
+            info["token_parse_error"] = type(e).__name__
+            info["auth_prefix"] = auth[:24]
+    log.info("FETCH-DETAIL %s %s %s", code, ip, json.dumps(info, default=str)[:3000])
+
+
 async def code_fetch(request):
     """HMPO retrieves the photo here. Only HMPO-signed requests get the JPEG."""
     code = request.path_params["code"]
@@ -154,6 +174,7 @@ async def code_fetch(request):
     if not ok:
         db.log_fetch(code, False, reason, ip)
         log.info("Rejected fetch %s from %s: %s", code, ip, reason)
+        _log_request_details(request, code, ip)
         return Response(status_code=404)
     path = _photo_path(row["id"])
     if not path.exists():
