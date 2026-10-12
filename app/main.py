@@ -17,14 +17,16 @@ from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
+from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing
+from . import config, db, hmpo_auth, processing, photomatic
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 templates = Jinja2Templates(directory=str(config.BASE_DIR / "templates"))
-templates.env.globals.update(cfg=config, short_url=hmpo_auth.short_url)
+templates.env.globals.update(cfg=config, short_url=hmpo_auth.short_url, catalog=photomatic.CATALOG,
+                             profiles=photomatic.COUNTRIES, printers=photomatic.PRINTERS)
 templates.env.filters["dt"] = lambda t: time.strftime("%d %b %Y %H:%M", time.localtime(t)) if t else ""
 templates.env.filters["fromjson"] = json.loads
 
@@ -81,11 +83,18 @@ def _require_admin(request):
 
 
 async def _read_upload(request):
-    form = await request.form(max_part_size=config.MAX_UPLOAD_MB * 1024 * 1024)
+    form = await request.form(max_files=1, max_fields=30, max_part_size=64 * 1024)
     up = form.get("photo")
     if up is None or not hasattr(up, "read"):
         raise HTTPException(400, "No photo uploaded")
-    data = await up.read()
+    limit = config.MAX_UPLOAD_MB * 1024 * 1024
+    if up.size is not None and up.size > limit:
+        await form.close()
+        raise HTTPException(413, "Photo exceeds upload limit")
+    data = await up.read(limit + 1)
+    await form.close()
+    if len(data) > limit:
+        raise HTTPException(413, "Photo exceeds upload limit")
     if not data:
         raise HTTPException(400, "Empty file")
     age = form.get("age_group", "adult")
@@ -100,15 +109,49 @@ def _opts(form=None):
     return {k: form.get(k) == "on" for k in ("auto_adjust", "fix_shadows", "even_bg", "replace_bg")}
 
 
-async def _process_and_store(data, age, source, opts=None, **contact):
-    result = await run_in_threadpool(lambda: processing.process(data, age, **(opts or _opts())))
+def _selection(form=None):
+    form = form or {}
+    try:
+        profile = photomatic.country(form.get("country_id") or None)
+        printer = form.get("printer") or photomatic.DEFAULT_PRINTER
+        choices = photomatic.print_choices(profile, printer)
+        layout_id = form.get("print_template_id") or photomatic.default_print(profile, printer)["id"]
+        layout = photomatic.PRINTS[layout_id]
+        if layout_id not in {p["id"] for p in choices}:
+            raise ValueError("Layout does not match country/printer")
+        return profile, layout
+    except (KeyError, ValueError):
+        raise HTTPException(400, "Choose a valid country and matching print layout")
+
+
+def _crop_options(form=None):
+    form = form or {}
+    try:
+        zoom, x, y = float(form.get("zoom", 1)), float(form.get("x", 0)), float(form.get("y", 0))
+        rotation = int(form.get("rotation", 0))
+        if not (0.5 <= zoom <= 2 and -30 <= x <= 30 and -30 <= y <= 30 and rotation in (0, 90, 180, 270)):
+            raise ValueError()
+        return dict(zoom=zoom, x=x, y=y, rotation=rotation)
+    except (ValueError, TypeError):
+        raise HTTPException(400, "Invalid crop adjustment")
+
+
+async def _process_and_store(data, age, source, opts=None, profile=None, layout=None, **contact):
+    profile = profile or photomatic.country()
+    layout = layout or photomatic.default_print(profile)
+    options = dict(opts or _opts())
+    options.setdefault("crop", _crop_options())
+    result = await run_in_threadpool(lambda: processing.process(data, age, country_id=profile["id"], **options))
     pid = db.new_id()
     if result.jpeg:
         _photo_path(pid).write_bytes(result.jpeg)
         _photo_path(pid, True).write_bytes(result.preview_jpeg)
         if result.before_jpeg:
             (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
-    db.create(pid, source, age, result, **contact)
+    # A pending shop photo can be recropped; the source is removed on issue/expiry.
+    if source == "shop":
+        (config.PHOTO_DIR / f"{pid}_source").write_bytes(data)
+    db.create(pid, source, age, result, country_id=profile["id"], print_template_id=layout["id"], options=options, **contact)
     return pid, result
 
 
@@ -238,10 +281,16 @@ async def admin_home(request):
 async def admin_new(request):
     _require_admin(request)
     if request.method == "GET":
-        return templates.TemplateResponse(request, "admin_new.html", {"ages": AGE_GROUPS})
+        profile = photomatic.country()
+        return templates.TemplateResponse(request, "station.html", {
+            "ages": AGE_GROUPS, "row": None, "profile": profile, "layout": photomatic.default_print(profile),
+            "choices": photomatic.print_choices(profile), "checks": [], "groups": [], "options": _opts(),
+            "crop": _crop_options(), "has_photo": False, "editable": True,
+        })
     form, data, age = await _read_upload(request)
+    profile, layout = _selection(form)
     pid, _ = await _process_and_store(
-        data, age, "shop", _opts(form),
+        data, age, "shop", dict(_opts(form), crop=_crop_options(form)), profile, layout,
         name=(form.get("name") or "").strip() or None,
         email=(form.get("email") or "").strip() or None,
         phone=(form.get("phone") or "").strip() or None,
@@ -254,23 +303,66 @@ async def admin_photo(request):
     row = db.get(request.path_params["pid"])
     if not row:
         raise HTTPException(404)
-    return templates.TemplateResponse(
-        request, "admin_photo.html",
-        {"row": row, "checks": json.loads(row["checks"]), "ages": AGE_GROUPS,
-         "emailed": request.query_params.get("emailed")},
-    )
+    profile = photomatic.country(row["country_id"])
+    layout = photomatic.PRINTS.get(row["print_template_id"]) or photomatic.default_print(profile)
+    checks = json.loads(row["checks"])
+    options = json.loads(row["options"])
+    return templates.TemplateResponse(request, "station.html", {
+        "row": row, "checks": checks, "groups": photomatic.summary(checks), "ages": AGE_GROUPS,
+        "profile": profile, "layout": layout, "choices": photomatic.print_choices(profile, layout["printer"]),
+        "options": options, "crop": options.get("crop", _crop_options()),
+        "has_photo": _photo_path(row["id"]).exists(),
+        "editable": row["status"] == "pending" and (config.PHOTO_DIR / f"{row['id']}_source").exists(),
+        "emailed": request.query_params.get("emailed"),
+    })
+
+
+async def admin_reprocess(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    row = db.get(pid)
+    if not row or row["status"] != "pending":
+        raise HTTPException(409, "Only pending photos can be recropped")
+    source = config.PHOTO_DIR / f"{pid}_source"
+    if not source.exists():
+        raise HTTPException(409, "Upload a new photo to change this crop")
+    form = await request.form()
+    profile, layout = _selection(form)
+    options = dict(_opts(form), crop=_crop_options(form))
+    original = source.read_bytes()
+    result = await run_in_threadpool(lambda: processing.process(original, row["age_group"], country_id=profile["id"], **options))
+    current = db.get(pid)
+    if not current or current["status"] != "pending":
+        raise HTTPException(409, "This photo has already been issued or rejected")
+    # Clear any previous usable crop when the new crop fails framing.
+    for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
+        (config.PHOTO_DIR / f"{pid}{suffix}").unlink(missing_ok=True)
+    if result.jpeg:
+        _photo_path(pid).write_bytes(result.jpeg)
+        _photo_path(pid, True).write_bytes(result.preview_jpeg)
+        (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
+    db.update_processing(pid, profile["id"], layout["id"], options, result)
+    return RedirectResponse(f"/admin/p/{pid}", status_code=303)
 
 
 async def admin_issue(request):
     _require_admin(request)
     pid = request.path_params["pid"]
+    form = await request.form()
     row = db.get(pid)
     if not row or not _photo_path(pid).exists():
         raise HTTPException(404)
-    form = await request.form()
+    if row["status"] == "rejected" or row["expires"] <= time.time():
+        raise HTTPException(409, "Photo is rejected or expired")
+    profile = photomatic.country(row["country_id"])
+    if profile["code_service"] == "ie":
+        raise HTTPException(503, "Irish photo codes need the Irish Passport Online provider connection. Print, save and email are available.")
+    if profile["code_service"] != "uk":
+        raise HTTPException(400, "Online photo codes are only for UK and Irish passports. Other templates can be printed, saved or emailed.")
     if not row["ok"] and form.get("override") != "on":
         raise HTTPException(400, "Photo failed checks. Tick override to issue anyway.")
     code = db.issue(pid)
+    (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
     emailed = await run_in_threadpool(_send_code_email, db.get(pid), code)
     return RedirectResponse(f"/admin/p/{pid}?emailed={int(emailed)}", status_code=303)
 
@@ -278,6 +370,7 @@ async def admin_issue(request):
 async def admin_reject(request):
     _require_admin(request)
     db.reject(request.path_params["pid"])
+    db.purge_expired()
     return RedirectResponse("/admin", status_code=303)
 
 
@@ -308,11 +401,65 @@ async def admin_sheet(request):
     if not row or not path.exists():
         raise HTTPException(404)
     code_text = f"{config.SHORT_DOMAIN}/{row['code']}" if row["code"] else None
-    sheet = await run_in_threadpool(processing.print_sheet, path.read_bytes(), code_text)
+    layout = photomatic.PRINTS.get(row["print_template_id"]) or photomatic.default_print(photomatic.country(row["country_id"]))
+    requested = request.query_params.get("template")
+    if requested:
+        candidates = photomatic.print_choices(photomatic.country(row["country_id"]), request.query_params.get("printer") or layout["printer"])
+        if requested not in {p["id"] for p in candidates}:
+            raise HTTPException(400, "Print layout does not match the country")
+        layout = photomatic.PRINTS[requested]
+    if request.query_params.get("page") == "1":
+        return templates.TemplateResponse(request, "print.html", {"row": row, "layout": layout})
+    sheet = await run_in_threadpool(processing.print_sheet, path.read_bytes(), code_text, layout["id"])
     return Response(
         sheet, media_type="image/jpeg",
         headers={"Content-Disposition": f'inline; filename="passport-{pid[:6]}-6x4.jpg"'},
     )
+
+
+async def admin_save(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    row = db.get(pid)
+    if not row or not _photo_path(pid).exists():
+        raise HTTPException(404)
+    photo = await run_in_threadpool(processing.save_photo, _photo_path(pid).read_bytes(), row["country_id"])
+    return Response(photo, media_type="image/jpeg", headers={
+        "Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="{row["country_id"]}-{pid[:6]}.jpg"'})
+
+
+def _email_photo(row):
+    if not config.SMTP_HOST or not row["email"]:
+        return False
+    profile = photomatic.country(row["country_id"])
+    msg = EmailMessage()
+    msg["Subject"] = f"Your {profile['name']} photo"
+    msg["From"], msg["To"] = config.SMTP_FROM or config.SMTP_USER, row["email"]
+    code = f"\nPhoto code: {config.SHORT_DOMAIN}/{row['code']}\n" if row["code"] else ""
+    msg.set_content(f"Your {profile['name']} photo is attached.{code}\n{config.SHOP_NAME}\n{config.SHOP_CONTACT}")
+    photo = processing.save_photo(_photo_path(row["id"]).read_bytes(), row["country_id"], email=True)
+    msg.add_attachment(photo, maintype="image", subtype="jpeg", filename=f"{profile['id']}.jpg")
+    try:
+        with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=20) as server:
+            server.starttls()
+            if config.SMTP_USER:
+                server.login(config.SMTP_USER, config.SMTP_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception:
+        log.exception("Photo email failed")
+        return False
+
+
+async def admin_email(request):
+    _require_admin(request)
+    row = db.get(request.path_params["pid"])
+    if not row or not _photo_path(row["id"]).exists():
+        raise HTTPException(404)
+    if not config.SMTP_HOST or not row["email"]:
+        raise HTTPException(400, "Set up SMTP and add a customer email address before sending")
+    sent = await run_in_threadpool(_email_photo, row)
+    return RedirectResponse(f"/admin/p/{row['id']}?emailed={int(sent)}", status_code=303)
 
 
 async def admin_slip(request):
@@ -367,15 +514,20 @@ public_routes = [
 main_routes = public_routes + [
     Route("/privacy", privacy),
     Route("/healthz", healthz),
-    Route("/admin", admin_home),
+    Route("/admin", admin_new),
+    Route("/admin/history", admin_home),
     Route("/admin/new", admin_new, methods=["GET", "POST"]),
     Route("/admin/p/{pid}", admin_photo),
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
+    Route("/admin/p/{pid}/reprocess", admin_reprocess, methods=["POST"]),
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
     Route("/admin/p/{pid}/before.jpg", admin_before),
     Route("/admin/p/{pid}/sheet.jpg", admin_sheet),
+    Route("/admin/p/{pid}/save.jpg", admin_save),
+    Route("/admin/p/{pid}/email", admin_email, methods=["POST"]),
     Route("/admin/p/{pid}/slip", admin_slip),
+    Mount("/static", app=StaticFiles(directory=config.BASE_DIR / "static"), name="static"),
 ]
 
 app = Starlette(

@@ -47,6 +47,15 @@ def conn():
 def init():
     with conn() as c:
         c.executescript(SCHEMA)
+        columns = {r["name"] for r in c.execute("PRAGMA table_info(photos)")}
+        # Existing issued codes retain their UK profile and photo bytes.
+        for name, definition in {
+            "country_id": "TEXT NOT NULL DEFAULT 'united-kingdom-passport'",
+            "print_template_id": "TEXT",
+            "options": "TEXT NOT NULL DEFAULT '{}'",
+        }.items():
+            if name not in columns:
+                c.execute(f"ALTER TABLE photos ADD COLUMN {name} {definition}")
 
 
 def new_id():
@@ -60,7 +69,8 @@ def new_code(c):
             return code
 
 
-def create(photo_id, source, age_group, result, name=None, email=None, phone=None):
+def create(photo_id, source, age_group, result, name=None, email=None, phone=None,
+           country_id='united-kingdom-passport', print_template_id=None, options=None):
     now = time.time()
     with conn() as c:
         c.execute(
@@ -70,6 +80,15 @@ def create(photo_id, source, age_group, result, name=None, email=None, phone=Non
              json.dumps(result.as_dict()["checks"]), int(result.ok), now,
              now + config.PENDING_RETENTION_HOURS * 3600),
         )
+        c.execute("UPDATE photos SET country_id=?, print_template_id=?, options=? WHERE id=?",
+                  (country_id, print_template_id, json.dumps(options or {}), photo_id))
+
+
+def update_processing(photo_id, country_id, print_template_id, options, result):
+    with conn() as c:
+        c.execute("UPDATE photos SET country_id=?,print_template_id=?,options=?,checks=?,ok=? WHERE id=? AND status='pending'",
+                  (country_id, print_template_id, json.dumps(options), json.dumps(result.as_dict()['checks']),
+                   int(result.ok), photo_id))
 
 
 def update_contact(photo_id, name, email, phone):
@@ -134,7 +153,7 @@ def purge_expired():
     with conn() as c:
         rows = c.execute("SELECT id FROM photos WHERE expires<=? OR status='rejected'", (now,)).fetchall()
         for r in rows:
-            for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
+            for suffix in (".jpg", "_prev.jpg", "_before.jpg", "_source"):
                 (config.PHOTO_DIR / f"{r['id']}{suffix}").unlink(missing_ok=True)
         c.execute("DELETE FROM photos WHERE expires<=? OR status='rejected'", (now,))
         c.execute("DELETE FROM fetch_log WHERE ts<?", (now - 90 * 86400,))

@@ -39,72 +39,14 @@ other_priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
 # ---------------------------------------------------------------- synthetic face
-def make_face(W=2400, H=3200, bg=(232, 232, 228), roll=0.0, scale=1.0, cx=None, cy=None,
-              smile=0.0, blink=0.0, half_shadow=False, glare=False):
-    img = np.full((H, W, 3), bg, np.uint8)
-    noise = np.random.default_rng(0).normal(0, 1.5, img.shape)
-    img = np.clip(img + noise, 0, 255).astype(np.uint8)
-    cx = W // 2 if cx is None else cx
-    cy = int(H * 0.42) if cy is None else cy
-    fw, fh = int(330 * scale), int(440 * scale)
-    # shoulders
-    cv2.ellipse(img, (cx, cy + int(fh * 2.1)), (int(fw * 2.6), int(fh * 1.3)), 0, 180, 360, (40, 50, 80), -1)
-    cv2.rectangle(img, (cx - int(fw * 2.6), cy + int(fh * 2.1)), (cx + int(fw * 2.6), H), (40, 50, 80), -1)
-    cv2.rectangle(img, (cx - fw // 3, cy + fh // 2), (cx + fw // 3, cy + int(fh * 1.1)), (170, 130, 110), -1)
-    # hair + face
-    cv2.ellipse(img, (cx, cy - int(fh * 0.15)), (int(fw * 1.08), int(fh * 1.05)), roll, 180, 360, (45, 30, 20), -1)
-    cv2.ellipse(img, (cx, cy), (fw, fh), roll, 0, 360, (200, 160, 140), -1)
-    tex = np.random.default_rng(1).normal(0, 6, img.shape)
-    mask = np.zeros(img.shape[:2], np.uint8)
-    cv2.ellipse(mask, (cx, cy), (fw, fh), roll, 0, 360, 255, -1)
-    img = np.where(mask[..., None] > 0, np.clip(img + tex, 0, 255), img).astype(np.uint8)
-    if half_shadow:
-        # soft side light: left side of the face falls off gradually
-        xs = np.arange(img.shape[1], dtype=np.float32)
-        ramp = np.clip((xs - (cx - fw)) / (1.4 * fw), 0, 1)
-        fall = (0.4 + 0.6 * ramp)[None, :, None]
-        img = np.where(mask[..., None] > 0, (img * fall).astype(np.uint8), img)
-
-    pts = np.tile([cx, cy], (478, 1)).astype(np.float32)
-    r = np.radians(roll)
-    rot = lambda dx, dy: (cx + dx * np.cos(r) - dy * np.sin(r), cy + dx * np.sin(r) + dy * np.cos(r))  # noqa
-    ex, ey = fw * 0.40, -fh * 0.15
-    L, R = rot(-ex, ey), rot(ex, ey)
-    for c in (L, R):
-        cv2.ellipse(img, (int(c[0]), int(c[1])), (int(fw * .14), int(fh * .05)), roll, 0, 360, (250, 250, 250), -1)
-        cv2.circle(img, (int(c[0]), int(c[1])), int(fh * .045), (60, 40, 30), -1)
-    if glare:
-        cv2.circle(img, (int(L[0] + fw * .1), int(L[1] - fh * .09)), int(fh * .05), (255, 255, 255), -1)
-    pts[P.L_IRIS], pts[P.R_IRIS] = L, R
-    pts[P.CHIN] = rot(0, fh)
-    pts[P.FOREHEAD] = rot(0, -fh * 0.85)
-    pts[P.NOSE] = rot(0, fh * 0.15)
-    pts[P.FACE_L], pts[P.FACE_R] = rot(-fw, 0), rot(fw, 0)
-    for ring, c in ((P.LEFT_EYE_RING, L), (P.RIGHT_EYE_RING, R)):
-        for k, idx in enumerate(ring):
-            a = 2 * np.pi * k / len(ring)
-            pts[idx] = (c[0] + fw * .14 * np.cos(a), c[1] + fh * .05 * np.sin(a))
-    person = np.zeros(img.shape[:2], np.float32)
-    person[(np.abs(img.astype(int) - np.array(bg)).sum(-1) > 25)] = 1.0
-    person = cv2.dilate(person, np.ones((9, 9)))
-    bs = {"eyeBlinkLeft": blink, "eyeBlinkRight": blink, "jawOpen": 0.02,
-          "mouthSmileLeft": smile, "mouthSmileRight": smile}
-    buf = io.BytesIO()
-    Image.fromarray(img).save(buf, "JPEG", quality=92)
-    return buf.getvalue(), P.Analysis([P.FaceData(pts, bs)], person)
-
-
-class Fake:
-    def __init__(self, analysis):
-        self.a = analysis
-
-    def analyze(self, rgb):
-        return self.a
+from synthetic import make_face, Fake
 
 
 def run(name, kw, expect_ok, expect_fail_key=None, age="adult", **opts):
     data, an = make_face(**kw)
-    res = P.process(data, age, analyzer=Fake(an), **opts)
+    enhance_options = dict(auto_adjust=True, fix_shadows=True, even_bg=True)
+    enhance_options.update(opts)
+    res = P.process(data, age, analyzer=Fake(an), **enhance_options)
     fails = [c.key for c in res.checks if c.status == "fail"]
     status = "OK " if (res.ok == expect_ok and (expect_fail_key is None or expect_fail_key in fails)) else "BAD"
     print(f"{status} {name:28s} ok={res.ok} fails={fails} warns={[c.key for c in res.checks if c.status=='warn']}")
@@ -138,7 +80,7 @@ _, _, sh = run("shadow on face, fix on", {"half_shadow": True}, True)
 d0, an0 = make_face()
 arr = np.asarray(Image.open(io.BytesIO(d0))).astype(np.float32) * np.array([0.55, 0.62, 0.78])
 buf = io.BytesIO(); Image.fromarray(arr.clip(0, 255).astype(np.uint8)).save(buf, "JPEG", quality=92)
-cc = P.process(buf.getvalue(), analyzer=Fake(an0))
+cc = P.process(buf.getvalue(), analyzer=Fake(an0), auto_adjust=True, fix_shadows=True, even_bg=True)
 print("OK  blue cast + dark scene        ok=", cc.ok, [c.detail for c in cc.checks if c.key == "adjust"])
 assert cc.ok
 o = np.asarray(Image.open(io.BytesIO(cc.jpeg)))
@@ -163,7 +105,8 @@ assert any(c.key == "glare" and c.status != "pass" for c in gl.checks)
 
 sheet = P.print_sheet(good.jpeg, "tpcode.uk/Ab3xK9pQ")
 sim = Image.open(io.BytesIO(sheet))
-assert sim.size == (1800, 1200), sim.size
+assert sim.size == (1844, 1240), sim.size
+assert sim.info['dpi'] == (301, 301)
 (TMP / "sheet.jpg").write_bytes(sheet)
 print("    print sheet", sim.size)
 
@@ -240,7 +183,14 @@ check("customer submits contact", s == 303)
 # admin
 s, _, _ = req("/admin")
 check("admin requires auth", s == 401)
-s, _, page = req("/admin", headers={"Authorization": AUTH})
+old_limit = main.config.MAX_UPLOAD_MB
+main.config.MAX_UPLOAD_MB = 1
+oversize, oversize_headers = multipart({"age_group": "adult"}, b"x" * (2 * 1024 * 1024))
+oversize_headers["Authorization"] = AUTH
+s, _, _ = req("/admin/new", "POST", oversize, oversize_headers)
+check("oversized file upload rejected", s == 413)
+main.config.MAX_UPLOAD_MB = old_limit
+s, _, page = req("/admin/history", headers={"Authorization": AUTH})
 check("admin list shows customer", s == 200 and b"Test Person" in page)
 s, h, _ = req(f"/admin/p/{pid}/issue", "POST", b"", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded",
                                                    "Origin": "https://evil.example"})
@@ -255,7 +205,7 @@ check(f"code generated ({code})", code and len(code) == 8)
 s, _, page = req(f"/r/{pid}")
 check("customer page now shows code", code.encode() in page)
 s, _, sheet = req(f"/admin/p/{pid}/sheet.jpg", headers={"Authorization": AUTH})
-check("print sheet served", s == 200 and Image.open(io.BytesIO(sheet)).size == (1800, 1200))
+check("print sheet served", s == 200 and Image.open(io.BytesIO(sheet)).size == (1844, 1240))
 s, _, slip = req(f"/admin/p/{pid}/slip", headers={"Authorization": AUTH})
 check("code slip served", s == 200 and code.encode() in slip)
 
@@ -301,6 +251,53 @@ s, h, _ = req("/admin/new", "POST", body, hdr)
 pid2 = h["location"].split("/admin/p/")[1]
 s, _, _ = req(f"/admin/p/{pid2}/issue", "POST", b"", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
 check("failed photo can't be issued without override", s == 400)
+
+# Photomatic station: source retained while pending, recrop, then delete it on issue.
+P._analyzer = Fake(an)
+body, hdr = multipart({"age_group": "adult", "country_id": "united-kingdom-passport"}, data)
+hdr["Authorization"] = AUTH
+s, h, _ = req("/admin/new", "POST", body, hdr)
+check("shop photo uploaded", s == 303)
+shop_pid = h["location"].split("/admin/p/")[1]
+check("pending source retained for crop adjustment", (TMP / "photos" / f"{shop_pid}_source").exists())
+s, _, page = req(f"/admin/p/{shop_pid}", headers={"Authorization": AUTH})
+check("Photomatic station renders imported countries", s == 200 and b"Select country / document" in page and b"Canada Passport" in page)
+form = urllib.parse.urlencode({"country_id": "usa-passport", "opts": "1", "zoom": "1", "x": "0", "y": "0", "rotation": "0"}).encode()
+s, _, _ = req(f"/admin/p/{shop_pid}/reprocess", "POST", form, {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("recrop to USA template", s == 303 and db.get(shop_pid)["country_id"] == "usa-passport")
+s, _, image = req(f"/admin/p/{shop_pid}/full.jpg", headers={"Authorization": AUTH})
+check("USA crop is square", Image.open(io.BytesIO(image)).size == (1500, 1500))
+s, _, _ = req(f"/admin/p/{shop_pid}/issue", "POST", b"override=on", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("non UK/Irish code blocked even with override", s == 400 and not db.get(shop_pid)["code"])
+form = urllib.parse.urlencode({"country_id": "ireland-passport-online", "opts": "1"}).encode()
+s, _, _ = req(f"/admin/p/{shop_pid}/reprocess", "POST", form, {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("Irish online crop saved", s == 303)
+s, _, image = req(f"/admin/p/{shop_pid}/save.jpg", headers={"Authorization": AUTH})
+check("Irish digital export uses exact dimensions", s == 200 and Image.open(io.BytesIO(image)).size == (715, 951))
+from unittest.mock import patch
+sent_messages = []
+class FakeSMTP:
+    def __init__(self, *args, **kwargs): pass
+    def __enter__(self): return self
+    def __exit__(self, *args): pass
+    def starttls(self): pass
+    def login(self, *args): pass
+    def send_message(self, message): sent_messages.append(message)
+db.update_contact(shop_pid, "Shop test", "example@example.com", "")
+with patch.object(main.config, "SMTP_HOST", "smtp.test"), patch.object(main.smtplib, "SMTP", FakeSMTP):
+    s, _, _ = req(f"/admin/p/{shop_pid}/email", "POST", b"", {"Authorization": AUTH})
+    check("photo email prepared through SMTP", s == 303 and len(sent_messages) == 1)
+    attachment = next(sent_messages[0].iter_attachments())
+    check("email attachment uses Irish dimensions", Image.open(io.BytesIO(attachment.get_payload(decode=True))).size == (715, 951))
+s, _, _ = req(f"/admin/p/{shop_pid}/issue", "POST", b"override=on", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("Irish code cannot be falsely issued without provider connection", s == 503 and not db.get(shop_pid)["code"])
+form = urllib.parse.urlencode({"country_id": "united-kingdom-passport", "opts": "1"}).encode()
+s, _, _ = req(f"/admin/p/{shop_pid}/reprocess", "POST", form, {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("recrop back to UK", s == 303)
+s, _, _ = req(f"/admin/p/{shop_pid}/issue", "POST", b"override=on", {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("UK shop code issued and source deleted", s == 303 and db.get(shop_pid)["code"] and not (TMP / "photos" / f"{shop_pid}_source").exists())
+s, _, _ = req(f"/admin/p/{shop_pid}/reprocess", "POST", form, {"Authorization": AUTH, "Content-Type": "application/x-www-form-urlencoded"})
+check("issued photo cannot be recropped", s == 409)
 
 # expiry purge
 with db.conn() as c:

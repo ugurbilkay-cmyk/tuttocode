@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ profile.name }} · Photomatic AI · {{ cfg.SHOP_NAME }}</title>
+  <link rel="stylesheet" href="/static/station.css">
+</head>
+<body>
+<header class="station-header">
+  <a class="brand" href="/admin/new"><span class="wordmark">Photo<span>Matic</span><small>biometric passport photos</small></span><span>AI <small>{{ cfg.SHOP_NAME }}</small></span></a>
+  <nav><a href="/admin/history">Photo history</a><a href="/admin/new">New photo</a><a href="/privacy">Privacy</a></nav>
+</header>
+<main class="station">
+  <form id="photo-form" method="post" enctype="{% if row %}application/x-www-form-urlencoded{% else %}multipart/form-data{% endif %}" action="{% if row %}/admin/p/{{ row.id }}/reprocess{% else %}/admin/new{% endif %}">
+    <input type="hidden" name="opts" value="1">
+    <div class="workspace">
+      <section class="photo-column" aria-label="Photo workspace">
+        <div class="stage-tools">
+          <span id="photo-size">{{ profile.width_mm|int }} × {{ profile.height_mm|int }} mm</span>
+          <label><input id="show-overlay" type="checkbox" checked> Guides</label>
+          {% if has_photo %}<button type="button" id="before-toggle">Before / After</button>{% endif %}
+        </div>
+        <div class="photo-stage" id="photo-stage" style="--photo-ratio:{{ profile.width_mm }}/{{ profile.height_mm }}">
+          {% if has_photo %}
+            <img class="stage-photo" id="stage-photo" src="/admin/p/{{ row.id }}/full.jpg" alt="Processed {{ profile.name }} photo">
+            <img class="stage-photo before-photo" id="before-photo" src="/admin/p/{{ row.id }}/before.jpg" alt="Before adjustments" hidden>
+          {% else %}
+            <img class="stage-photo" id="stage-photo" alt="Selected photo" hidden>
+            <div class="empty-photo" id="empty-photo"><span class="camera-symbol">▣</span><h1>Open a photo</h1><p>Select the country, then open a file<br>or take a photo with your camera.</p>{% if row %}<p>Adjust the crop or upload a new photo.</p>{% endif %}</div>
+          {% endif %}
+          <img class="crop-overlay" id="crop-overlay" {% if profile.overlay %}src="{{ profile.overlay }}"{% else %}hidden{% endif %} alt="{{ profile.name }} crop guide">
+        </div>
+        <div class="photo-caption">{% if row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}35 × 45, visa, passport, ID and online formats{% endif %}</div>
+        {% if editable %}
+        <details class="adjustments" {% if row and not has_photo %}open{% endif %}>
+          <summary>Move, zoom and rotate</summary>
+          <div class="sliders">
+            <label>Zoom <output id="zoom-value">{{ crop.zoom }}</output><input type="range" name="zoom" id="zoom" min="0.5" max="2" step="0.01" value="{{ crop.zoom }}"></label>
+            <label>Horizontal <output id="x-value">{{ crop.x }}%</output><input type="range" name="x" id="x" min="-30" max="30" step="1" value="{{ crop.x }}"></label>
+            <label>Vertical <output id="y-value">{{ crop.y }}%</output><input type="range" name="y" id="y" min="-30" max="30" step="1" value="{{ crop.y }}"></label>
+            <label>Rotate<select name="rotation" id="rotation">{% for v in [0,90,180,270] %}<option value="{{ v }}" {% if crop.rotation == v %}selected{% endif %}>{{ v }}° clockwise</option>{% endfor %}</select></label>
+          </div>
+          <button type="button" id="reset-crop">Reset crop</button>
+          {% if row %}<p class="subtle">Click Apply changes to calculate the crop from the original photo.</p>{% endif %}
+        </details>
+        {% endif %}
+      </section>
+      <aside class="controls">
+        <button class="country-button" id="choose-country" type="button" {% if not editable %}disabled{% endif %}>
+          <img id="country-flag" {% if profile.flag %}src="{{ profile.flag }}"{% else %}hidden{% endif %} alt="">
+          <span id="country-label">{{ profile.name }}</span><span>▾</span>
+        </button>
+        <input type="hidden" name="country_id" id="country-id" value="{{ profile.id }}">
+        <div class="quality-summary">
+          {% for name in ['Image quality','Face size and position','Background'] %}
+            {% set group = groups|selectattr('name','equalto',name)|first %}
+            <div class="quality-row"><span>{{ name }}</span><span class="quality-light {{ group.status if group else 'waiting' }}" aria-label="{{ group.status if group else 'Not checked' }}">{{ '✓' if group and group.status == 'pass' else '!' if group else '—' }}</span></div>
+          {% endfor %}
+        </div>
+        <p class="subtle">AI checks support the staff visual review.</p>
+        {% if checks %}<details class="check-details"><summary>View all AI checks</summary>{% include '_checks.html' %}</details>{% endif %}
+        {% if profile.special_mode %}<p class="notice">This template also needs its external document submission/signature step.</p>{% endif %}
+        <label class="field-label" for="printer">Printer</label>
+        <select id="printer" name="printer">{% for printer in printers %}<option {% if printer == layout.printer %}selected{% endif %}>{{ printer }}</option>{% endfor %}</select>
+        <label class="field-label" for="print-template">Print layout</label>
+        <select id="print-template" name="print_template_id">{% for choice in choices %}<option value="{{ choice.id }}" {% if choice.id == layout.id %}selected{% endif %}>{{ choice.name }} · {{ choice.boxes|length }} photos · {{ choice.printer }}</option>{% endfor %}</select>
+        <p class="subtle" id="print-dimensions">{{ layout.width_px }} × {{ layout.height_px }} px · {{ layout.dpi }} DPI</p>
+        {% if editable %}
+        <details class="adjustments"><summary>Colour and lighting</summary>
+          <label class="tick"><input type="checkbox" name="auto_adjust" {% if options.auto_adjust %}checked{% endif %}> Fix colour and exposure</label>
+          <label class="tick"><input type="checkbox" name="fix_shadows" {% if options.fix_shadows %}checked{% endif %}> Soften face shadows</label>
+          <label class="tick"><input type="checkbox" name="even_bg" {% if options.even_bg %}checked{% endif %}> Even background light</label>
+          <label class="tick"><input type="checkbox" name="replace_bg" {% if options.replace_bg %}checked{% endif %}> Replace background</label>
+        </details>
+        {% if not row %}
+        <details class="customer"><summary>Customer and age</summary>
+          <label class="field-label">Age<select name="age_group">{% for k,v in ages.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+          <label class="field-label">Name<input type="text" name="name" maxlength="100"></label>
+          <label class="field-label">Email<input type="email" name="email" maxlength="200"></label>
+          <label class="field-label">Phone<input type="tel" name="phone" maxlength="40"></label>
+        </details>
+        {% endif %}
+        {% endif %}
+        <div class="station-actions">
+          {% if not row %}
+            <input type="file" name="photo" id="file-input" accept="image/*" required class="file-input">
+            <label for="file-input" class="action-button">Open file</label>
+            <button type="button" id="camera-button">Camera</button>
+            <button class="primary" id="process-button" type="submit">Process photo</button>
+          {% elif editable %}
+            <button class="primary" type="submit">Apply changes</button>
+            <a class="action-button" href="/admin/new">Open another photo</a>
+          {% else %}<a class="action-button" href="/admin/new">Open file</a>{% endif %}
+          {% if has_photo %}
+            <button type="button" id="print-button">Print</button>
+            <a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save</a>
+            <button type="submit" form="email-form" {% if not row.email or not cfg.SMTP_HOST %}disabled title="Add an email address and configure SMTP to send"{% endif %}>Email</button>
+          {% endif %}
+        </div>
+      </aside>
+    </div>
+  </form>
+  {% if has_photo %}<form id="email-form" method="post" action="/admin/p/{{ row.id }}/email"></form>{% endif %}
+  {% if row %}
+  <section class="code-panel">
+    {% if row.code %}
+      <div><span class="eyebrow">Passport photo code</span><strong class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</strong><p class="subtle">Valid until {{ row.expires|dt }} · collected by HMPO {{ row.fetched_count }} times</p></div>
+      <a class="action-button" href="/admin/p/{{ row.id }}/slip" target="_blank">Print code slip</a>
+    {% elif row.status == 'pending' and profile.hmpo_code and has_photo %}
+      <form method="post" action="/admin/p/{{ row.id }}/issue">
+        <h2>Issue UK passport photo code</h2>
+        <label class="tick"><input type="checkbox" required> Good likeness, recent photo, correct framing and plain background</label>
+        <label class="tick"><input type="checkbox" required> No prohibited head covering, obscured eyes, glare or red eye</label>
+        {% if not row.ok %}<label class="tick"><input type="checkbox" name="override"> Override failed automatic checks after staff review</label>{% endif %}
+        <button class="primary" type="submit">Issue photo code</button>
+      </form>
+    {% elif profile.code_service == 'ie' %}<div><h2>Irish passport photo code</h2><p class="notice">Irish code issuance needs the Irish Passport Online provider connection. Print, Save and Email are available.</p><button disabled>Irish photo code · connection required</button></div>
+    {% elif not profile.code_service %}<p>Print, save or email this {{ profile.name }} photo. Online codes are limited to UK and Irish passports.</p>{% endif %}
+    {% if emailed == '1' %}<p class="success-message">Email sent to customer.</p>{% elif emailed == '0' and row.email %}<p class="notice">Email was not sent. Check SMTP settings.</p>{% endif %}
+    <form class="reject-form" method="post" action="/admin/p/{{ row.id }}/reject" onsubmit="return confirm('Delete this photo and cancel its code?')"><button class="danger" type="submit">{{ 'Cancel code and delete' if row.code else 'Reject and delete' }}</button></form>
+  </section>
+  {% endif %}
+</main>
+<dialog id="country-dialog">
+  <div class="dialog-heading"><h2>Select country / document</h2><button type="button" id="close-countries">Close</button></div>
+  <label for="country-search" class="sr-only">Search templates</label><input id="country-search" type="search" placeholder="Search country, passport, visa, ID or online…">
+  <p class="subtle">{{ catalog.countries|length }} templates from your Photomatic installation</p>
+  <div class="country-grid">{% for c in catalog.countries %}<button type="button" class="country-choice" data-country="{{ c.id }}" data-search="{{ (c.name ~ ' ' ~ c.country)|lower }}">{% if c.flag %}<img src="{{ c.flag }}" alt="" loading="lazy">{% endif %}<span>{{ c.name }}</span><small>{{ c.width_mm|int }} × {{ c.height_mm|int }} mm{% if c.digital_size[0] > 0 %} · {{ c.digital_size[0] }} × {{ c.digital_size[1] }} px{% endif %}</small></button>{% endfor %}</div>
+  <p id="no-countries" hidden>No matching templates.</p>
+</dialog>
+<dialog id="camera-dialog"><div class="dialog-heading"><h2>Camera</h2><button type="button" id="close-camera">Close</button></div><video id="camera-video" autoplay playsinline muted></video><p id="camera-error" class="notice" hidden></p><button type="button" id="capture-photo">Take photo</button></dialog>
+<script id="station-catalog" type="application/json">{{ {'countries':catalog.countries,'prints':catalog.prints}|tojson }}</script>
+<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationEditable={{ editable|tojson }};</script>
+<script src="/static/station.js" defer></script>
+</body></html>

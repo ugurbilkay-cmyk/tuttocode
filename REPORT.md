@@ -2,25 +2,35 @@
 
 *Last updated: 12 October 2026*
 
+## Photomatic AI update (12 October 2026)
+
+The repository now includes the supplied installation's 208 country/document
+templates and 169 print layouts, a Photomatic-style station, country-specific AI
+crops, pending-photo adjustments and digital exports. This update is prepared
+for review; it has not been deployed to the live VPS. See
+[implementation and validation](docs/PHOTOMATIC.md). UK code retrieval is retained;
+Irish code issuance requires a separate provider connection and remains disabled.
+See [Irish integration research](docs/IRISH_CODES.md).
+
 ## 1. What it is
 
 An in-shop system that turns a customer's photo into a **UK passport photo code**.
 The customer enters the code on gov.uk, and HM Passport Office (HMPO) collects the
 photo directly from our server. It replaces the retiring Fujifilm ID service.
 
-**Status: live and working.** On 12 Oct 2026 a test code (`tpcode.uk/nKAeerjA`) was
+**UK service status before the Photomatic update: live and working.** On 12 Oct 2026 a test code (`tpcode.uk/nKAeerjA`) was
 entered on gov.uk and HMPO successfully retrieved the photo.
 
 ## 2. How it works
 
 1. Staff open **https://staff.tpcode.uk/admin** in any browser and log in.
 2. **+ New photo**: take or upload the photo (e.g. from the Canon camera).
-3. The system automatically:
+3. The earlier system automatically:
    - finds the face and crops to passport size (35×45 mm ratio, 1050×1350 px)
-   - **auto-enhances**: fixes colour casts and exposure, softens shadows on the face, evens out the background (each one can be switched off per photo)
+   - offered automatic colour/exposure correction, face-shadow softening and background evening
    - runs checks: one face, head straight, facing camera, eyes open, neutral expression, sharpness, lighting, background, glasses glare, resolution
 4. The staff member reviews **Before / After** and the checklist, then clicks **Issue photo code**.
-5. Print the **6×4 sheet** (4 photos plus the code) on the Mitsubishi, and/or the **code slip** for the customer.
+5. Print the **Photomatic sheet** (the selected imported layout; UK defaults to six photos) on the Mitsubishi, and/or the **code slip** for the customer.
 6. The customer applies at gov.uk and enters the code. HMPO fetches the photo.
 
 ### Security

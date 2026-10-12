@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config
+from . import config, photomatic
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -159,7 +159,9 @@ def _encode_jpeg(rgb: np.ndarray, min_kb=60, max_kb=9500) -> bytes:
 
 def _small_jpeg(rgb):
     buf = io.BytesIO()
-    Image.fromarray(rgb).resize((350, 450), Image.LANCZOS).save(buf, "JPEG", quality=85)
+    im = Image.fromarray(rgb)
+    im.thumbnail((350, 450), Image.LANCZOS)
+    im.save(buf, "JPEG", quality=85)
     return buf.getvalue()
 
 
@@ -190,7 +192,7 @@ def _shoulder(x, knee=0.85):
     return np.where(x > knee, knee + span * (1 - np.exp(-over / span)), x)
 
 
-def enhance(rgb: np.ndarray, person_mask, face_box, even_bg=False):
+def enhance(rgb: np.ndarray, person_mask, face_box, even_bg=False, adjust=True):
     """Returns (adjusted_rgb, notes). face_box = (x0, y0, x1, y1) in pixels."""
     notes = []
     h, w = rgb.shape[:2]
@@ -207,37 +209,40 @@ def enhance(rgb: np.ndarray, person_mask, face_box, even_bg=False):
     if ref.sum() < max(2000, 0.02 * h * w):
         return rgb, ["Background too small to use as reference — colour left as taken"]
 
-    # 1. white balance: make the (plain, light) background neutral
-    bg_rgb = np.median(lin[ref], axis=0)
-    gains = bg_rgb.mean() / np.maximum(bg_rgb, 1e-4)
-    gains = np.clip(gains, 0.6, 1.7)
-    if np.abs(gains - 1).max() > 0.02:
-        lin = lin * gains
-        notes.append("colour cast removed")
+    if adjust:
+        # 1. white balance: make the (plain, light) background neutral
+        bg_rgb = np.median(lin[ref], axis=0)
+        gains = bg_rgb.mean() / np.maximum(bg_rgb, 1e-4)
+        gains = np.clip(gains, 0.6, 1.7)
+        if np.abs(gains - 1).max() > 0.02:
+            lin = lin * gains
+            notes.append("colour cast removed")
 
-    # 2. exposure: bring the background to a light, even level
-    y = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
-    bg_y = float(np.median(y[ref]))
-    target_lin = float(_to_lin(np.float32(BG_TARGET)))
-    gain = float(np.clip(target_lin / max(bg_y, 1e-4), MIN_GAIN, MAX_GAIN))
-    # never push the face into clipping
-    x0, y0, x1, y1 = [int(v) for v in face_box]
-    face_y = y[max(y0, 0):max(y1, 1), max(x0, 0):max(x1, 1)]
-    if face_y.size:
-        p99 = float(np.percentile(face_y, 95))  # ignore eye whites / speculars
-        if p99 * gain > 0.92:
-            gain = max(min(gain, 0.92 / max(p99, 1e-4)), MIN_GAIN)
-    if abs(gain - 1) > 0.04:
-        lin = lin * gain
-        stops = np.log2(gain)
-        notes.append(f"exposure {'+' if stops > 0 else ''}{stops:.1f} stop")
+        # 2. exposure: bring the background to a light, even level
+        y = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+        bg_y = float(np.median(y[ref]))
+        target_lin = float(_to_lin(np.float32(BG_TARGET)))
+        gain = float(np.clip(target_lin / max(bg_y, 1e-4), MIN_GAIN, MAX_GAIN))
+        # never push the face into clipping
+        x0, y0, x1, y1 = [int(v) for v in face_box]
+        face_y = y[max(y0, 0):max(y1, 1), max(x0, 0):max(x1, 1)]
+        if face_y.size:
+            p99 = float(np.percentile(face_y, 95))  # ignore eye whites / speculars
+            if p99 * gain > 0.92:
+                gain = max(min(gain, 0.92 / max(p99, 1e-4)), MIN_GAIN)
+        if abs(gain - 1) > 0.04:
+            lin = lin * gain
+            stops = np.log2(gain)
+            notes.append(f"exposure {'+' if stops > 0 else ''}{stops:.1f} stop")
 
-    # 3. highlight roll-off
-    if (lin > 0.85).mean() > 0.001:
-        lin = _shoulder(lin)
-        notes.append("highlights recovered")
+        # 3. highlight roll-off
+        if (lin > 0.85).mean() > 0.001:
+            lin = _shoulder(lin)
+            notes.append("highlights recovered")
 
-    out = _to_srgb(lin)
+        out = _to_srgb(lin)
+    else:
+        out = img.copy()
 
     # 4. optional: even out the background only (face/body untouched)
     if even_bg:
@@ -336,18 +341,47 @@ def soften_face_shadows(rgb, face_box, person_mask=None, strength=1.0):
     return (out * 255 + 0.5).astype(np.uint8), amount
 
 
-def replace_background(rgb, mask, colour=(236, 236, 233)):
+def replace_background(rgb, mask, colour=(228, 228, 228)):
     soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 2)[..., None]
     plain = np.empty_like(rgb)
     plain[:] = colour
     return (rgb * soft + plain * (1 - soft)).astype(np.uint8)
 
 
+def _crown_y(points, person_mask):
+    """Locate the visible head top; use landmarks if segmentation is unavailable.
+
+    A fixed forehead extension clips tall/curly hair. Require a continuous,
+    substantial foreground band above the face so isolated hairs/noise do not
+    control the crop. Arms or headwear still require the staff visual check.
+    """
+    forehead, chin = points[FOREHEAD], points[CHIN]
+    face_h = chin[1] - forehead[1]
+    estimate = float(forehead[1] - 0.30 * face_h)
+    if person_mask is None or face_h <= 0:
+        return estimate
+    h, w = person_mask.shape
+    cx = (points[FACE_L][0] + points[FACE_R][0]) / 2
+    fw = abs(points[FACE_R][0] - points[FACE_L][0])
+    x0, x1 = max(int(cx - .75 * fw), 0), min(int(cx + .75 * fw), w)
+    low, high = max(int(forehead[1] - face_h), 0), min(int(forehead[1]), h)
+    band = person_mask[low:high, x0:x1]
+    if not band.size:
+        return estimate
+    visible = (band > .75).sum(axis=1) >= max(.15 * fw, 3)
+    run = max(3, int(face_h * .01))
+    starts = np.where(np.convolve(visible.astype(int), np.ones(run, int), mode="valid") >= run)[0]
+    return float(low + starts[0]) if len(starts) else estimate
+
+
 def process(data: bytes, age_group: str = "adult", analyzer=None,
-            auto_adjust: bool = True, even_bg: bool = True,
-            fix_shadows: bool = True, replace_bg: bool = False) -> Result:
+            auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
+            fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
+            country_id: str | None = None, crop=None) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
-    analyzer = analyzer or get_analyzer()
+    profile = photomatic.country(country_id)
+    out_w, out_h = photomatic.output_size(profile)
+    crop = crop or {"zoom": 1, "x": 0, "y": 0, "rotation": 0}
     checks: list[Check] = []
 
     def add(key, label, status, detail=""):
@@ -360,6 +394,17 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         return Result(False, checks)
 
     h, w = rgb.shape[:2]
+    rotation = int(crop.get("rotation", 0)) % 360
+    if rotation:
+        rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
+        h, w = rgb.shape[:2]
+    # Freestyle templates deliberately do not impose biometric framing.
+    if not profile["use_head"] and not profile["use_width"]:
+        im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
+        out = np.asarray(im)
+        add("framing", "Free-style crop", "pass", "No face-size target in this template")
+        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), _small_jpeg(out))
+    analyzer = analyzer or get_analyzer()
     an = analyzer.analyze(rgb)
 
     if len(an.faces) == 0:
@@ -386,7 +431,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     face_w = np.linalg.norm(face_r - face_l)
     face_cx = (face_l[0] + face_r[0]) / 2
     yaw_ratio = abs(p[NOSE][0] - face_cx) / max(face_w, 1)
-    if abs(roll) > 8:
+    max_angle = float(photomatic.CATALOG["quality"].get("MaxAngle", 6))
+    if abs(roll) > max_angle:
         add("tilt", "Head straight", "fail", f"Head tilted {abs(roll):.0f}°. Keep eyes level.")
     elif abs(roll) > 4:
         add("tilt", "Head straight", "warn", f"Slight tilt ({abs(roll):.0f}°).")
@@ -426,32 +472,41 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
 
     # --- crop -----------------------------------------------------------
     face_h = chin[1] - forehead[1]
-    crown_y = forehead[1] - 0.30 * face_h  # landmark 10 sits below the hair/crown
+    crown_y = _crown_y(p, an.person_mask)
     head_h = chin[1] - crown_y
-    crop_h = head_h / HEAD_TARGET
-    crop_w = crop_h * OUT_W / OUT_H
-    top = crown_y - CROWN_MARGIN * crop_h
+    if profile["use_head"]:
+        crop_h = head_h / (profile["head"][0] / 100)
+        crop_w = crop_h * out_w / out_h
+    else:
+        crop_w = face_w / (profile["face_width"][0] / 100)
+        crop_h = crop_w * out_h / out_w
+    zoom = float(crop.get("zoom", 1))
+    crop_h, crop_w = crop_h / zoom, crop_w / zoom
+    # Country-template Eyes is the eye-line position as % of image height.
+    top = eye_mid[1] - profile["eyes"][0] / 100 * crop_h
     left = eye_mid[0] - crop_w / 2
+    left += float(crop.get("x", 0)) / 100 * crop_w
+    top += float(crop.get("y", 0)) / 100 * crop_h
     x0, y0, x1, y1 = left, top, left + crop_w, top + crop_h
 
     if x0 < 0 or y0 < 0 or x1 > w or y1 > h:
         add("framing", "Head and shoulders in frame", "fail",
             "Not enough space around the head. Step back so head and shoulders fit with space above.")
         return Result(False, checks)
-    if crop_w < MIN_SRC_W or crop_h < MIN_SRC_H:
+    if crop_w < min(MIN_SRC_W, out_w) or crop_h < min(MIN_SRC_H, out_h):
         add("resolution", "Resolution", "fail",
             f"Face area too small ({int(crop_w)}x{int(crop_h)}px). Move closer or use a better camera.")
         return Result(False, checks)
     add("framing", "Head and shoulders in frame", "pass")
     add("resolution", "Resolution", "pass", f"{int(crop_w)}x{int(crop_h)}px source")
 
-    M = np.array([[OUT_W / crop_w, 0, -x0 * OUT_W / crop_w],
-                  [0, OUT_H / crop_h, -y0 * OUT_H / crop_h]], dtype=np.float32)
-    out = cv2.warpAffine(rgb, M, (OUT_W, OUT_H), flags=cv2.INTER_AREA,
+    M = np.array([[out_w / crop_w, 0, -x0 * out_w / crop_w],
+                  [0, out_h / crop_h, -y0 * out_h / crop_h]], dtype=np.float32)
+    out = cv2.warpAffine(rgb, M, (out_w, out_h), flags=cv2.INTER_AREA,
                          borderMode=cv2.BORDER_REPLICATE)
     mask = None
     if an.person_mask is not None:
-        mask = cv2.warpAffine(an.person_mask, M, (OUT_W, OUT_H), flags=cv2.INTER_LINEAR,
+        mask = cv2.warpAffine(an.person_mask, M, (out_w, out_h), flags=cv2.INTER_LINEAR,
                               borderMode=cv2.BORDER_REPLICATE)
     tp = np.c_[p, np.ones(len(p))] @ M.T  # landmarks in output space
 
@@ -464,13 +519,13 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         out, amt = soften_face_shadows(out, fb, mask)
         if amt:
             notes.append("face shadow softened")
-    if auto_adjust:
-        out, n = enhance(out, mask, fb, even_bg=even_bg and not replace_bg)
+    if auto_adjust or even_bg:
+        out, n = enhance(out, mask, fb, even_bg=even_bg and not replace_bg, adjust=auto_adjust)
         notes += n
     if replace_bg and mask is not None:
-        out = replace_background(out, mask)
+        out = replace_background(out, mask, profile["background"])
         notes.append("background replaced")
-    if auto_adjust or fix_shadows or replace_bg:
+    if auto_adjust or fix_shadows or replace_bg or even_bg:
         add("adjust", "Auto enhance", "pass",
             ("Applied: " + ", ".join(notes)) if notes else "No correction needed")
 
@@ -478,7 +533,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     lum = _lum(out)
     fx0, fx1 = int(tp[FACE_L][0]), int(tp[FACE_R][0])
     fy0, fy1 = int(tp[FOREHEAD][1]), int(tp[CHIN][1])
-    fx0, fx1 = sorted((max(fx0, 0), min(fx1, OUT_W)))
+    fx0, fx1 = sorted((max(fx0, 0), min(fx1, out_w)))
     face_region = lum[max(fy0, 0):fy1, fx0:fx1]
     face_rgb = out[max(fy0, 0):fy1, fx0:fx1]
 
@@ -518,7 +573,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
 
     # specular glare around eyes (glasses). Eye whites themselves are excluded.
     glare_px, total_px = 0, 0
-    eye_mask = np.zeros((OUT_H, OUT_W), np.uint8)
+    eye_mask = np.zeros((out_h, out_w), np.uint8)
     for ring in (LEFT_EYE_RING, RIGHT_EYE_RING):
         cv2.fillPoly(eye_mask, [tp[ring].astype(np.int32)], 255)
     eye_mask = cv2.dilate(eye_mask, np.ones((7, 7), np.uint8))
@@ -549,7 +604,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         bg = np.zeros(lum.shape, bool)
         top_band = slice(0, int(tp[CHIN][1] * 0.8))
         bg[top_band, : max(fx0 - 30, 1)] = True
-        bg[top_band, min(fx1 + 30, OUT_W - 1):] = True
+        bg[top_band, min(fx1 + 30, out_w - 1):] = True
 
     if replace_bg and mask is not None:
         add("background", "Plain light background", "pass", "Replaced with plain light grey")
@@ -558,7 +613,13 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     else:
         bl = lum[bg]
         bmean, bstd = float(bl.mean()), float(bl.std())
-        if bmean < 62:
+        bg_rgb = np.median(out[bg], axis=0)
+        lower = np.array(profile["background_min"])
+        upper = np.array(profile["background_max"])
+        if (bg_rgb < lower - 3).any() or (bg_rgb > upper + 3).any():
+            add("background", "Template background colour", "fail",
+                f"Background RGB {tuple(bg_rgb.astype(int))}; expected {tuple(lower)} to {tuple(upper)}.")
+        elif bmean < 62:
             add("background", "Plain light background", "fail", "Background too dark. Use a plain light wall.")
         elif bstd > 12:
             add("background", "Plain light background", "fail", "Background not plain (pattern, objects or shadow).")
@@ -569,63 +630,106 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         # shadow behind: compare left/right background halves
         cols = np.where(bg.any(axis=0))[0]
         if len(cols):
-            half = OUT_W // 2
+            half = out_w // 2
             lb, rb = lum[:, :half][bg[:, :half]], lum[:, half:][bg[:, half:]]
             if lb.size > 200 and rb.size > 200 and abs(lb.mean() - rb.mean()) > 10:
                 add("bgshadow", "No shadow behind", "warn", "One side of the background is darker.")
 
     # --- head size sanity (after crop) ---------------------------------
-    head_frac = (tp[CHIN][1] - (tp[FOREHEAD][1] - 0.30 * (tp[CHIN][1] - tp[FOREHEAD][1]))) / OUT_H
-    if not (HEAD_MIN - 0.02 <= head_frac <= HEAD_MAX + 0.02):
+    head_frac = (chin[1] - crown_y) / crop_h
+    if profile["use_head"] and not (profile["head"][1] / 100 <= head_frac <= profile["head"][2] / 100):
         add("headsize", "Head size", "warn", f"Head is {head_frac*100:.0f}% of height.")
+    eyes_frac = (tp[L_IRIS][1] + tp[R_IRIS][1]) / 2 / out_h * 100
+    if not profile["eyes"][1] <= eyes_frac <= profile["eyes"][2]:
+        add("eyeposition", "Eye position", "warn", f"Eyes at {eyes_frac:.0f}%; template range {profile['eyes'][1]:g}–{profile['eyes'][2]:g}%.")
+    if profile["use_width"]:
+        width_frac = np.linalg.norm(tp[FACE_R] - tp[FACE_L]) / out_w * 100
+        if not profile["face_width"][1] <= width_frac <= profile["face_width"][2]:
+            add("facewidth", "Face width", "warn", f"Face width {width_frac:.0f}%.")
+    if profile["glasses_forbidden"]:
+        add("glasses", "Glasses removed", "warn", "This template forbids glasses. Staff must check; AI glare detection does not detect all glasses.")
+    if profile["special_mode"]:
+        add("special", "Additional document workflow", "warn", "This Photomatic template uses an external application. Its submission/signature step is separate from this photo.")
 
     ok = not any(c.status == "fail" for c in checks)
+    max_kb = profile["digital_kb"][1] if profile["digital_kb"][1] > 0 else 9500
+    min_kb = profile["digital_kb"][0] if profile["digital_kb"][0] > 0 else (50 if profile["hmpo_code"] else 0)
     jpeg = _encode_jpeg(out)
+    if all(v > 0 for v in profile["digital_size"]):
+        digital = ImageOps.fit(Image.fromarray(out), photomatic.save_size(profile), method=Image.LANCZOS)
+        digital_jpeg = _encode_jpeg(np.asarray(digital), min_kb=min_kb, max_kb=max_kb)
+        size_kb = len(digital_jpeg) / 1024
+    else:
+        size_kb = len(jpeg) / 1024
+    if size_kb < min_kb or size_kb > max_kb:
+        add("filesize", "Digital file size", "fail", f"{size_kb:.0f} KB; template requires {min_kb:g}–{max_kb:g} KB.")
+        ok = False
     return Result(ok, checks, jpeg, _small_jpeg(out), before)
 
 
-# --- print sheet --------------------------------------------------------
-SHEET_DPI = 300
+# --- print and save ------------------------------------------------------
+SHEET_DPI = 301
 
 
-def _mm(mm):
-    return int(round(mm / 25.4 * SHEET_DPI))
+def _mm(mm, dpi=SHEET_DPI):
+    return int(round(mm / 25.4 * dpi))
 
 
-def print_sheet(jpeg: bytes, code_text: str | None = None) -> bytes:
-    """6x4in (152x102mm) landscape sheet, 4 photos at 35x45mm with cut marks."""
+def print_sheet(jpeg: bytes, code_text: str | None = None, template_id=None) -> bytes:
+    """Render the imported printer's exact canvas, boxes and rotations.
+
+    Code text occupies Photomatic's photo-number position. The separate code
+    slip is available when a template has no photo-number field.
+    """
     from PIL import ImageDraw, ImageFont
 
-    W, H = _mm(152.4), _mm(101.6)
+    layout = photomatic.PRINTS[template_id] if template_id else photomatic.default_print(photomatic.country())
+    W, H, dpi = layout["width_px"], layout["height_px"], layout["dpi"]
     sheet = Image.new("RGB", (W, H), "white")
-    photo = Image.open(io.BytesIO(jpeg)).convert("RGB").resize((_mm(35), _mm(45)), Image.LANCZOS)
-    pw, ph = photo.size
-    gap = _mm(2)
-    total = 4 * pw + 3 * gap
-    x0 = (W - total) // 2
-    y0 = _mm(12)
+    if layout["background"]:
+        background = config.BASE_DIR / layout["background"].lstrip("/")
+        sheet = Image.open(background).convert("RGB").resize((W, H), Image.LANCZOS)
+    photo = Image.open(io.BytesIO(jpeg)).convert("RGB")
     d = ImageDraw.Draw(sheet)
-    for i in range(4):
-        x = x0 + i * (pw + gap)
-        sheet.paste(photo, (x, y0))
-        for cx, cy in ((x, y0), (x + pw, y0), (x, y0 + ph), (x + pw, y0 + ph)):
-            d.line([(cx - 12, cy), (cx - 4, cy)], fill="#999", width=1)
-            d.line([(cx + 4, cy), (cx + 12, cy)], fill="#999", width=1)
-            d.line([(cx, cy - 12), (cx, cy - 4)], fill="#999", width=1)
-            d.line([(cx, cy + 4), (cx, cy + 12)], fill="#999", width=1)
-    try:
-        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 44)
-        small = ImageFont.truetype("DejaVuSans.ttf", 28)
-    except Exception:
-        font = small = ImageFont.load_default()
-    ty = y0 + ph + _mm(5)
-    if code_text:
-        d.text((x0, ty), "Passport photo code:", font=small, fill="black")
-        d.text((x0, ty + 36), code_text, font=font, fill="black")
-        d.text((x0, ty + 96), "Enter at gov.uk/apply-renew-passport → “I have a code”",
-               font=small, fill="#333")
-    d.text((W - x0, H - _mm(5)), f"{config.SHOP_NAME} · {config.SHOP_CONTACT}",
-           font=small, fill="#555", anchor="rs")
+    rectangles = []
+    for box in layout["boxes"]:
+        x, y = _mm(box["x_mm"], dpi), _mm(box["y_mm"], dpi)
+        pw, ph = _mm(box["width_mm"], dpi), _mm(box["height_mm"], dpi)
+        # Landscape boxes hold a portrait turned clockwise, not a stretched face.
+        source = photo.transpose(Image.Transpose.ROTATE_270) if box["landscape"] else photo
+        tile = ImageOps.fit(source, (pw, ph), method=Image.LANCZOS)
+        # Some original portrait layouts extend past the paper for borderless
+        # bleed. Pillow clips those boxes at the canvas just as the printer does.
+        sheet.paste(tile, (x, y))
+        rectangles.append((x, y, x + pw, y + ph))
+    if layout["cut_marks"]:
+        # Draw marks in the surrounding margins, leaving every photo untouched.
+        marks = Image.new("RGBA", (W, H))
+        md = ImageDraw.Draw(marks)
+        length = int(layout["cut_mark_size"])
+        for x0, y0, x1, y1 in rectangles:
+            for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
+                md.line((x-length, y, x+length, y), fill=(100, 100, 100, 255), width=1)
+                md.line((x, y-length, x, y+length), fill=(100, 100, 100, 255), width=1)
+        for x0, y0, x1, y1 in rectangles:
+            md.rectangle((x0, y0, x1-1, y1-1), fill=(0, 0, 0, 0))
+        sheet.paste(marks, (0, 0), marks)
+    if code_text and layout["photo_number"]:
+        try:
+            font = ImageFont.truetype("DejaVuSans.ttf", _mm(3, dpi))
+        except OSError:
+            font = ImageFont.load_default(size=_mm(3, dpi))
+        xy = tuple(_mm(v, dpi) for v in layout["number_position_mm"])
+        d.text(xy, code_text, font=font, fill="#0088bd")
     buf = io.BytesIO()
-    sheet.save(buf, "JPEG", quality=95, dpi=(SHEET_DPI, SHEET_DPI))
+    sheet.save(buf, "JPEG", quality=95, dpi=(dpi, dpi))
     return buf.getvalue()
+
+
+def save_photo(jpeg: bytes, country_id=None, email=False) -> bytes:
+    """Digital export follows the selected country's required/save dimensions."""
+    profile = photomatic.country(country_id)
+    size = photomatic.save_size(profile, email=email)
+    rgb = np.asarray(ImageOps.fit(Image.open(io.BytesIO(jpeg)).convert("RGB"), size, method=Image.LANCZOS))
+    maximum = profile["digital_kb"][1] if profile["digital_kb"][1] > 0 else 9500
+    return _encode_jpeg(rgb, min_kb=0, max_kb=maximum)
