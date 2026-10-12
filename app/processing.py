@@ -289,6 +289,15 @@ def soften_face_shadows(rgb, face_box, person_mask=None, strength=1.0):
         skin = np.exp(-d2 / (2 * 14.0 ** 2)).astype(np.float32)
         region *= cv2.GaussianBlur(skin, (0, 0), max(fw * 0.02, 2))
     region[int(min(y1 + fh * 0.25, h)):] = 0
+    # skin only: colour close to the centre of the face (excludes clothes, hair, background)
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    core = lab[int(y0 + fh * 0.45):int(y0 + fh * 0.7), int(cx - fw * 0.15):int(cx + fw * 0.15)]
+    if core.size:
+        ref_ab = np.median(core[..., 1:].reshape(-1, 2), axis=0)
+        d2 = ((lab[..., 1:] - ref_ab) ** 2).sum(-1)
+        skin = np.exp(-d2 / (2 * 14.0 ** 2)).astype(np.float32)
+        region *= cv2.GaussianBlur(skin, (0, 0), max(fw * 0.02, 2))
+    region[int(min(y1 + fh * 0.25, h)):] = 0
     region = cv2.GaussianBlur(region, (0, 0), max(fw * 0.03, 2))
     if person_mask is not None:  # keep the correction off the background (no halo)
         inside = (person_mask > 0.5).astype(np.uint8)
