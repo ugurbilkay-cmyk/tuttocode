@@ -1,5 +1,7 @@
 # Tuttoprint passport photo codes
 
+See **REPORT.md** for the full project report.
+
 ## Run
 ```
 pip install -r requirements.txt
