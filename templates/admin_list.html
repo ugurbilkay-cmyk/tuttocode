@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Station{% endblock %}
+{% block home %}/admin{% endblock %}
+{% block nav %}<a class="btn" href="/admin/new">+ New photo</a>{% endblock %}
+{% block content %}
+<h1>Photos</h1>
+<div class="card" style="padding:8px 12px;overflow-x:auto">
+<table>
+<tr><th></th><th>Created</th><th>Customer</th><th class="hide-sm">Source</th><th>Checks</th><th>Status</th><th>Code</th></tr>
+{% for r in rows %}
+<tr onclick="location='/admin/p/{{ r.id }}'" style="cursor:pointer">
+  <td>{% if r.ok %}<img src="/admin/p/{{ r.id }}/full.jpg" alt="" loading="lazy">{% endif %}</td>
+  <td>{{ r.created|dt }}</td>
+  <td>{{ r.name or '—' }}<br><span class="muted" style="font-size:.85rem">{{ r.email or r.phone or '' }}</span></td>
+  <td class="hide-sm">{{ r.source }}</td>
+  <td>{% if r.ok %}<span class="badge ok">pass</span>{% else %}<span class="badge bad">fail</span>{% endif %}</td>
+  <td>{% if r.status == 'issued' %}<span class="badge issued">issued</span>{% elif r.status == 'pending' and r.ok and r.name %}<span class="badge" style="background:#fff2d6">to review</span>{% else %}<span class="badge">{{ r.status }}</span>{% endif %}</td>
+  <td>{% if r.code %}<code>{{ r.code }}</code>{% if r.fetched_count %} <span class="badge ok">used</span>{% endif %}{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="7" class="muted">No photos yet.</td></tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

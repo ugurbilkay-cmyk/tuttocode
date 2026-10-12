@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Passport photo code{% endblock %} · {{ cfg.SHOP_NAME }}</title>
+<style>
+:root{--ink:#16181d;--muted:#5d6370;--line:#e3e5ea;--bg:#f6f7f9;--card:#fff;--accent:#0b5cff;--ok:#127a3f;--warn:#a86500;--bad:#c0261c}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--ink);color:#fff;padding:14px 16px}
+header a{color:#fff;text-decoration:none;font-weight:600}
+header .wrap{display:flex;justify-content:space-between;align-items:center}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px}
+main{padding:24px 0 48px}
+h1{font-size:1.6rem;margin:0 0 8px}
+h2{font-size:1.15rem;margin:24px 0 8px}
+.muted{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin:16px 0}
+label{display:block;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=email],input[type=tel],select{width:100%;padding:11px 12px;border:1px solid #c9ccd4;border-radius:8px;font:inherit;background:#fff}
+input[type=file]{width:100%;padding:10px;border:2px dashed #c9ccd4;border-radius:8px;background:#fafbfc}
+.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.secondary{background:#fff;color:var(--ink);border:1px solid #c9ccd4}
+.btn.danger{background:var(--bad)}
+.row{display:flex;gap:20px;flex-wrap:wrap}
+.row>*{flex:1 1 260px}
+.checks{list-style:none;padding:0;margin:0}
+.checks li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.checks li:last-child{border:0}
+.dot{flex:0 0 22px;height:22px;border-radius:50%;color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
+.pass .dot{background:var(--ok)}.warn .dot{background:var(--warn)}.fail .dot{background:var(--bad)}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.8rem;font-weight:600;background:#eef0f4}
+.badge.ok{background:#dff3e7;color:var(--ok)}.badge.bad{background:#fbe3e1;color:var(--bad)}.badge.issued{background:#e2ebff;color:var(--accent)}
+.photo{width:100%;max-width:350px;border:1px solid var(--line);border-radius:6px;display:block}
+.code{font:700 1.6rem/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;background:#eef3ff;padding:12px 16px;border-radius:8px;display:inline-block;word-break:break-all}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:.85rem}
+td img{width:42px;border-radius:3px;display:block}
+.tips{padding-left:20px;margin:6px 0}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:400}
+.check input{margin-top:5px}
+@media (max-width:600px){.hide-sm{display:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a href="{% block home %}/{% endblock %}">{{ cfg.SHOP_NAME }} · Passport photos</a>{% block nav %}{% endblock %}</div></header>
+<main><div class="wrap">{% block content %}{% endblock %}</div></main>
+</body>
+</html>

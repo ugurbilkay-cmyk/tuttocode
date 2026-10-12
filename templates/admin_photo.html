@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Photo{% endblock %}
+{% block home %}/admin{% endblock %}
+{% block nav %}<a class="btn secondary" href="/admin/new">+ New photo</a>{% endblock %}
+{% block content %}
+<p><a href="/admin">← All photos</a></p>
+<h1>{{ row.name or 'Walk-in customer' }} <span class="muted" style="font-size:1rem">{{ ages[row.age_group] }} · {{ row.source }}</span></h1>
+<p class="muted">{{ row.email or '' }} {{ row.phone or '' }} · created {{ row.created|dt }}</p>
+
+{% if row.code %}
+<div class="card">
+  <p style="margin-top:0">Photo code</p>
+  <p><span class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</span></p>
+  <p class="muted">Valid until {{ row.expires|dt }} · fetched by HMPO {{ row.fetched_count }}×{% if row.last_fetched %}, last {{ row.last_fetched|dt }}{% endif %}
+  {% if emailed == '1' %} · <strong>emailed to customer</strong>{% elif emailed == '0' and row.email %} · email not sent (SMTP not set up){% endif %}</p>
+  <p><a class="btn" href="/admin/p/{{ row.id }}/sheet.jpg" target="_blank">6×4 print sheet</a>
+     <a class="btn secondary" href="/admin/p/{{ row.id }}/slip" target="_blank">Code slip</a>
+     <a class="btn secondary" href="/admin/p/{{ row.id }}/full.jpg" download="passport-{{ row.code }}.jpg">Download JPEG</a></p>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="card">
+    {% if row.ok or row.code %}<img class="photo" src="/admin/p/{{ row.id }}/full.jpg" alt="Passport photo">
+    {% else %}<p class="muted">No usable crop.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Automatic checks</h2>
+    {% include "_checks.html" %}
+  </div>
+</div>
+
+{% if row.status == 'pending' %}
+<div class="card">
+  <h2 style="margin-top:0">Staff check before issuing</h2>
+  <form method="post" action="/admin/p/{{ row.id }}/issue">
+    <label class="check"><input type="checkbox" required> Good likeness of the customer, taken in the last month</label>
+    <label class="check"><input type="checkbox" required> No hat or head covering (unless religious/medical), hair off the eyes</label>
+    <label class="check"><input type="checkbox" required> No glare on glasses, no red eye, nothing covering the face</label>
+    <label class="check"><input type="checkbox" required> Background plain with nothing behind</label>
+    {% if not row.ok %}<label class="check"><input type="checkbox" name="override"> <strong>Override failed automatic checks</strong></label>{% endif %}
+    <p><button class="btn" type="submit">Issue photo code</button></p>
+  </form>
+  <form method="post" action="/admin/p/{{ row.id }}/reject" onsubmit="return confirm('Reject and delete this photo?')">
+    <button class="btn danger" type="submit">Reject &amp; delete</button>
+  </form>
+</div>
+{% endif %}
+{% if row.status == 'issued' %}
+<form method="post" action="/admin/p/{{ row.id }}/reject" onsubmit="return confirm('Cancel this code and delete the photo now?')">
+  <button class="btn danger" type="submit">Cancel code &amp; delete</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Photo code slip</title>
+<style>
+@page{size:80mm auto;margin:4mm}
+body{font:14px/1.4 system-ui,sans-serif;width:72mm;margin:0 auto;color:#000}
+h1{font-size:16px;margin:0 0 6px}
+.code{font:700 20px ui-monospace,Menlo,Consolas,monospace;border:2px solid #000;padding:8px;text-align:center;margin:10px 0;word-break:break-all}
+small{color:#333}
+</style></head>
+<body onload="window.print()">
+<h1>{{ cfg.SHOP_NAME }}</h1>
+<div>Passport photo code</div>
+<div class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</div>
+<div>Apply online at <strong>gov.uk/apply-renew-passport</strong>. At the photo step choose to use a photo code and enter the code above.</div>
+<p>Valid until <strong>{{ row.expires|dt }}</strong></p>
+<small>Problem with your photo? {{ cfg.SHOP_CONTACT }}</small>
+</body></html>

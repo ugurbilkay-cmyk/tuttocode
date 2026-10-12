@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}New photo{% endblock %}
+{% block home %}/admin{% endblock %}
+{% block content %}
+<h1>New passport photo</h1>
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+  <label for="photo">Photo (camera or file)</label>
+  <input id="photo" type="file" name="photo" accept="image/*" capture="environment" required>
+  <label for="age_group">Age</label>
+  <select id="age_group" name="age_group">{% for k, v in ages.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <div class="row">
+    <div><label for="name">Name</label><input id="name" type="text" name="name"></div>
+    <div><label for="email">Email (code sent here)</label><input id="email" type="email" name="email"></div>
+    <div><label for="phone">Phone</label><input id="phone" type="tel" name="phone"></div>
+  </div>
+  <p><button class="btn" type="submit">Process</button></p>
+</form>
+</div>
+{% endblock %}

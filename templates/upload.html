@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>UK passport photo code</h1>
+<p class="muted">Upload a photo. We check it against HM Passport Office rules, crop it to size and give you a photo code for your online application.</p>
+
+<div class="card">
+<form method="post" action="/upload" enctype="multipart/form-data">
+  <label for="photo">Photo</label>
+  <input id="photo" type="file" name="photo" accept="image/*" required>
+
+  <label for="age_group">Who is the passport for?</label>
+  <select id="age_group" name="age_group">
+    {% for k, v in ages.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+  </select>
+
+  <label class="check"><input type="checkbox" name="consent" required>
+    <span>I agree to {{ cfg.SHOP_NAME }} storing this photo to create my passport photo code. It is deleted automatically after {{ cfg.RETENTION_DAYS }} days. <a href="/privacy">Privacy</a></span></label>
+
+  <p><button class="btn" type="submit">Check my photo</button></p>
+</form>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0">How to take it</h2>
+<ul class="tips">
+  <li>Ask someone else to take it, arm's length or further away</li>
+  <li>Stand in front of a plain light wall, no shadows</li>
+  <li>Face the camera, plain expression, mouth closed, eyes open</li>
+  <li>Head and shoulders in view with space above your head</li>
+  <li>No glasses if possible, no hat, hair away from eyes</li>
+  <li>No filters, no editing, taken within the last month</li>
+</ul>
+</div>
+{% endblock %}

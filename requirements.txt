@@ -1,0 +1,11 @@
+starlette>=0.40
+uvicorn[standard]>=0.30
+jinja2>=3.1
+python-multipart>=0.0.9
+pillow>=10
+pillow-heif>=0.16
+numpy>=1.26
+opencv-python-headless>=4.9
+mediapipe>=0.10.14
+PyJWT[crypto]>=2.8
+cryptography>=42

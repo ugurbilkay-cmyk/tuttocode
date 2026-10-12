@@ -1,0 +1,6 @@
+<ul class="checks">
+{% for c in checks %}
+  <li class="{{ c.status }}"><span class="dot">{{ '✓' if c.status == 'pass' else ('!' if c.status == 'warn' else '✕') }}</span>
+    <span><strong>{{ c.label }}</strong>{% if c.detail %}<br><span class="muted">{{ c.detail }}</span>{% endif %}</span></li>
+{% endfor %}
+</ul>
