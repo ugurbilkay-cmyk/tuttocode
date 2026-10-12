@@ -12,7 +12,7 @@ ENVF=/etc/tpcode.env
 echo "==> Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -y -q python3-venv python3-pip git curl caddy ufw openssl unattended-upgrades libgl1 libglib2.0-0
+apt-get install -y -q python3-venv python3-pip git curl caddy ufw openssl unattended-upgrades libgl1 libglib2.0-0 libegl1 libgles2
 
 id tpcode >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nologin tpcode
 
