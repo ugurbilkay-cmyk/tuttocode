@@ -92,12 +92,22 @@ async def _read_upload(request):
     return form, data, age if age in AGE_GROUPS else "adult"
 
 
-async def _process_and_store(data, age, source, **contact):
-    result = await run_in_threadpool(processing.process, data, age)
+def _opts(form=None):
+    """Enhance options from the form; defaults from config."""
+    if form is None or form.get("opts") != "1":
+        return dict(auto_adjust=config.AUTO_ADJUST, fix_shadows=config.FIX_SHADOWS,
+                    even_bg=config.EVEN_BG, replace_bg=config.BG_REPLACE)
+    return {k: form.get(k) == "on" for k in ("auto_adjust", "fix_shadows", "even_bg", "replace_bg")}
+
+
+async def _process_and_store(data, age, source, opts=None, **contact):
+    result = await run_in_threadpool(lambda: processing.process(data, age, **(opts or _opts())))
     pid = db.new_id()
     if result.jpeg:
         _photo_path(pid).write_bytes(result.jpeg)
         _photo_path(pid, True).write_bytes(result.preview_jpeg)
+        if result.before_jpeg:
+            (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
     db.create(pid, source, age, result, **contact)
     return pid, result
 
@@ -231,7 +241,7 @@ async def admin_new(request):
         return templates.TemplateResponse(request, "admin_new.html", {"ages": AGE_GROUPS})
     form, data, age = await _read_upload(request)
     pid, _ = await _process_and_store(
-        data, age, "shop",
+        data, age, "shop", _opts(form),
         name=(form.get("name") or "").strip() or None,
         email=(form.get("email") or "").strip() or None,
         phone=(form.get("phone") or "").strip() or None,
@@ -274,6 +284,17 @@ async def admin_reject(request):
 async def admin_full(request):
     _require_admin(request)
     path = _photo_path(request.path_params["pid"])
+    if not path.exists():
+        raise HTTPException(404)
+    return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+async def admin_before(request):
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    if not ID_RE.match(pid):
+        raise HTTPException(404)
+    path = config.PHOTO_DIR / f"{pid}_before.jpg"
     if not path.exists():
         raise HTTPException(404)
     return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
@@ -352,6 +373,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
+    Route("/admin/p/{pid}/before.jpg", admin_before),
     Route("/admin/p/{pid}/sheet.jpg", admin_sheet),
     Route("/admin/p/{pid}/slip", admin_slip),
 ]

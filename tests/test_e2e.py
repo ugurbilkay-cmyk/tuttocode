@@ -59,9 +59,11 @@ def make_face(W=2400, H=3200, bg=(232, 232, 228), roll=0.0, scale=1.0, cx=None, 
     cv2.ellipse(mask, (cx, cy), (fw, fh), roll, 0, 360, 255, -1)
     img = np.where(mask[..., None] > 0, np.clip(img + tex, 0, 255), img).astype(np.uint8)
     if half_shadow:
-        sh = img.copy()
-        sh[:, :cx] = (sh[:, :cx] * 0.45).astype(np.uint8)
-        img = np.where(mask[..., None] > 0, sh, img)
+        # soft side light: left side of the face falls off gradually
+        xs = np.arange(img.shape[1], dtype=np.float32)
+        ramp = np.clip((xs - (cx - fw)) / (1.4 * fw), 0, 1)
+        fall = (0.4 + 0.6 * ramp)[None, :, None]
+        img = np.where(mask[..., None] > 0, (img * fall).astype(np.uint8), img)
 
     pts = np.tile([cx, cy], (478, 1)).astype(np.float32)
     r = np.radians(roll)
@@ -100,9 +102,9 @@ class Fake:
         return self.a
 
 
-def run(name, kw, expect_ok, expect_fail_key=None, age="adult"):
+def run(name, kw, expect_ok, expect_fail_key=None, age="adult", **opts):
     data, an = make_face(**kw)
-    res = P.process(data, age, analyzer=Fake(an))
+    res = P.process(data, age, analyzer=Fake(an), **opts)
     fails = [c.key for c in res.checks if c.status == "fail"]
     status = "OK " if (res.ok == expect_ok and (expect_fail_key is None or expect_fail_key in fails)) else "BAD"
     print(f"{status} {name:28s} ok={res.ok} fails={fails} warns={[c.key for c in res.checks if c.status=='warn']}")
@@ -126,7 +128,36 @@ run("smiling", {"smile": 0.8}, False, "expression")
 run("smiling child (allowed)", {"smile": 0.8}, True, age="child")
 run("eyes closed", {"blink": 0.9}, False, "eyes")
 run("eyes closed baby (allowed)", {"blink": 0.9}, True, age="baby")
-run("shadow on face", {"half_shadow": True}, False, "shadow")
+run("shadow on face, fix off", {"half_shadow": True}, False, "shadow", fix_shadows=False)
+_, _, sh = run("shadow on face, fix on", {"half_shadow": True}, True)
+(TMP / "shadow_fixed.jpg").write_bytes(sh.jpeg)
+(TMP / "shadow_before.jpg").write_bytes(sh.before_jpeg)
+
+# colour cast + underexposed: background should come out neutral and light
+# whole scene under-exposed with a blue/cold cast (camera on wrong white balance)
+d0, an0 = make_face()
+arr = np.asarray(Image.open(io.BytesIO(d0))).astype(np.float32) * np.array([0.55, 0.62, 0.78])
+buf = io.BytesIO(); Image.fromarray(arr.clip(0, 255).astype(np.uint8)).save(buf, "JPEG", quality=92)
+cc = P.process(buf.getvalue(), analyzer=Fake(an0))
+print("OK  blue cast + dark scene        ok=", cc.ok, [c.detail for c in cc.checks if c.key == "adjust"])
+assert cc.ok
+o = np.asarray(Image.open(io.BytesIO(cc.jpeg)))
+corner = o[20:200, 20:150].reshape(-1, 3).mean(0)
+print("    background after:", corner.round(1))
+assert corner.min() > 190 and corner.max() - corner.min() < 8, corner
+(TMP / "cast_fixed.jpg").write_bytes(cc.jpeg)
+(TMP / "cast_before.jpg").write_bytes(cc.before_jpeg)
+
+# features kept: fine detail in the face matches before/after
+def detail(rgb):
+    g = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
+    return g - cv2.GaussianBlur(g, (0, 0), 6)
+b = np.asarray(Image.open(io.BytesIO(sh.before_jpeg)).resize((350, 450)))
+a = np.asarray(Image.open(io.BytesIO(sh.preview_jpeg)))
+db_, da_ = detail(b)[120:330, 90:260], detail(a)[120:330, 90:260]
+corr = np.corrcoef(db_.ravel(), da_.ravel())[0, 1]
+print(f"    facial detail correlation before/after: {corr:.3f}")
+assert corr > 0.85
 _, _, gl = run("glare on glasses (flagged)", {"glare": True}, True)
 assert any(c.key == "glare" and c.status != "pass" for c in gl.checks)
 
@@ -258,6 +289,8 @@ check("admin not reachable on short domain", s == 404)
 s, _, _ = req(f"/{code}", headers={"Authorization": tok(hmpo_priv)})
 check("code route not on main domain", s == 404)
 check("fetch counted", db.get(pid)["fetched_count"] == 5)
+s, _, _ = req(f"/admin/p/{pid}/before.jpg", headers={"Authorization": AUTH})
+check("before image served", s == 200)
 
 # shop flow with a failing photo
 bad, _ = make_face(bg=(90, 70, 60))

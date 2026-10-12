@@ -21,8 +21,10 @@
 
 <div class="row">
   <div class="card">
-    {% if row.ok or row.code %}<img class="photo" src="/admin/p/{{ row.id }}/full.jpg" alt="Passport photo">
-    {% else %}<p class="muted">No usable crop.</p>{% endif %}
+    <div style="display:flex;gap:10px">
+      <figure style="margin:0;flex:1"><img class="photo" src="/admin/p/{{ row.id }}/before.jpg" alt="Before" onerror="this.parentNode.style.display='none'"><figcaption class="muted">Before</figcaption></figure>
+      <figure style="margin:0;flex:1"><img class="photo" src="/admin/p/{{ row.id }}/full.jpg" alt="After" onerror="this.parentNode.innerHTML='<p class=muted>No usable crop.</p>'"><figcaption class="muted">After</figcaption></figure>
+    </div>
   </div>
   <div class="card">
     <h2 style="margin-top:0">Automatic checks</h2>

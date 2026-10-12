@@ -134,7 +134,7 @@ def purge_expired():
     with conn() as c:
         rows = c.execute("SELECT id FROM photos WHERE expires<=? OR status='rejected'", (now,)).fetchall()
         for r in rows:
-            for suffix in (".jpg", "_prev.jpg"):
+            for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
                 (config.PHOTO_DIR / f"{r['id']}{suffix}").unlink(missing_ok=True)
         c.execute("DELETE FROM photos WHERE expires<=? OR status='rejected'", (now,))
         c.execute("DELETE FROM fetch_log WHERE ts<?", (now - 90 * 86400,))

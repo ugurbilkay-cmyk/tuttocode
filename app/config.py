@@ -37,8 +37,11 @@ HMPO_KEY_URL = os.getenv(
 )
 HMPO_KEY_FILE = Path(os.getenv("HMPO_KEY_FILE", DATA_DIR / "hmpo-photo-code-auth-key.pub"))
 
-# Background replacement counts as editing under HMPO rules. Off by default.
-BG_REPLACE = _bool("BG_REPLACE", False)
+# Default state of the enhance tick-boxes on the station page.
+AUTO_ADJUST = _bool("AUTO_ADJUST", True)      # colour cast + exposure
+FIX_SHADOWS = _bool("FIX_SHADOWS", True)      # soften shadows on the face
+EVEN_BG = _bool("EVEN_BG", True)              # even out background light
+BG_REPLACE = _bool("BG_REPLACE", False)       # replace background with plain grey
 
 # Customer self-upload page. Off = shop/staff use only.
 PUBLIC_UPLOADS = _bool("PUBLIC_UPLOADS", False)

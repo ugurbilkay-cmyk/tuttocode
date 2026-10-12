@@ -1,7 +1,7 @@
 """Passport photo processing: face analysis, HMPO crop, compliance checks.
 
-Only crops and re-encodes. No face retouching (HMPO rejects edited photos).
-Background replacement is optional and off by default (BG_REPLACE).
+Auto enhance: colour/exposure, face-shadow softening, background evening or
+replacement. Facial features are never reshaped.
 """
 from __future__ import annotations
 
@@ -64,6 +64,7 @@ class Result:
     checks: list[Check] = field(default_factory=list)
     jpeg: bytes | None = None
     preview_jpeg: bytes | None = None
+    before_jpeg: bytes | None = None
 
     def as_dict(self):
         return {
@@ -156,11 +157,186 @@ def _encode_jpeg(rgb: np.ndarray, min_kb=60, max_kb=9500) -> bytes:
     return buf.getvalue()
 
 
+def _small_jpeg(rgb):
+    buf = io.BytesIO()
+    Image.fromarray(rgb).resize((350, 450), Image.LANCZOS).save(buf, "JPEG", quality=85)
+    return buf.getvalue()
+
+
 def _lum(rgb):
     return cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)[..., 0].astype(np.float32) * (100 / 255)
 
 
-def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
+# --- auto colour & lighting ----------------------------------------------
+# Whole-image corrections only (white balance, exposure, highlight roll-off),
+# the same adjustments a photo lab makes. Nothing local is done to the face.
+BG_TARGET = 0.86      # target background brightness (sRGB 0..1), light grey/cream
+MAX_GAIN, MIN_GAIN = 3.0, 0.6   # exposure limits (about +1.6 / -0.7 stop)
+
+
+def _to_lin(x):
+    return np.where(x <= 0.04045, x / 12.92, ((x + 0.055) / 1.055) ** 2.4)
+
+
+def _to_srgb(x):
+    x = np.clip(x, 0, 1)
+    return np.where(x <= 0.0031308, x * 12.92, 1.055 * np.power(x, 1 / 2.4) - 0.055)
+
+
+def _shoulder(x, knee=0.85):
+    """Soft highlight roll-off so bright areas don't clip to pure white."""
+    over = np.maximum(x - knee, 0)
+    span = 1 - knee
+    return np.where(x > knee, knee + span * (1 - np.exp(-over / span)), x)
+
+
+def enhance(rgb: np.ndarray, person_mask, face_box, even_bg=False):
+    """Returns (adjusted_rgb, notes). face_box = (x0, y0, x1, y1) in pixels."""
+    notes = []
+    h, w = rgb.shape[:2]
+    small_scale = 800 / max(h, w)
+    img = rgb.astype(np.float32) / 255
+    lin = _to_lin(img)
+
+    if person_mask is None:
+        return rgb, ["No background reference — colour left as taken"]
+    bg = person_mask < 0.15
+    # ignore very dark / clipped pixels when sampling background
+    y = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    ref = bg & (y > 0.02) & (lin.max(axis=2) < 0.995)
+    if ref.sum() < max(2000, 0.02 * h * w):
+        return rgb, ["Background too small to use as reference — colour left as taken"]
+
+    # 1. white balance: make the (plain, light) background neutral
+    bg_rgb = np.median(lin[ref], axis=0)
+    gains = bg_rgb.mean() / np.maximum(bg_rgb, 1e-4)
+    gains = np.clip(gains, 0.6, 1.7)
+    if np.abs(gains - 1).max() > 0.02:
+        lin = lin * gains
+        notes.append("colour cast removed")
+
+    # 2. exposure: bring the background to a light, even level
+    y = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+    bg_y = float(np.median(y[ref]))
+    target_lin = float(_to_lin(np.float32(BG_TARGET)))
+    gain = float(np.clip(target_lin / max(bg_y, 1e-4), MIN_GAIN, MAX_GAIN))
+    # never push the face into clipping
+    x0, y0, x1, y1 = [int(v) for v in face_box]
+    face_y = y[max(y0, 0):max(y1, 1), max(x0, 0):max(x1, 1)]
+    if face_y.size:
+        p99 = float(np.percentile(face_y, 95))  # ignore eye whites / speculars
+        if p99 * gain > 0.92:
+            gain = max(min(gain, 0.92 / max(p99, 1e-4)), MIN_GAIN)
+    if abs(gain - 1) > 0.04:
+        lin = lin * gain
+        stops = np.log2(gain)
+        notes.append(f"exposure {'+' if stops > 0 else ''}{stops:.1f} stop")
+
+    # 3. highlight roll-off
+    if (lin > 0.85).mean() > 0.001:
+        lin = _shoulder(lin)
+        notes.append("highlights recovered")
+
+    out = _to_srgb(lin)
+
+    # 4. optional: even out the background only (face/body untouched)
+    if even_bg:
+        m = cv2.GaussianBlur(person_mask.astype(np.float32), (0, 0), 3)
+        bgw = np.clip((0.35 - m) / 0.25, 0, 1)[..., None]  # 1 = background, 0 = person
+        sw, sh = int(w * small_scale), int(h * small_scale)
+        lum = cv2.cvtColor((out * 255).astype(np.uint8), cv2.COLOR_RGB2LAB)[..., 0].astype(np.float32)
+        lum_s = cv2.resize(lum, (sw, sh), interpolation=cv2.INTER_AREA)
+        bg_s = cv2.resize(bgw[..., 0], (sw, sh)) > 0.5
+        # fill person area with nearby background, then blur → smooth light field
+        fill = cv2.inpaint(lum_s.astype(np.uint8), (~bg_s).astype(np.uint8) * 255, 15, cv2.INPAINT_TELEA)
+        field = cv2.GaussianBlur(fill.astype(np.float32), (0, 0), sw / 12)
+        field = cv2.resize(field, (w, h), interpolation=cv2.INTER_LINEAR)
+        target = np.median(field[bgw[..., 0] > 0.5]) if (bgw > 0.5).any() else field.mean()
+        corr = np.clip(target / np.maximum(field, 1), 0.7, 1.6)[..., None]
+        out = out * (1 - bgw) + np.clip(out * corr, 0, 1) * bgw
+        notes.append("background evened")
+
+    return (np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), notes
+
+
+def soften_face_shadows(rgb, face_box, person_mask=None, strength=1.0):
+    """Evens out large-scale light across the face (e.g. one side darker).
+
+    Only the low-frequency lighting is changed; fine detail (features, skin
+    texture, eyes) is kept, so the face itself is not reshaped. The gain is
+    applied in linear light to all channels so skin colour stays natural.
+    Returns (rgb, amount) where amount is the max brightening applied (0 = none).
+    """
+    h, w = rgb.shape[:2]
+    x0, y0, x1, y1 = face_box
+    fw, fh = x1 - x0, y1 - y0
+    if fw < 40 or fh < 40:
+        return rgb, 0.0
+    cx = (x0 + x1) / 2
+    lin = _to_lin(rgb.astype(np.float32) / 255)
+    Y = lin @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+
+    # face oval (forehead down to the neck), limited to the person, feathered
+    region = np.zeros((h, w), np.float32)
+    cy = (y0 + y1) / 2 + fh * 0.08
+    cv2.ellipse(region, (int(cx), int(cy)), (int(fw * 0.55), int(fh * 0.66)), 0, 0, 360, 1.0, -1)
+    # skin only: colour close to the centre of the face (excludes clothes, hair, background)
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    core = lab[int(y0 + fh * 0.45):int(y0 + fh * 0.7), int(cx - fw * 0.15):int(cx + fw * 0.15)]
+    if core.size:
+        ref_ab = np.median(core[..., 1:].reshape(-1, 2), axis=0)
+        d2 = ((lab[..., 1:] - ref_ab) ** 2).sum(-1)
+        skin = np.exp(-d2 / (2 * 14.0 ** 2)).astype(np.float32)
+        region *= cv2.GaussianBlur(skin, (0, 0), max(fw * 0.02, 2))
+    region[int(min(y1 + fh * 0.25, h)):] = 0
+    region = cv2.GaussianBlur(region, (0, 0), max(fw * 0.03, 2))
+    if person_mask is not None:  # keep the correction off the background (no halo)
+        inside = (person_mask > 0.5).astype(np.uint8)
+        k = max(int(fw * 0.04), 3)
+        inside = cv2.erode(inside, np.ones((k, k), np.uint8)).astype(np.float32)
+        region *= cv2.GaussianBlur(inside, (0, 0), k / 2)
+
+    # large-scale light inside the face (normalised blur: background doesn't leak in)
+    sigma = max(fw / 14, 3)
+    num = cv2.GaussianBlur(Y * region, (0, 0), sigma)
+    den = cv2.GaussianBlur(region, (0, 0), sigma)
+    illum = num / np.maximum(den, 1e-3)
+
+    # mirror around the face centre and aim for the brighter side
+    mirrored = np.fliplr(illum)
+    shift = int(round(2 * cx - w + 1))
+    mirrored = cv2.warpAffine(mirrored, np.float32([[1, 0, shift], [0, 1, 0]]), (w, h),
+                              borderMode=cv2.BORDER_REPLICATE)
+    # per-row reference level (bright side of each row), so the middle isn't left darker
+    rows = np.zeros(h, np.float32)
+    inside = region > 0.5
+    for yy in range(max(int(y0), 0), min(int(y1 + fh * 0.3), h)):
+        vals = illum[yy][inside[yy]]
+        if vals.size > 10:
+            rows[yy] = np.percentile(vals, 90)
+    rows = cv2.GaussianBlur(rows[:, None], (0, 0), sigma)[:, 0]
+    target = np.maximum(np.maximum(illum, mirrored), 0.94 * rows[:, None])
+    gain = 1 + strength * (target / np.maximum(illum, 1e-4) - 1)
+    gain = cv2.GaussianBlur(np.clip(gain, 1.0, 3.0), (0, 0), sigma / 2)
+    gain = 1 + (gain - 1) * region
+
+    amount = float((gain - 1).max())
+    if amount < 0.05:
+        return rgb, 0.0
+    out = _to_srgb(_shoulder(lin * gain[..., None]))
+    return (out * 255 + 0.5).astype(np.uint8), amount
+
+
+def replace_background(rgb, mask, colour=(236, 236, 233)):
+    soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 2)[..., None]
+    plain = np.empty_like(rgb)
+    plain[:] = colour
+    return (rgb * soft + plain * (1 - soft)).astype(np.uint8)
+
+
+def process(data: bytes, age_group: str = "adult", analyzer=None,
+            auto_adjust: bool = True, even_bg: bool = True,
+            fix_shadows: bool = True, replace_bg: bool = False) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     analyzer = analyzer or get_analyzer()
     checks: list[Check] = []
@@ -270,6 +446,25 @@ def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
                               borderMode=cv2.BORDER_REPLICATE)
     tp = np.c_[p, np.ones(len(p))] @ M.T  # landmarks in output space
 
+    raw = out.copy()  # unadjusted crop, used for glare detection
+    before = _small_jpeg(out)
+    fb = (min(tp[FACE_L][0], tp[FACE_R][0]), tp[FOREHEAD][1],
+          max(tp[FACE_L][0], tp[FACE_R][0]), tp[CHIN][1])
+    notes = []
+    if fix_shadows:
+        out, amt = soften_face_shadows(out, fb, mask)
+        if amt:
+            notes.append("face shadow softened")
+    if auto_adjust:
+        out, n = enhance(out, mask, fb, even_bg=even_bg and not replace_bg)
+        notes += n
+    if replace_bg and mask is not None:
+        out = replace_background(out, mask)
+        notes.append("background replaced")
+    if auto_adjust or fix_shadows or replace_bg:
+        add("adjust", "Auto enhance", "pass",
+            ("Applied: " + ", ".join(notes)) if notes else "No correction needed")
+
     # --- quality --------------------------------------------------------
     lum = _lum(out)
     fx0, fx1 = int(tp[FACE_L][0]), int(tp[FACE_R][0])
@@ -300,7 +495,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
     lmean, rmean = face_region[:, :mid].mean(), face_region[:, mid:].mean()
     shadow = abs(lmean - rmean) / max(fmean, 1)
     if shadow > 0.30:
-        add("shadow", "No shadows on face", "fail", "Uneven light — one side of the face is in shadow.")
+        add("shadow", "No shadows on face", "fail", "One side of the face is in shadow. This can't be corrected: fix the lights and retake.")
     elif shadow > 0.18:
         add("shadow", "No shadows on face", "warn", "Light is a bit uneven across the face.")
     else:
@@ -324,7 +519,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
         pad = max(int(hh * 1.5), 10)
         ys = slice(max(y - pad, 0), y + hh + pad)
         xs = slice(max(x - pad, 0), x + ww + pad)
-        roi = out[ys, xs]
+        roi = raw[ys, xs]
         if roi.size:
             h2 = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
             bright = (h2[..., 2] > 245) & (h2[..., 1] < 25) & (eye_mask[ys, xs] == 0)
@@ -347,13 +542,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
         bg[top_band, : max(fx0 - 30, 1)] = True
         bg[top_band, min(fx1 + 30, OUT_W - 1):] = True
 
-    if config.BG_REPLACE and mask is not None:
-        soft = cv2.GaussianBlur(mask, (0, 0), 2)[..., None]
-        plain = np.full_like(out, (238, 238, 236))
-        out = (out * soft + plain * (1 - soft)).astype(np.uint8)
-        lum = _lum(out)
-        add("background", "Plain light background", "warn",
-            "Background replaced — HMPO may treat this as editing.")
+    if replace_bg and mask is not None:
+        add("background", "Plain light background", "pass", "Replaced with plain light grey")
     elif bg.sum() < 500:
         add("background", "Plain light background", "warn", "Could not measure background.")
     else:
@@ -382,9 +572,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None) -> Result:
 
     ok = not any(c.status == "fail" for c in checks)
     jpeg = _encode_jpeg(out)
-    prev = io.BytesIO()
-    Image.fromarray(out).resize((350, 450)).save(prev, "JPEG", quality=85)
-    return Result(ok, checks, jpeg, prev.getvalue())
+    return Result(ok, checks, jpeg, _small_jpeg(out), before)
 
 
 # --- print sheet --------------------------------------------------------

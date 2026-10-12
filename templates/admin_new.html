@@ -14,6 +14,12 @@
     <div><label for="email">Email (code sent here)</label><input id="email" type="email" name="email"></div>
     <div><label for="phone">Phone</label><input id="phone" type="tel" name="phone"></div>
   </div>
+  <input type="hidden" name="opts" value="1">
+  <label>Auto enhance</label>
+  <label class="check"><input type="checkbox" name="auto_adjust" {% if cfg.AUTO_ADJUST %}checked{% endif %}> Fix colour &amp; exposure</label>
+  <label class="check"><input type="checkbox" name="fix_shadows" {% if cfg.FIX_SHADOWS %}checked{% endif %}> Soften shadows on the face</label>
+  <label class="check"><input type="checkbox" name="even_bg" {% if cfg.EVEN_BG %}checked{% endif %}> Even out background light</label>
+  <label class="check"><input type="checkbox" name="replace_bg" {% if cfg.BG_REPLACE %}checked{% endif %}> Replace background with plain grey</label>
   <p><button class="btn" type="submit">Process</button></p>
 </form>
 </div>
