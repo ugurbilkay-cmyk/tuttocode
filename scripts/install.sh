@@ -18,6 +18,7 @@ id tpcode >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/no
 
 echo "==> Getting the code"
 if [ -d "$APP/.git" ]; then
+  git config --global --add safe.directory "$APP"
   git -C "$APP" pull --ff-only
 else
   git clone "$REPO" "$APP"

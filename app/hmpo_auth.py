@@ -25,6 +25,7 @@ _lock = threading.Lock()
 _key = None
 _key_loaded_at = 0.0
 KEY_REFRESH_SECONDS = 24 * 3600
+CLOCK_LEEWAY = 600  # seconds of clock difference tolerated
 
 
 def _parse_key(raw: bytes):
@@ -109,9 +110,12 @@ def verify(auth_header: str | None, code: str) -> tuple[bool, str]:
         return False, "key unavailable"
 
     def _decode(k):
+        # Signature is verified here; time claims are checked below by us,
+        # because HMPO's clock/units may differ (e.g. milliseconds).
         return jwt.decode(
             token, k, algorithms=_algorithms(k),
-            options={"verify_aud": False, "require": ["sub"]}, leeway=60,
+            options={"verify_aud": False, "verify_iat": False, "verify_nbf": False,
+                     "verify_exp": False, "require": ["sub"]},
         )
 
     try:
@@ -126,6 +130,25 @@ def verify(auth_header: str | None, code: str) -> tuple[bool, str]:
     except Exception as e:
         return False, f"invalid token ({type(e).__name__})"
 
+    times = {k: claims.get(k) for k in ("iat", "nbf", "exp") if k in claims}
+    log.info("HMPO token sub=%s times=%s now=%d", claims.get("sub"), times, int(time.time()))
+
+    def _secs(v):
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return None
+        return v / 1000 if v > 1e11 else v  # milliseconds -> seconds
+
+    now = time.time()
+    exp = _secs(claims.get("exp"))
+    if exp is not None and exp < now - CLOCK_LEEWAY:
+        return False, "token expired"
+    for k in ("iat", "nbf"):
+        t = _secs(claims.get(k))
+        if t is not None and t > now + CLOCK_LEEWAY:
+            return False, f"{k} in future by {int(t - now)}s"
+
     if _norm(str(claims.get("sub", ""))) != _norm(short_url(code)):
-        return False, "sub mismatch"
+        return False, f"sub mismatch ({claims.get('sub')})"
     return True, "ok"
