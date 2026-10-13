@@ -4,6 +4,13 @@ Tuttoprint's independent studio uses TuttoCode for photo processing and its own
 UK code service. The confirmed shop workflow is file upload, document selection,
 photo review/correction, and printing on a **Fujifilm DE100-XD**.
 
+The engine runs independently of Photomatic. Open `/admin/new` to upload and
+process photos with our local tools and optional OpenAI preparation. Changes to
+crop controls take effect on Prepare and check photo or Apply changes. Import
+Photomatic export is a separate, optional vendor-review workflow. The immediate
+priority is our working engine; Photomatic analysis/integration is a progressive
+research track, not a requirement for using it.
+
 The prototype imports the supplied reference installation's 208 country/document
 profiles and 169 print layouts. `/admin` opens the studio workspace;
 `/admin/history` shows previous photos. Select a country, open a photo or use a

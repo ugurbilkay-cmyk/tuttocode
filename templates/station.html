@@ -46,7 +46,8 @@
           </div>
           <div class="rotation-buttons"><button type="button" data-rotate="-1">Rotate −1°</button><button type="button" data-rotate="1">Rotate +1°</button></div>
           <button type="button" id="reset-crop">Reset crop</button>
-          {% if row %}<p class="subtle">Apply changes recalculates the crop from the {{ 'accepted AI source' if options.ai else 'camera original' }}.</p>{% endif %}
+          {% if row %}<p class="subtle">Click Apply changes to update the photo and recalculate its checks from the {{ 'accepted AI source' if options.ai else 'camera original' }}.</p><button type="submit">Apply changes</button>
+          {% else %}<p class="subtle">The crop settings take effect when you click Prepare and check photo.</p>{% endif %}
         </details>
         {% endif %}
       </section>

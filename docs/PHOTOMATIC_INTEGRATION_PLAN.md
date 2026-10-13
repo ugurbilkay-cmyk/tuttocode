@@ -2,7 +2,9 @@
 
 Implementation plan prepared on 13 October 2026. The manual preserved-JPEG import, staff review and UK issuance path are implemented in the local prototype. A genuine sample was saved and reopened on the equipped shop installation, transferred and imported byte for byte. Photomatic generated another analysis crop on reopening; exact-file measurement provenance, repeated-export behaviour, the Windows helper and production validation remain outstanding.
 
-The first version will combine Tuttoprint preparation and UK codes with the working Windows Photomatic installation for document framing, quality review and country printing. Staff will operate both applications initially. This preserves the useful vendor measurements while our independent quality engine is calibrated against real examples.
+The user's priority is two separate tracks. First, run our independent engine now through the simplest working local interface. Its upload, crop, enhancement, background, skin tools, measurements and output routes do not require the Photomatic executable or its licence. Imported document/layout settings are local data; they do not invoke the vendor runtime. Full vendor-score equivalence remains unestablished and unimplemented metrics stay visibly Not tested.
+
+Second, progressively investigate Photomatic's settings, measured behaviour and possible integration. The preserved-file companion workflow below is optional for vendor review; it is not a prerequisite for running our engine. Staff can use both applications while our own quality engine is calibrated against reference examples. Structured-result extraction and deeper analysis remain research tasks, rather than established capabilities. Desktop packaging is deferred while the current local studio is made usable.
 
 ## What is ready and what needs building
 

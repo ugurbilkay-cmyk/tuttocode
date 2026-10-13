@@ -156,7 +156,8 @@ def _require_admin(request):
 
 
 async def _read_upload(request):
-    form = await request.form(max_files=1, max_fields=30, max_part_size=64 * 1024)
+    # The expanded studio includes crop, tone, background and enhancer controls.
+    form = await request.form(max_files=1, max_fields=100, max_part_size=64 * 1024)
     up = form.get("photo")
     if up is None or not hasattr(up, "read"):
         raise HTTPException(400, "No photo uploaded")

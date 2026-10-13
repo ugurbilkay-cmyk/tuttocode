@@ -5,6 +5,7 @@ Run: python3 tests/test_ai_preparation.py
 """
 import base64
 import hashlib
+from html.parser import HTMLParser
 import io
 import json
 import logging
@@ -26,6 +27,49 @@ from synthetic import Fake, make_face
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 REVIEW = {"review_likeness": "on", "review_visibility": "on", "customer_permission": "on"}
+
+
+class PhotoForm(HTMLParser):
+    """Successful default fields of the rendered studio form, excluding its file."""
+    def __init__(self, html):
+        super().__init__()
+        self.fields = {}
+        self.active = False
+        self.select = None
+        self.option = None
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'form':
+            self.active = attrs.get('id') == 'photo-form'
+        if not self.active:
+            return
+        if tag == 'input' and attrs.get('name') and 'disabled' not in attrs:
+            kind = attrs.get('type', 'text')
+            if kind in ('file', 'button', 'submit') or (kind in ('checkbox', 'radio') and 'checked' not in attrs):
+                return
+            self.fields[attrs['name']] = attrs.get('value', 'on' if kind in ('checkbox', 'radio') else '')
+        if tag == 'select' and attrs.get('name') and 'disabled' not in attrs:
+            self.select = (attrs['name'], [])
+        if tag == 'option' and self.select:
+            self.option = {'attrs': attrs, 'text': ''}
+
+    def handle_data(self, data):
+        if self.active and self.option is not None:
+            self.option['text'] += data
+
+    def handle_endtag(self, tag):
+        if tag == 'option' and self.option is not None:
+            self.select[1].append(self.option)
+            self.option = None
+        if tag == 'select' and self.select:
+            name, options = self.select
+            selected = next((o for o in options if 'selected' in o['attrs']), options[0])
+            self.fields[name] = selected['attrs'].get('value', selected['text'].strip())
+            self.select = None
+        if tag == 'form':
+            self.active = False
 
 
 class ApiContractTests(unittest.TestCase):
@@ -129,6 +173,31 @@ class WorkflowTests(unittest.TestCase):
     def accept(self, pid):
         candidate = json.loads(db.get(pid)["ai_state"])["candidate_id"]
         return self.client.post(f"/admin/p/{pid}/ai/accept", data={"review_likeness": "on", "candidate_id": candidate}, follow_redirects=False)
+
+    def test_complete_rendered_studio_form_uploads_and_crop_controls_change_photo(self):
+        fields = PhotoForm(self.client.get('/admin/new').text).fields
+        self.assertGreater(len(fields), 30, 'Exercise the expanded form that exceeded the old parser limit')
+        with patch.object(ai_prepare, 'prepare', side_effect=AssertionError('OpenAI was not selected')):
+            response = self.client.post('/admin/new', data=fields,
+                files={'photo': ('camera.jpg', self.source, 'image/jpeg')}, follow_redirects=False)
+            self.assertEqual(response.status_code, 303, response.text)
+            path = response.headers['location']
+            before = self.client.get(path + '/full.jpg').content
+            fields.update(zoom='0.84', x='-17', y='9', angle='-3')
+            response = self.client.post(path + '/reprocess', data=fields, follow_redirects=False)
+            self.assertEqual(response.status_code, 303, response.text)
+        row = db.get(path.rsplit('/', 1)[1])
+        self.assertEqual(json.loads(row['options'])['crop'],
+                         dict(zoom=.84, x=-17., y=9., rotation=0, angle=-3.))
+        after = self.client.get(path + '/full.jpg').content
+        self.assertNotEqual(hashlib.sha256(before).hexdigest(), hashlib.sha256(after).hexdigest())
+        Image.open(io.BytesIO(after)).verify()
+
+    def test_upload_field_count_remains_bounded(self):
+        with patch.object(P, 'process', side_effect=AssertionError('Oversized form must not process')):
+            response = self.client.post('/admin/new', data={f'field_{i}': '0' for i in range(101)},
+                files={'photo': ('camera.jpg', self.source, 'image/jpeg')}, follow_redirects=False)
+        self.assertEqual(response.status_code, 400)
 
     def test_upload_automatically_prepares_when_selected(self):
         with patch.object(config, "OPENAI_API_KEY", "test-secret"), patch.object(ai_prepare, "prepare", return_value=ai_prepare.PreparedImage(self.source, "mock-image-model", "req_test")) as call:
