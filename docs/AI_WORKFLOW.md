@@ -1,19 +1,23 @@
 # OpenAI preparation and reviewed UK code issuance
 
-User decision, 12 October 2026: staff take a camera photo and upload it;
-OpenAI adjusts lighting/exposure and camera colour cast; the result is checked
-and reviewed before TuttoCode issues our UK code. Irish codes are outsourced for
+Current user decision, 13 October 2026: staff upload a camera photo and start
+with the included local tools. OpenAI lighting/colour preparation is an optional
+paid add-on. Quality results remain advisory; trained staff may issue under
+explicit recorded responsibility despite red or unapproved checks. Irish codes are outsourced for
 now. The rest of the familiar studio workflow is reproduced in our application.
-The user specifically requested the detailed measurements screen and a failure
-gate with child, disability, health and other documented exceptions.
+The detailed measurements screen retains failures and documented allowances;
+the latest staff-responsibility decision takes precedence over the earlier
+request to block issuance on a failed check.
 
 ## Implemented workflow
 
 1. Upload the camera original with a country/document and staff age selection.
-   When an OpenAI key is configured, AI preparation is selected by default. Staff
-   record customer permission before sending the photograph to the external API.
-2. Save the original locally. Check that the source has a face, sufficient detail
-   and usable framing. Do not use generation to invent missing image detail.
+   OpenAI is unchecked by default even with a configured key. Staff explicitly
+   select the optional upgrade and record customer permission before an API call.
+2. Save the original locally and measure face detection, source detail and framing.
+   Poor quality does not prevent staff-requested preparation. A full-frame job
+   fits the whole photograph when a passport crop cannot be produced; source
+   warnings remain evidence rather than a claim of recovered detail.
 3. Send an orientation-normalized, metadata-stripped PNG to the OpenAI Images
    edit endpoint. Do not send customer contact details. Request only lighting and
    colour corrections, with explicit preservation of appearance, face geometry,
@@ -26,13 +30,15 @@ gate with child, disability, health and other documented exceptions.
    that source, avoiding another generative edit. A new AI request always starts
    from the camera original. Restore original removes AI preparation from the job.
 6. Enforce code eligibility on the server. A pending AI preview must be accepted
-   or discarded. Failures block issuance unless every failure has an eligible,
-   specifically recorded document allowance. Staff must confirm likeness,
-   visibility and customer permission for storage/delivery. The reviewed revision
+   or discarded. Staff review failures and may use an explicit responsibility
+   override, with an optional note; named document allowances remain supported.
+   Staff record likeness/visibility review and customer permission for storage/delivery. The reviewed revision
    must match the current photo; stale review forms and replaced AI previews fail.
 7. Validate the exact UK code JPEG, rerunning detection and checks after encoding
-   and resizing without recropping it. Final failures are shown to staff and block
-   issuance. Freeze that JPEG after approval. Record its SHA-256, country, photo
+   and resizing without recropping it. Final failures are shown to staff; explicit
+   staff responsibility permits issuance while retaining the failed results.
+   Conflicting digital aspect limits can retain the reviewed framing under that
+   decision, with delivery-format warnings recorded. Freeze that JPEG after review. Record its SHA-256, country, photo
    revision, processing options, AI request/model/prompt version, review identity,
    age allowances and exception decision. HMPO's signed request retrieves those
    exact bytes. Printing uses a separate master. Repeated issuance reuses the code.
@@ -67,29 +73,25 @@ biometric scores remain explicitly **not tested**. A neutral grey cell is not a 
 Our current checks are not a complete replica or certification of the native
 FaceIt/Photomatic ICAO engine. That remains a release-validation requirement.
 
-Presentation/biometric failures eligible for an explicitly justified allowance:
-eyes, expression, tilt, facing, head height, eye level, face width, glare and glasses.
-Categories: child/baby, disability, health/medical, other documented allowance.
-Every failed key must be named; a specific reason of at least 15 characters and
-confirmation of the selected document's allowance are required. Child exceptions
-cannot be entered for an adult job. Technical file, missing/multiple face,
-resolution, inter-eye detail, focus, exposure, shadow, background and file-size
-failures cannot be waived. The generic `override=on` path is removed.
-
-An exception leaves the failed measurements unchanged and records
-`approved_with_exception`. Applied age relaxations are separately recorded as
-`approved_with_age_allowance`. Neither decision is labelled as all checks passing.
-The current automatic age rules still require per-country validation; UK issuance
-is the own-code scope, and other countries must not inherit unsupported allowances.
+Quality failures are advisory. Staff can confirm `staff_override` to issue despite
+working or final JPEG failures, including technical quality warnings. The record
+contains identity, time, optional note, failed-check keys and full-frame status.
+Failures stay failed; the decision is `staff_override`. The old generic
+`override=on` field does not silently bypass review. Named document allowances
+remain a separate evidence-backed route for existing clients. Missing measurements
+never become machine-verified passes through a staff decision.
 
 ## Delivery, retention and limits
 
-UK code JPEGs must be at least 600 × 750 pixels and 50,000–10,000,000 bytes.
+The normal UK delivery specification is at least 600 × 750 pixels and
+50,000–10,000,000 bytes. Explicit staff override permits proceeding with warnings
+when those specifications are not met; the exact returned file is still recorded.
 Required digital dimensions are used when their aspect agrees with the reviewed
 crop. The imported `UK online` 800 × 1150 requirement differs from its working
-aspect; that template is blocked for issuance until final framing is implemented.
-Use `United Kingdom Online Renewal` (800 × 1120) or the UK paper profile instead.
-Originals of AI-prepared issued jobs remain available to staff for comparison
+aspect; staff receive a format warning, and can explicitly retain the reviewed
+crop under responsibility. `United Kingdom Online Renewal` (800 × 1120) and the
+UK paper profile have coherent working/export aspects.
+Originals of AI-prepared and staff-overridden issued jobs remain available for comparison
 until the code's expiry/deletion. Accepted AI sources and previews are deleted
 when no longer needed. Rejection and expiry remove all photo artefacts and job data.
 

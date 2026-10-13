@@ -245,7 +245,7 @@ class WorkflowTests(unittest.TestCase):
         with db.conn() as c:
             c.execute("UPDATE photos SET ok=0, checks=? WHERE id=?", (json.dumps([{"key": key, "label": key, "status": "fail", "detail": "test failure"}]), pid))
 
-    def test_failure_needs_specific_recorded_exception(self):
+    def test_named_allowance_without_staff_override_needs_specific_evidence(self):
         pid = self.upload()
         self.set_failure(pid, "eyes")
         self.assertEqual(self.issue(pid, override="on").status_code, 400)
@@ -260,7 +260,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(record["exception"]["checks"], ["eyes"])
         self.assertFalse(db.get(pid)["ok"])  # Never relabel the failed metric.
 
-    def test_technical_failures_and_output_format_cannot_be_waived(self):
+    def test_quality_and_export_failures_need_explicit_staff_override(self):
         for key in ("resolution", "sharp", "exposure", "background", "framing", "filesize"):
             pid = self.upload()
             self.set_failure(pid, key)

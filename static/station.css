@@ -17,6 +17,10 @@
 .hotspot-regions .hotspot-patch{fill:#ffc24733;stroke:#ffc247;stroke-width:2;vector-effect:non-scaling-stroke}
 .hotspot-table th,.hotspot-table td{font-size:12px;padding:8px 5px;white-space:normal}
 #hotspots-dialog{width:min(1450px,96vw);max-width:96vw}
+.local-control{display:block;margin:12px 0;font-size:13px}
+.local-control output{float:right;color:var(--blue)}
+.manual-tools{margin-top:14px;border-top:1px solid var(--edge);padding-top:10px}
+.premium-tools>summary{font-size:18px;color:var(--blue);cursor:pointer}
 
 *{
   box-sizing:border-box

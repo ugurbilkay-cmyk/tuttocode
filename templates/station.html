@@ -32,7 +32,7 @@
         </div>
         <div class="photo-caption">{% if row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}35 × 45, visa, passport, ID and online formats{% endif %}</div>
         {% if editable %}
-        <details class="adjustments" {% if row and not has_photo %}open{% endif %}>
+        <details class="adjustments" id="crop-controls" {% if row and not has_photo %}open{% endif %}>
           <summary>Move, zoom and rotate</summary>
           <div class="sliders">
             <label>Zoom <output id="zoom-value">{{ crop.zoom }}</output><input type="range" name="zoom" id="zoom" min="0.5" max="2" step="0.01" value="{{ crop.zoom }}"></label>
@@ -70,15 +70,26 @@
         <select id="print-template" name="print_template_id">{% for choice in choices %}<option value="{{ choice.id }}" {% if choice.id == layout.id %}selected{% endif %}>{{ choice.name }} · {{ choice.boxes|length }} photos · {{ choice.printer }}</option>{% endfor %}</select>
         <p class="subtle" id="print-dimensions">{{ layout.width_px }} × {{ layout.height_px }} px · {{ layout.dpi }} DPI</p>
         {% if editable %}
-        <details class="adjustments"><summary>Colour and lighting</summary>
+        <label class="tick"><input type="checkbox" id="print-only" name="print_only" {% if options.print_only %}checked{% endif %}> Full-frame / print job</label>
+        <p class="subtle">Full-frame jobs keep the whole photo, fitted to the selected format with borders when needed. Quality warnings stay visible; staff control whether to issue a code.</p>
+        <details class="adjustments" id="local-tools"><summary>Local photo tools · included</summary>
           <label class="tick"><input type="checkbox" name="auto_adjust" {% if options.auto_adjust %}checked{% endif %}> Fix colour and exposure</label>
           <label class="tick"><input type="checkbox" name="fix_shadows" {% if options.fix_shadows %}checked{% endif %}> Soften face shadows</label>
           <label class="tick"><input type="checkbox" name="even_bg" {% if options.even_bg %}checked{% endif %}> Even background light</label>
           <label class="tick"><input type="checkbox" name="replace_bg" {% if options.replace_bg %}checked{% endif %}> Replace background</label>
+          <details class="manual-tools"><summary>Fine-tune lighting and colour</summary>
+          {% set local = options.get('adjustments',{}) %}
+          {% for control in adjustment_controls %}
+          <label class="local-control">{{ control.label }} <output>{{ local.get(control.key,0)|float }} {{ control.unit }}</output><input class="local-slider" type="range" name="{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ local.get(control.key,0) }}" data-unit="{{ control.unit }}"></label>
+          {% endfor %}
+          <button type="button" id="reset-local-tools">Reset local adjustments</button>
+          </details>
+          <p class="subtle">Included tools use local processing. Apply changes to compare the result and rerun measurements.</p>
         </details>
         {% if not row %}
         <div class="adjustments">
-          <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if cfg.OPENAI_API_KEY %}checked{% else %}disabled{% endif %}> Prepare lighting and colour with OpenAI</label>
+          <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if not cfg.OPENAI_API_KEY %}disabled{% endif %}> Optional OpenAI upgrade · lighting and colour</label>
+          <p class="subtle">Start with the included local tools. Choose the OpenAI upgrade when you want further preparation.</p>
           {% if cfg.OPENAI_API_KEY %}<label class="tick"><input type="checkbox" id="upload-ai-consent" name="ai_consent"> Customer agrees to send this photo to OpenAI for preparation</label>{% else %}<p class="subtle">OpenAI connection needs server setup. Local cropping and checks are available.</p>{% endif %}
         </div>
         <details class="customer"><summary>Customer and age</summary>
@@ -109,15 +120,17 @@
     </div>
   </form>
   {% if row and row.status == 'pending' %}
-  <section class="ai-panel" id="ai-panel">
-    <h2>AI photo preparation</h2>
+  <details class="ai-panel premium-tools" id="ai-panel" {% if ai_status.status in ['running','ready','error'] %}open{% endif %}>
+    <summary>Optional OpenAI upgrade</summary>
+    <p>Use the included local tools first. OpenAI preparation is an optional extra service.</p>
     {% if ai_status.status == 'running' %}<p role="status">Preparing lighting and colour… This may take a few minutes. Refresh to see the result.</p>
     {% elif ai_status.status == 'ready' %}
       <p>Compare the camera original with the prepared crop. Check eyes, skin texture, hair and all distinguishing marks.</p>
       <div class="ai-comparison"><figure><img src="/admin/p/{{ row.id }}/original.jpg" alt="Camera original"><figcaption>Camera original · full frame</figcaption></figure><figure><img src="/admin/p/{{ row.id }}/ai-preview.jpg" alt="OpenAI preparation preview"><figcaption>AI preparation · proposed crop</figcaption></figure></div>
       <button type="button" id="open-ai-measurements">Detailed AI preview measurements</button>
+      {% if ai_status.original_checks %}<details><summary>Checks on the camera original</summary>{% set checks = ai_status.original_checks %}{% include '_checks.html' %}</details>{% endif %}
       <details><summary>Checks on the AI preview</summary>{% set checks = ai_status.checks %}{% include '_checks.html' %}</details>
-      {% if not ai_status.ok %}<p class="notice">The preview has failed checks. Accepting the lighting edit does not approve it for a code; correct the crop or retake before issuance.</p>{% endif %}
+      {% if not ai_status.ok %}<p class="notice">The preview has failed or unapproved checks. Review them before deciding whether to proceed under staff responsibility.</p>{% endif %}
       <div class="ai-review-actions">
         <form method="post" action="/admin/p/{{ row.id }}/ai/accept"><input type="hidden" name="candidate_id" value="{{ ai_status.candidate_id }}"><label class="tick"><input type="checkbox" name="review_likeness" required> I compared both photos and the person's appearance is preserved</label><button class="primary" type="submit">Accept preparation and recheck</button></form>
         <form method="post" action="/admin/p/{{ row.id }}/ai/discard"><button type="submit">Discard AI preview</button></form>
@@ -135,7 +148,7 @@
       </form>
     {% endif %}
     {% if options.ai and editable %}<form method="post" action="/admin/p/{{ row.id }}/restore-original"><button type="submit">Use camera original and recheck</button></form>{% endif %}
-  </section>
+  </details>
   {% endif %}
   {% if has_photo %}<form id="email-form" method="post" action="/admin/p/{{ row.id }}/email"></form>{% endif %}
   {% if row %}
@@ -143,20 +156,21 @@
     {% if row.code %}
       <div><span class="eyebrow">Passport photo code</span><strong class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</strong><p class="subtle">Valid until {{ row.expires|dt }} · collected by HMPO {{ row.fetched_count }} times</p></div>
       {% set review = row.issue_review|fromjson %}{% if review.exception %}<p class="notice">Approved with {{ review.exception.category }} exception: {{ review.exception.reason }}. Failed measurements are retained in the review record.</p>{% endif %}
+      {% if review.staff_override %}<p class="notice">Issued under staff responsibility by {{ review.staff_override.confirmed_by }}. Failed checks remain recorded. {{ review.staff_override.reason }}</p>{% endif %}
       <a class="action-button" href="/admin/p/{{ row.id }}/slip" target="_blank">Print code slip</a>
     {% elif row.status == 'pending' and profile.hmpo_code and has_photo %}
       <form method="post" action="/admin/p/{{ row.id }}/issue">
         <input type="hidden" name="review_revision" value="{{ row.revision }}">
         <h2>Issue UK passport photo code</h2>
-        <label class="tick"><input type="checkbox" name="review_likeness" required> Good likeness, recent photo, correct framing and plain background</label>
-        <label class="tick"><input type="checkbox" name="review_visibility" required> No prohibited head covering, obscured eyes, glare or red eye</label>
+        {% set responsibility_needed = not row.ok or options.get('print_only',false) or options.get('ai',{}).get('print_only',false) %}
+        <label class="tick"><input type="checkbox" name="review_likeness" required> I reviewed likeness, recency, framing and background</label>
+        <label class="tick"><input type="checkbox" name="review_visibility" required> I reviewed head coverings, eye visibility, glare and red eye</label>
         <label class="tick"><input type="checkbox" name="customer_permission" required> Customer informed and agrees to photo storage and code delivery</label>
-        {% if not row.ok %}
-          {% if nonwaivable_checks %}<p class="notice">Correct technical / image quality failures before issuing a code. These cannot be waived.</p>
-          {% elif exception_checks %}<details class="adjustments"><summary>Record an allowed exception</summary><label class="field-label">Category<select name="exception_category"><option value="">Select an allowance…</option>{% for key, label in exception_categories.items() %}<option value="{{ key }}" {% if key == 'child' and row.age_group == 'adult' %}disabled{% endif %}>{{ label }}</option>{% endfor %}</select></label><label class="field-label">Specific reason and applicable document allowance<textarea name="exception_reason" minlength="15" maxlength="1000" rows="3"></textarea></label>{% for check in exception_checks %}<label class="tick"><input type="checkbox" name="exception_checks" value="{{ check.key }}"> Allowance covers: {{ check.label }}</label>{% endfor %}<label class="tick"><input type="checkbox" name="exception_confirmed"> I verified that this document allows the recorded exception</label><p class="subtle">An exception records a staff decision; it does not change a failed result into a pass.</p></details>{% endif %}
-        {% endif %}
+        {% if responsibility_needed %}<p class="notice">Quality checks are advisory. Review the red or unapproved results, then confirm responsibility if you choose to issue anyway.</p>{% endif %}
+        <label class="tick"><input type="checkbox" name="staff_override" {% if responsibility_needed %}required{% endif %}> Issue despite failed or unapproved quality checks — I take responsibility for this decision</label>
+        <label class="field-label">Optional decision note<textarea name="override_reason" maxlength="1000" rows="2"></textarea></label>
         {% if ai_status.status in ['ready','running'] %}<p class="notice">Finish the AI preview review before issuing a code.</p>{% endif %}
-        <button class="primary" type="submit" {% if nonwaivable_checks or ai_status.status in ['ready','running'] or row.edit_token %}disabled{% endif %}>Issue UK photo code</button>
+        <button class="primary" type="submit" {% if ai_status.status in ['ready','running'] or row.edit_token %}disabled{% endif %}>Issue UK photo code</button>
         <p class="subtle">A photo code delivers the photo; passport acceptance is decided by HMPO.</p>
       </form>
     {% elif profile.code_service == 'ie' %}<div><h2>Irish passport photo code</h2><p>Irish codes are handled by your external provider. Save the photo and submit it through that provider.</p><a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save for Irish provider</a>{% if cfg.IRISH_PROVIDER_URL %}<a class="action-button" href="{{ cfg.IRISH_PROVIDER_URL }}" target="_blank" rel="noopener noreferrer">Open Irish provider</a>{% endif %}</div>
@@ -195,6 +209,6 @@
 </dialog>
 <dialog id="camera-dialog"><div class="dialog-heading"><h2>Camera</h2><button type="button" id="close-camera">Close</button></div><video id="camera-video" autoplay playsinline muted></video><p id="camera-error" class="notice" hidden></p><button type="button" id="capture-photo">Take photo</button></dialog>
 <script id="station-catalog" type="application/json">{{ {'countries':catalog.countries,'prints':catalog.prints}|tojson }}</script>
-<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationEditable={{ editable|tojson }};</script>
+<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationEditable={{ editable|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};</script>
 <script src="/static/station.js" defer></script>
 </body></html>

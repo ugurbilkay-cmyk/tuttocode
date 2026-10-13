@@ -170,8 +170,9 @@ not government acceptance.
 Child, disability, health and other exceptions must identify the particular
 document allowance, affected metric, reason and reviewing staff member. They do
 not grant a general bypass. Preserve failed measurements and distinguish an
-approved exception from a normal pass. Technical file failures and unavailable
-required assessments block issuance. Irish code issuance remains external.
+approved exception from a normal pass. Technical quality failures and unavailable required assessments stay visible.
+The trained-staff workflow permits explicit responsibility overrides, separately
+recorded from machine-verified passes; see [LOCAL_TOOLS](LOCAL_TOOLS.md). Irish code issuance remains external.
 
 ## Evidence required for an industrial release
 
@@ -184,7 +185,7 @@ required assessments block issuance. Irish code issuance remains external.
 | Decision accuracy | False acceptance, false rejection, review/unknown rates and uncertainty intervals, separately for each critical metric and the complete decision |
 | Population coverage | Age groups, skin tones, hair styles, headwear, glasses, disability/medical cases and pose/lighting variation, using appropriately permitted images |
 | Capture robustness | Multiple cameras, resolutions, orientations, colour profiles, compression and real shop lighting; source versus AI versus final JPEG comparisons |
-| Operational reliability | Concurrency, timeout, missing/corrupt models, worker crash, stale review, byte changes and failed issuance cannot bypass required checks |
+| Operational reliability | Concurrency, stale review and byte changes cannot substitute a different delivered image; missing/corrupt models and worker failures remain unavailable/failed assessments, with any staff override explicitly recorded |
 | Print accuracy | Physical DE100-XD measurements for every supported sheet layout; scale, borderless expansion and colour workflow validated on paper |
 | Release control | Versioned licences/model hashes/policies; documented regression results and rollback; no automatic model update changing shop decisions |
 

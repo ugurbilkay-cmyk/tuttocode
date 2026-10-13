@@ -30,7 +30,7 @@ class PreparedImage:
     prompt_version: str = PROMPT_VERSION
 
 
-def prepare(data, *, lighting=True, colour=True):
+def prepare(data, *, lighting=True, colour=True, print_only=False):
     if not config.OPENAI_API_KEY:
         raise PreparationError("OpenAI is not connected. Configure OPENAI_API_KEY on the server.")
     if not lighting and not colour:
@@ -45,6 +45,11 @@ def prepare(data, *, lighting=True, colour=True):
     # Keep enough real source resolution for passport cropping; cap the requested
     # output at the model's documented non-experimental 2K pixel area.
     scale = min(1, math.sqrt(3_686_400 / (w * h)))
+    if print_only:
+        # A print/edit preview can request a larger canvas, without claiming
+        # additional source detail or a passport-quality verdict.
+        scale = min(max(1, 512/min(w,h), math.sqrt(1_048_576/(w*h))),
+                    math.sqrt(3_686_400/(w*h)))
     width, height = max(16, round(w * scale / 16) * 16), max(16, round(h * scale / 16) * 16)
     while width * height > 3_686_400:
         if width >= height:

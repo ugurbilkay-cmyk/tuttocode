@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic
+from . import config, photomatic, local_adjustments
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -247,7 +247,7 @@ def enhance(rgb: np.ndarray, person_mask, face_box, even_bg=False, adjust=True):
         # 3. highlight roll-off
         if (lin > 0.85).mean() > 0.001:
             lin = _shoulder(lin)
-            notes.append("highlights recovered")
+            notes.append("highlights softened")
 
         out = _to_srgb(lin)
     else:
@@ -386,13 +386,16 @@ def _crown_y(points, person_mask):
 def process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
-            country_id: str | None = None, crop=None, framed=False) -> Result:
+            country_id: str | None = None, crop=None, framed=False,
+            adjustments=None, print_only=False) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     profile = photomatic.country(country_id)
     out_w, out_h = photomatic.output_size(profile)
     crop = crop or {"zoom": 1, "x": 0, "y": 0, "rotation": 0}
     checks: list[Check] = []
     measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
+    adjustments = local_adjustments.validate(adjustments)
+    measurements["local_adjustments"] = {"engine": local_adjustments.VERSION, "values": adjustments}
 
     def add(key, label, status, detail=""):
         checks.append(Check(key, label, status, detail))
@@ -405,6 +408,9 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
 
     h, w = rgb.shape[:2]
     measurements["input_size"] = [w, h]
+    if print_only:
+        return _print_only_result(rgb, profile, analyzer, adjustments,
+                                  auto_adjust, fix_shadows, even_bg, replace_bg)
     rotation = int(crop.get("rotation", 0)) % 360
     if rotation:
         rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
@@ -426,6 +432,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["analysis_size"] = [w, h]
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
+        rgb, notes = local_adjustments.apply(rgb, adjustments)
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
         out = np.asarray(im)
         add("framing", "Free-style crop", "pass", "No face-size target in this template")
@@ -575,7 +582,9 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if replace_bg and mask is not None:
         out = replace_background(out, mask, profile["background"])
         notes.append("background replaced")
-    if auto_adjust or fix_shadows or replace_bg or even_bg:
+    out, manual_notes = local_adjustments.apply(out, adjustments)
+    notes += manual_notes
+    if auto_adjust or fix_shadows or replace_bg or even_bg or manual_notes:
         add("adjust", "Auto enhance", "pass",
             ("Applied: " + ", ".join(notes)) if notes else "No correction needed")
 
@@ -728,7 +737,62 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements)
 
 
-def code_photo(jpeg, country_id):
+def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg):
+    """Full-frame editing for staff output, without a passport framing verdict."""
+    h, w = rgb.shape[:2]
+    before = _small_jpeg(rgb)
+    out = rgb.copy()
+    notes, checks = [], [Check("print_only", "Full-frame / print job", "warn",
+                              "The whole photograph is fitted to the selected format. Passport framing has not been approved.")]
+    mask, box = None, None
+    try:
+        analysis = (analyzer or get_analyzer()).analyze(rgb)
+        mask = analysis.person_mask
+        if len(analysis.faces) == 1:
+            points = analysis.faces[0].points
+            box = (min(points[FACE_L][0], points[FACE_R][0]), points[FOREHEAD][1],
+                   max(points[FACE_L][0], points[FACE_R][0]), points[CHIN][1])
+            checks.append(Check("face", "Face found", "pass"))
+        else:
+            checks.append(Check("face", "Face found", "fail", "One face is needed for facial preparation; this image can still be printed."))
+    except Exception:
+        notes.append("Facial analysis unavailable; only whole-image manual tools applied")
+        checks.append(Check("face", "Facial analysis", "fail", "Unavailable; staff review needed"))
+    if fix_shadows and box is not None:
+        out, amount = soften_face_shadows(out, box, mask)
+        if amount: notes.append("face shadow softened")
+    if auto_adjust or even_bg:
+        out, automatic_notes = enhance(out, mask, box or (0,0,w,h),
+                                       even_bg=even_bg and not replace_bg, adjust=auto_adjust)
+        notes += automatic_notes
+    if replace_bg and mask is not None:
+        out = replace_background(out,mask,profile["background"])
+        notes.append("background replaced")
+    elif replace_bg:
+        checks.append(Check("background", "Background replacement", "warn", "Foreground mask unavailable; background left in place"))
+    out, manual_notes = local_adjustments.apply(out,adjustments)
+    notes += manual_notes
+    if notes: checks.append(Check("adjust", "Local photo tools", "warn", "; ".join(notes)))
+    out_w, out_h = photomatic.output_size(profile)
+    # Fit rather than stretch or invent framing. Borders retain the whole image.
+    border_colour = tuple(profile["background"])
+    if replace_bg and mask is not None:
+        background_pixels = out[mask < .15]
+        if len(background_pixels) >= 100:
+            border_colour = tuple(int(v) for v in np.median(background_pixels,axis=0))
+    master = np.asarray(ImageOps.pad(Image.fromarray(out),(out_w,out_h),
+                                    method=Image.Resampling.LANCZOS,color=border_colour))
+    measurements = {"method":"Full-frame local editing", "country_id":profile["id"],
+                    "input_size":[w,h], "output_size":[out_w,out_h],
+                    "local_adjustments":{"engine":local_adjustments.VERSION,"values":adjustments},
+                    "print_only":True, "passport_assessment":"not_assessed"}
+    if w < MIN_SRC_W or h < MIN_SRC_H:
+        checks.append(Check("resolution", "Original source resolution", "fail",
+                            f"{w} × {h} px; enlarging for print does not add real source detail"))
+    return Result(False,checks,_encode_jpeg(master),_small_jpeg(master),before,measurements)
+
+
+def code_photo(jpeg, country_id, staff_override=False):
     """Freeze and validate the exact UK JPEG served to HMPO, without stretching."""
     profile = photomatic.country(country_id)
     if profile["code_service"] != "uk":
@@ -738,17 +802,38 @@ def code_photo(jpeg, country_id):
         # Online templates with a different digital aspect need a fresh framing
         # implementation; never silently crop a second time after checks passed.
         if abs((size[0] / size[1]) / (image.width / image.height) - 1) > .005:
-            raise ValueError("Digital aspect ratio differs from the checked crop. Use the UK Online Renewal template.")
-        output = _encode_jpeg(np.asarray(image.convert("RGB").resize(size, Image.Resampling.LANCZOS)),
-                              min_kb=50, max_kb=10_000_000 / 1024)
-    if size[0] < 600 or size[1] < 750 or not 50_000 <= len(output) <= 10_000_000:
+            if not staff_override:
+                raise ValueError("Digital aspect ratio differs from the checked crop. Use the UK Online Renewal template or confirm staff responsibility.")
+            # Staff chose to retain the reviewed framing; never stretch or
+            # silently recrop it just to match a legacy export requirement.
+            size = image.size
+            output = jpeg
+        else:
+            output = _encode_jpeg(np.asarray(image.convert("RGB").resize(size, Image.Resampling.LANCZOS)),
+                                  min_kb=50, max_kb=10_000_000 / 1024)
+    if not staff_override and (size[0] < 600 or size[1] < 750 or not 50_000 <= len(output) <= 10_000_000):
         raise ValueError("The exact code JPEG must be at least 600 × 750 pixels and 50 KB–10 MB")
     return output
 
 
 def check_code_photo(jpeg, country_id, age_group):
-    return process(jpeg, age_group, country_id=country_id, framed=True,
-                   auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False)
+    with Image.open(io.BytesIO(jpeg)) as image:
+        size = image.size
+    try:
+        result = process(jpeg, age_group, country_id=country_id, framed=True,
+                         auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False)
+    except Exception:
+        result = Result(False,[Check("quality_unavailable","Final quality assessment","fail",
+                                    "The checker is unavailable; staff visual review and responsibility are required")],
+                        measurements={"method":"Quality assessment unavailable","input_size":list(size)})
+    profile = photomatic.country(country_id)
+    target = photomatic.save_size(profile)
+    if (size[0] < 600 or size[1] < 750 or not 50_000 <= len(jpeg) <= 10_000_000 or
+            (all(v > 0 for v in profile["digital_size"]) and size != target)):
+        result.checks.append(Check("delivery_format", "Digital delivery specification", "fail",
+                                   f"Actual JPEG: {size[0]} × {size[1]} px, {len(jpeg)} bytes; review the digital document requirements"))
+        result.ok = False
+    return result
 
 
 # --- print and save ------------------------------------------------------

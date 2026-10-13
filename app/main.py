@@ -20,14 +20,15 @@ from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots
+from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 templates = Jinja2Templates(directory=str(config.BASE_DIR / "templates"))
 templates.env.globals.update(cfg=config, short_url=hmpo_auth.short_url, catalog=photomatic.CATALOG,
-                             profiles=photomatic.COUNTRIES, printers=photomatic.PRINTERS)
+                             profiles=photomatic.COUNTRIES, printers=photomatic.PRINTERS,
+                             adjustment_controls=local_adjustments.CONTROLS)
 templates.env.filters["dt"] = lambda t: time.strftime("%d %b %Y %H:%M", time.localtime(t)) if t else ""
 templates.env.filters["fromjson"] = json.loads
 
@@ -35,9 +36,9 @@ CODE_RE = re.compile(r"^[A-Za-z0-9]{6,8}$")
 ID_RE = re.compile(r"^[A-Za-z0-9_-]{10,40}$")
 AGE_GROUPS = {"adult": "Adult / 6+", "child": "Child 1–5", "baby": "Baby under 1"}
 EXCEPTION_CATEGORIES = {"child": "Child / baby", "disability": "Disability", "health": "Health / medical", "other": "Other documented allowance"}
-# These concern presentation/biometrics that staff can assess against a genuine
-# document allowance. Technical file, resolution, focus, background and exposure
-# failures must be corrected and cannot be waived by this form.
+# Named document allowances remain available for existing clients. Trained staff
+# may separately acknowledge any quality failure with staff_override; that
+# responsibility decision is recorded without converting failed checks to passes.
 EXCEPTION_KEYS = {"eyes", "expression", "tilt", "facing", "headsize", "eyeposition", "facewidth", "glare", "glasses"}
 
 
@@ -139,9 +140,16 @@ async def _read_upload(request):
 def _opts(form=None):
     """Enhance options from the form; defaults from config."""
     if form is None or form.get("opts") != "1":
-        return dict(auto_adjust=config.AUTO_ADJUST, fix_shadows=config.FIX_SHADOWS,
-                    even_bg=config.EVEN_BG, replace_bg=config.BG_REPLACE)
-    return {k: form.get(k) == "on" for k in ("auto_adjust", "fix_shadows", "even_bg", "replace_bg")}
+        options = dict(auto_adjust=config.AUTO_ADJUST, fix_shadows=config.FIX_SHADOWS,
+                       even_bg=config.EVEN_BG, replace_bg=config.BG_REPLACE)
+    else:
+        options = {k: form.get(k) == "on" for k in ("auto_adjust", "fix_shadows", "even_bg", "replace_bg")}
+    try:
+        options["adjustments"] = local_adjustments.validate({c["key"]: form.get(c["key"],0) for c in local_adjustments.CONTROLS} if form else None)
+    except ValueError as exc:
+        raise HTTPException(400,str(exc)) from None
+    options["print_only"] = bool(form and form.get("print_only") == "on")
+    return options
 
 
 def _selection(form=None):
@@ -413,18 +421,29 @@ async def _prepare_candidate(pid, *, lighting, colour):
         db.set_ai_state(pid, token, {"status": "running", "started": time.time()})
         try:
             original = (config.PHOTO_DIR / f"{pid}_source").read_bytes()
-            # Check the original's real detail and framing before enhancement.
+            # Measure original detail/framing for evidence; staff decide whether
+            # to request preparation despite quality failures.
             local_options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                                 print_only=options.get("print_only",False),
                                  crop=options.get("crop", _crop_options()))
             original_result = await run_in_threadpool(lambda: processing.process(
                 original, row["age_group"], country_id=row["country_id"], **local_options))
-            if any(c.status == "fail" and c.key in ("file", "face", "resolution", "framing") for c in original_result.checks):
-                raise ai_prepare.PreparationError("Adjust the original framing or retake the photo before AI preparation. AI must not invent missing image detail.")
-            prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour)
+            if any(c.status == "fail" and c.key == "file" for c in original_result.checks):
+                raise ai_prepare.PreparationError("Upload a readable image before OpenAI preparation")
+            full_frame = options.get("print_only",False) or not original_result.jpeg
+            if full_frame:
+                local_options["print_only"] = True
+                prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour, print_only=True)
+            else:
+                prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour)
             result = await run_in_threadpool(lambda: processing.process(
                 prepared.image, row["age_group"], country_id=row["country_id"], **local_options))
             if not result.jpeg:
-                raise ai_prepare.PreparationError("The AI result could not be framed safely. Keep the original or prepare again.")
+                local_options["print_only"] = True
+                result = await run_in_threadpool(lambda: processing.process(
+                    prepared.image, row["age_group"], country_id=row["country_id"], **local_options))
+            if not result.jpeg:
+                raise ai_prepare.PreparationError("The AI result is not a readable photo")
             db.assert_edit(pid, token)
             (config.PHOTO_DIR / f"{pid}_ai_source").write_bytes(prepared.image)
             (config.PHOTO_DIR / f"{pid}_ai.jpg").write_bytes(result.jpeg)
@@ -434,7 +453,8 @@ async def _prepare_candidate(pid, *, lighting, colour):
                 "options": local_options, "checks": result.as_dict()["checks"], "ok": result.ok,
                 "measurements": result.measurements, "model": prepared.model,
                 "request_id": prepared.request_id, "prompt_version": prepared.prompt_version,
-                "lighting": lighting, "colour": colour, "permission_recorded": time.time(),
+                "lighting": lighting, "colour": colour, "print_only": local_options.get("print_only",False), "permission_recorded": time.time(),
+                "original_checks": original_result.as_dict()["checks"], "original_measurements": original_result.measurements,
                 "original_sha256": hashlib.sha256(original).hexdigest(),
                 "edited_source_sha256": hashlib.sha256(prepared.image).hexdigest(),
             }
@@ -487,6 +507,9 @@ async def admin_ai_accept(request):
         options["ai"] = {k: state[k] for k in (
             "model", "request_id", "prompt_version", "lighting", "colour", "permission_recorded",
             "original_sha256", "edited_source_sha256")}
+        options["ai"]["print_only"] = state.get("print_only",False)
+        options["ai"]["original_checks"] = state.get("original_checks",[])
+        options["ai"]["original_measurements"] = state.get("original_measurements",{})
         options["ai"].update(reviewed_at=time.time(), reviewed_by=config.ADMIN_USER)
         _store_result(pid, result)
         db.update_processing(pid, row["country_id"], row["print_template_id"], options, result, token)
@@ -509,6 +532,7 @@ async def admin_restore_original(request):
     with _edit_job(pid) as token:
         row = db.get(pid)
         options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                       print_only=json.loads(row["options"]).get("print_only",False),
                        crop=json.loads(row["options"]).get("crop", _crop_options()))
         data = (config.PHOTO_DIR / f"{pid}_source").read_bytes()
         result = await run_in_threadpool(lambda: processing.process(data, row["age_group"], country_id=row["country_id"], **options))
@@ -604,13 +628,18 @@ async def admin_issue(request):
     with _edit_job(pid) as token:
         row = db.get(pid)
         state = json.loads(row["ai_state"])
+        options = json.loads(row["options"])
+        staff_override = form.get("staff_override") == "on"
+        needs_override = options.get("print_only") or options.get("ai",{}).get("print_only")
+        if needs_override and not staff_override:
+            raise HTTPException(400, "Confirm staff responsibility to issue from a full-frame / print job")
         if str(form.get("review_revision")) != str(row["revision"]):
             raise HTTPException(409, "The photo changed since this review screen opened. Refresh and review the current photo")
         if state.get("status") in ("ready", "running"):
             raise HTTPException(409, "Review and accept or discard the AI preview before issuing a code")
         failed = {c["key"] for c in json.loads(row["checks"]) if c["status"] == "fail"}
         exception = None
-        if failed:
+        if failed and not staff_override:
             category = form.get("exception_category")
             reason = (form.get("exception_reason") or "").strip()[:1000]
             covered = set(form.getlist("exception_checks"))
@@ -627,13 +656,16 @@ async def admin_issue(request):
         if any(form.get(k) != "on" for k in required):
             raise HTTPException(400, "Complete the staff photo review and customer permission before issuing a code")
         try:
-            final = await run_in_threadpool(processing.code_photo, _photo_path(pid).read_bytes(), row["country_id"])
+            if staff_override:
+                final = await run_in_threadpool(processing.code_photo, _photo_path(pid).read_bytes(), row["country_id"], True)
+            else:
+                final = await run_in_threadpool(processing.code_photo, _photo_path(pid).read_bytes(), row["country_id"])
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from None
         final_result = await run_in_threadpool(processing.check_code_photo, final, row["country_id"], row["age_group"])
         final_failed = {c.key for c in final_result.checks if c.status == "fail"}
         allowed = set(exception["checks"]) if exception else set()
-        if final_failed - allowed:
+        if final_failed - allowed and not staff_override:
             # Surface failures discovered on the encoded/resized deliverable so
             # staff can correct them or record a genuinely applicable allowance.
             combined = {c["key"]: c for c in json.loads(row["checks"])}
@@ -645,21 +677,34 @@ async def admin_issue(request):
                 recorded["code_validation"] = final_result.as_dict()
                 connection.execute("UPDATE photos SET checks=?,ok=0,measurements=?,revision=revision+1 WHERE id=? AND edit_token=?",
                                    (json.dumps(list(combined.values())), json.dumps(recorded), pid, token))
-            raise HTTPException(400, "The final code JPEG failed checks: " + ", ".join(sorted(final_failed - allowed)) + ". Refresh the review screen and correct the photo or record an applicable allowance.")
+            raise HTTPException(400, "The final code JPEG failed checks: " + ", ".join(sorted(final_failed - allowed)) + ". Refresh the review screen and correct the photo or confirm staff responsibility to proceed.")
+        override_record = None
+        if staff_override:
+            override_record = {"confirmed_by":config.ADMIN_USER,"confirmed_at":time.time(),
+                               "reason":str(form.get("override_reason") or "").strip()[:1000],
+                               "working_failed_checks":sorted(failed),"final_failed_checks":sorted(final_failed),
+                               "full_frame_job":bool(needs_override),"quality_assessment":"staff_responsibility"}
+            combined = {c["key"]:c for c in json.loads(row["checks"])}
+            for check in final_result.as_dict()["checks"]:
+                if check["status"] == "fail":
+                    combined[check["key"]] = dict(check,detail="Final code JPEG: "+check["detail"])
+            with db.conn() as connection:
+                connection.execute("UPDATE photos SET checks=?,ok=? WHERE id=? AND edit_token=?",
+                                   (json.dumps(list(combined.values())),int(not needs_override and not any(c["status"]=="fail" for c in combined.values())),pid,token))
         db.assert_edit(pid, token)
         (config.PHOTO_DIR / f"{pid}_code.jpg").write_bytes(final)
         options = json.loads(row["options"])
         age_allowances = [c["key"] for c in json.loads(row["checks"]) if c.get("detail", "").startswith("Not required")]
         review = dict(staff=config.ADMIN_USER, reviewed_at=time.time(), revision=row["revision"],
                       country_id=row["country_id"], photo_sha256=hashlib.sha256(final).hexdigest(),
-                      confirmations=list(required), ai=options.get("ai"), exception=exception,
+                      confirmations=list(required), ai=options.get("ai"), exception=exception, staff_override=override_record,
                       processing_options=options,
                       final_checks=final_result.as_dict()["checks"], final_measurements=final_result.measurements,
                       age_group=row["age_group"], age_allowances=age_allowances,
-                      decision="approved_with_exception" if exception else "approved_with_age_allowance" if age_allowances else "checks_passed_and_reviewed")
+                      decision="staff_override" if staff_override else "approved_with_exception" if exception else "approved_with_age_allowance" if age_allowances else "checks_passed_and_reviewed")
         code = db.issue(pid, review, token)
-        # Keep an AI job's original for comparison until the code expires.
-        if not options.get("ai"):
+        # Keep AI and staff-overridden originals as review evidence until expiry.
+        if not options.get("ai") and not staff_override:
             (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
         (config.PHOTO_DIR / f"{pid}_working_source").unlink(missing_ok=True)
         _clear_candidate(pid)

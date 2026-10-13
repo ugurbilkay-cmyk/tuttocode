@@ -24,9 +24,16 @@ submit it through your chosen external provider. No other country can be issued 
 
 OpenAI lighting/colour preparation has a separate preview, staff likeness review
 and local rechecks before code issuance. Configure `OPENAI_API_KEY` on the server
-to enable it. Failed checks block UK issuance except specifically recorded
-applicable allowances; technical failures cannot be waived. Read the
+to enable the optional upgrade; it is not selected by default. Included local
+tools provide exposure, brightness, white balance, highlights, shadows, contrast,
+colour strength and local contrast, alongside background and facial lighting
+tools. Full-frame jobs allow adjustment and printing of poor sources. Quality
+checks are advisory: staff can explicitly take responsibility for issuing despite
+failed checks, which remain red and are stored in the issue record. Read the
 [AI workflow and validation limits](docs/AI_WORKFLOW.md).
+See [local tools and staff responsibility](docs/LOCAL_TOOLS.md) for the workflow.
+The [background-removal evaluation](docs/BACKGROUND_REMOVAL.md) compares local
+portrait matting candidates; the higher-detail replacement is not yet integrated.
 
 Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
 this prototype as a replacement for the current shop software. See also
@@ -65,5 +72,6 @@ pip install -r requirements-dev.txt
 python3 tests/test_photomatic.py
 python3 tests/test_ai_preparation.py
 python3 tests/test_hotspots.py
+python3 tests/test_local_tools.py
 python3 tests/test_e2e.py
 ```

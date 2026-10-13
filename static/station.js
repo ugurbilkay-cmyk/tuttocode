@@ -41,7 +41,7 @@ function selectCountry(id) {
   $('photo-stage').style.setProperty('--photo-ratio', `${selected.width_mm}/${selected.height_mm}`);
   const overlay = $('crop-overlay'); overlay.hidden = !selected.overlay || !$('show-overlay').checked;
   if (selected.overlay) overlay.src = selected.overlay;
-  printTemplate.value = ''; updatePrints(); $('country-dialog').close();
+  printTemplate.value = ''; updatePrints(); updateJobMode(); $('country-dialog').close();
 }
 $('choose-country').addEventListener('click', () => { $('country-dialog').showModal(); $('country-search').focus(); });
 $('close-countries').addEventListener('click', () => $('country-dialog').close());
@@ -52,7 +52,7 @@ $('country-search').addEventListener('input', e => {
   $('no-countries').hidden = visible > 0;
 });
 printer.addEventListener('change', () => { updatePrints();try { sessionStorage.setItem('photomatic-printer',printer.value); } catch (_) {} }); printTemplate.addEventListener('change', updateDimensions);
-$('show-overlay').addEventListener('change', e => $('crop-overlay').hidden = !e.target.checked || !selected.overlay);
+$('show-overlay').addEventListener('change', () => updateJobMode());
 let beforeShown = false;
 $('before-toggle')?.addEventListener('click', () => { beforeShown = !beforeShown; $('before-photo').hidden = !beforeShown; $('stage-photo').hidden = beforeShown; });
 for (const id of ['zoom','x','y','angle']) $(id)?.addEventListener('input', e => $(id + '-value').textContent = e.target.value + (id === 'zoom' ? '' : id === 'angle' ? '°' : '%'));
@@ -65,6 +65,24 @@ document.querySelectorAll('[data-measurements]').forEach(button => button.addEve
 $('close-measurements')?.addEventListener('click', () => $('measurements-dialog').close());
 $('open-ai-measurements')?.addEventListener('click', () => $('ai-measurements-dialog').showModal());
 $('close-ai-measurements')?.addEventListener('click', () => $('ai-measurements-dialog').close());
+document.querySelectorAll('.local-slider').forEach(input => input.addEventListener('input', () => {
+  input.closest('label').querySelector('output').textContent = `${input.value} ${input.dataset.unit}`;
+}));
+$('reset-local-tools')?.addEventListener('click', () => {
+  document.querySelectorAll('#local-tools .local-slider').forEach(input => { input.value=0; input.dispatchEvent(new Event('input',{bubbles:true})); });
+  document.querySelectorAll('#local-tools input[type=checkbox]').forEach(input => { input.checked=false; input.dispatchEvent(new Event('input',{bubbles:true})); });
+});
+function updateJobMode(reset=false) {
+  const fullFrame = $('print-only')?.checked ?? Boolean(window.stationFullFrame);
+  if ($('crop-controls')) $('crop-controls').hidden = Boolean(fullFrame);
+  if (fullFrame && reset) {
+    for (const [id,value] of [['zoom',1],['x',0],['y',0],['rotation',0],['angle',0]]) {
+      if ($(id)) { $(id).value=value; $(id).dispatchEvent(new Event('input',{bubbles:true})); }
+    }
+  }
+  $('crop-overlay').hidden = Boolean(fullFrame) || !$('show-overlay').checked || !selected.overlay;
+}
+$('print-only')?.addEventListener('change', () => updateJobMode(true)); updateJobMode();
 let hotspotBusy = false;
 function hotspotElement(tag, text, className) {
   const element = document.createElement(tag);
