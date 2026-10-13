@@ -1,6 +1,6 @@
 # Tuttoprint and Photomatic integration plan
 
-Implementation plan prepared on 13 October 2026. The manual preserved-JPEG import, staff review and UK issuance path are implemented in the local prototype. The real Photomatic export round trip, Windows helper and production validation remain outstanding.
+Implementation plan prepared on 13 October 2026. The manual preserved-JPEG import, staff review and UK issuance path are implemented in the local prototype. A genuine sample was saved and reopened on the equipped shop installation, transferred and imported byte for byte. Photomatic generated another analysis crop on reopening; exact-file measurement provenance, repeated-export behaviour, the Windows helper and production validation remain outstanding.
 
 The first version will combine Tuttoprint preparation and UK codes with the working Windows Photomatic installation for document framing, quality review and country printing. Staff will operate both applications initially. This preserves the useful vendor measurements while our independent quality engine is calibrated against real examples.
 
@@ -11,8 +11,8 @@ The first version will combine Tuttoprint preparation and UK codes with the work
 | Local enhancement and optional OpenAI preparation | Implemented in the local Tuttoprint prototype | Export a named candidate for Photomatic review |
 | Photomatic detailed measurements | Observed working on the local Windows installation | Record the exact document, individual results and final export |
 | Country profiles and print layouts | Imported into Tuttoprint; Photomatic printing remains available | Test physical DE100-XD output separately |
-| Reviewed Photomatic import | Implemented in the local prototype | Verify with a real Photomatic export |
-| Own UK code and retrieval paths | Implemented in the prototype | Adapt issuance for preserved imports and verify the public service with HMPO |
+| Reviewed Photomatic import | Implemented; genuine vendor sample imported unchanged | Verify representative staff jobs and record the analysis crop |
+| Own UK code and retrieval paths | Preserved issuance implemented and locally tested | Verify the public service with HMPO |
 | Irish codes | External provider workflow | Retain export to the external provider |
 | Automatic extraction of Photomatic scores | No verified interface | Investigate structured results separately; use staff entry initially |
 
@@ -25,7 +25,7 @@ The normal preparation upload, Save and code paths can process or re-encode an i
 3. Export the prepared candidate with a job reference. Open it in Photomatic and select the matching document profile. Photomatic may adjust the framing.
 4. Review Image Quality, Face size and position, Background and the individual measurements. Record failures, cautions and untested fields as they appear.
 5. Save a digital portrait from Photomatic into a dedicated job folder. A print sheet from Backup is a separate output.
-6. Reopen that saved portrait in Photomatic and inspect it again. If Photomatic changes its framing or requires another export, repeat the export review until the deliverable is stable. Record any difference between assessed pixels and the saved deliverable rather than claiming an automatic verified pass.
+6. Reopen that saved portrait in Photomatic and inspect it again. Record Input Image Size and ID photo data dimensions: the equipped-shop test generated a new analysis crop on reopening. Inspect the exact saved JPEG separately. Do not assume repeated saving will converge or that scores for the new crop measure the unchanged file.
 7. Import the final JPEG into Tuttoprint in reviewed-file mode. Staff confirm the document, review evidence, likeness and customer permission against that exact file.
 8. For UK jobs, issue our code using the preserved JPEG. For Irish jobs, export for the external provider. For other countries, print or save through the selected workflow.
 
@@ -86,7 +86,7 @@ Track missed defects and false alarms, including differences by capture conditio
 | 5 | Shop pilot | Public retrieval verified and physical DE100-XD prints checked |
 | In parallel after reference capture | Independent metric calibration | Per-metric evaluation with known limitations |
 
-The immediate next implementation step is the digital export experiment. Its result determines the import format and whether the first handoff can use ordinary Save directly or needs an additional final export review step.
+The first ordinary Save/import experiment succeeded with an 800 × 1120 JPEG. The next reference experiment must explain the 780 × 1093 analysis crop generated on reopening, establish the assessed pixel region and test representative prepared portraits and repeat exports. Then simplify the staff handoff with the Windows helper. Public retrieval and physical print validation remain separate milestones.
 
 ## Repository references
 

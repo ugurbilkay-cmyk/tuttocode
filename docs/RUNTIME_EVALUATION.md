@@ -139,7 +139,9 @@ invoke our processing, and their issuance may resize/re-encode the JPEG. Those
 paths are separate from the preserved import. Validate JPEG decode,
 dimensions and file bytes without editing the delivered image, and require
 review of the current hash before issuance. An edit, replacement or country
-change cancels prior approval; technical failures still block issuance.
+change cancels prior approval. File-format and quality warnings permit a recorded
+staff-responsibility decision; integrity errors and stale evidence require a new
+valid import or review.
 
 A later Windows helper can exchange per-job files through dedicated folders,
 wait for export writes to complete and upload through an authenticated HTTPS
@@ -153,7 +155,7 @@ review remains mandatory.
 Before shop use, verify the second Windows installation independently, final
 export behaviour, review/byte-change failure cases, public HTTPS hosting, signed
 HMPO retrieval, expiry and code-slip printing. This companion/import workflow
-is not yet validated against a real Photomatic export. The local manual import
+was subsequently tested with a real Photomatic export as recorded below. The local manual import
 and exact-file issuance implementation is described in [staff instructions](REVIEWED_IMPORT.md).
 
 ## Local Windows demo export test on 13 October 2026
@@ -183,3 +185,52 @@ The private baseline record is in ignored
 output/photomatic-export-evaluation-20261013/baseline-and-export-status.json.
 Licence keys, contact details and remote identifiers are excluded. No provider
 code, physical print, email or OpenAI request was initiated by this test.
+
+## Equipped shop export and preserved import on 13 October 2026
+
+The installed vendor sample IMG_1012.jpg was opened in the working Windows shop
+installation and United Kingdom Online Renewal selected. Photomatic displayed
+input 2133 × 3200 and ID photo data 1977 × 2769, with all three summary categories
+dark green. Observed values included confidence 90, general quality 86,
+sharpness 82, motion blur 82, hotspots 70, face width 31.97%, face height 33.84%
+and eye height 39.15% from the top.
+
+Normal Save exported a single Format5to7 portrait at 800 × 1120. A dedicated test
+folder on the shop desktop was used because the configured save destination did
+not exist. Save opened the vendor print preview; Back returned to the photo
+screen without submitting a test print. No licence, online-service activation or
+security configuration was changed.
+
+Reopening the saved JPEG showed Input Image Size 800 × 1120 but ID photo data
+780 × 1093. Image quality was light green; geometry and background summaries
+were dark green. Observed values included confidence 90, general quality 86,
+sharpness 80, motion blur 84, hotspots 69, face width 33.08%, face height 34.49%
+and eye height 37.69% from the top. Inter-eye distance was 114 pixels, light
+green in the quality screen and dark green in the geometry screen. Background
+detail was inspected before export only; individual background results after
+reopening were not recorded.
+
+The geometry screen displayed face-width bounds 55–65% while measured face
+width was about 32–33% and the summary remained green. This observation does not
+establish the actual decision rule. Do not use these displayed controls alone
+as acceptance thresholds or convert light green into a calibrated ICAO score.
+
+The JPEG was transferred through the existing remote-control file-transfer
+feature to the local private test folder. It is RGB, orientation 1, 515,145
+bytes, SHA-256 `4f8ac0ff648962da806422e83db9a07a621f528d1a09f13b86d0210bc5e353a9`.
+The normal standalone import endpoint created a separate pending review job.
+Save exact JPEG and full-photo responses both matched the transferred file
+byte for byte. No customer confirmations or machine-verified metric passes
+were entered for the vendor sample. Numerical observations are retained
+separately from customer review evidence.
+
+Private observations and the import receipt are in ignored
+output/shop-export-test-20261013. Vendor images and remote identifiers are not
+Git artifacts. No test code, email, physical print or OpenAI request was
+initiated. Staff used the station for an unrelated customer job during the
+pause in testing; that customer workflow is outside this export test.
+
+The file handoff is verified. Linking structured vendor measurements to the
+exact exported JPEG remains unproven because reopening generated another crop.
+Public HMPO retrieval and physical printer sizing remain separate validation
+steps.

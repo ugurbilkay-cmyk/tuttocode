@@ -7,7 +7,7 @@ Tuttoprint can now import a digital JPEG exported by Photomatic, record staff re
 1. Prepare the camera photo in the normal studio screen. Apply all pending changes and finish any OpenAI preview review.
 2. Click Save for Photomatic. This downloads the prepared master with a job reference, without another Save-profile resize.
 3. Open that file in Photomatic, select the matching document and review its individual checks.
-4. Save a single digital portrait using a unique filename. Reopen and review the saved portrait in Photomatic so the review describes the final export.
+4. Save a single digital portrait using a unique filename. Reopen it in Photomatic and record both Input Image Size and ID photo data dimensions. Photomatic may analyse a new crop on reopening; its displayed scores then describe that crop, rather than necessarily the full saved JPEG. Separately inspect the exact imported JPEG and record this distinction in the review notes.
 5. Return to the preparation job and click Import reviewed export. Select the saved JPEG and confirm the document. Import unchanged JPEG creates a separate linked review job.
 6. Record the operator, actual Photomatic profile, category results, individual measurements and final-photo confirmations. Save staff review.
 7. For a UK document, confirm the recorded review and issue the code. Failed checks or untested categories remain visible and staff can proceed under recorded responsibility. Irish jobs retain the external-provider route.
@@ -34,4 +34,6 @@ An imported review job cannot be enhanced or recropped in place. Changes belong 
 
 The preserved-import suite covers byte equality, signed retrieval with a local test key, tampered files, stale and concurrent reviews, untested results, operator responsibility, source-resolution evidence, retained originals, exact email attachments with mocked sending, non-UK issuance, EXIF orientation and expiry cleanup.
 
-The local workflow smoke test uses a prepared portrait with no recorded Photomatic review and no issued code. A genuine Photomatic save and reopen round trip remains to be tested on the equipped Windows station. Public HMPO retrieval and physical DE100-XD printing also remain production validation steps.
+On 13 October 2026, the equipped Windows station saved the installed vendor sample as an 800 × 1120 RGB JPEG (515,145 bytes) under United Kingdom Online Renewal. After transfer, a separate local review job imported it; both Save exact JPEG and the full-photo response returned byte-identical data. Its SHA-256 is `4f8ac0ff648962da806422e83db9a07a621f528d1a09f13b86d0210bc5e353a9`. No customer review was attested and no code was issued for this sample.
+
+Reopening that export in Photomatic produced ID photo data at 780 × 1093. Some displayed values changed, including hotspots from 70 before export to 69 after reopening. This confirms the manual file handoff, and also establishes why staff must record the analysis context. It does not establish an automatic, exact-file vendor pass or equivalent ICAO calculations in our engine. Public HMPO retrieval and physical DE100-XD printing remain production validation steps.

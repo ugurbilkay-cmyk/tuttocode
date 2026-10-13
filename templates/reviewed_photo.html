@@ -30,6 +30,7 @@
 <div class="card">
 <h2>Photomatic results</h2>
 <p>Enter the values and statuses shown by Photomatic for the final saved portrait. These are vendor scores, not our calculated measurements. Keep grey or unmeasured fields as Not tested.</p>
+<p class="muted">Photomatic may calculate a new crop when you reopen the export. Record its Input Image Size and ID photo data dimensions in the review notes. If they differ, the displayed measurements describe that crop; separately inspect the exact JPEG shown above before deciding to issue.</p>
 <form id="vendor-review-form" action="/admin/p/{{ row.id }}/external-review" method="post">
 <input type="hidden" name="review_revision" value="{{ row.revision }}"><input type="hidden" name="photo_sha256" value="{{ record.file.sha256 }}">
 <fieldset {% if row.status!='pending' %}disabled{% endif %}>
