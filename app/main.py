@@ -71,13 +71,16 @@ def _clear_candidate(pid):
 
 
 def _store_result(pid, result):
-    for suffix in (".jpg", "_prev.jpg", "_before.jpg"):
+    for suffix in (".jpg", "_prev.jpg", "_before.jpg", "_clean_before.png", "_clean_after.png", "_clean_mask.png"):
         (config.PHOTO_DIR / f"{pid}{suffix}").unlink(missing_ok=True)
     if result.jpeg:
         _photo_path(pid).write_bytes(result.jpeg)
         _photo_path(pid, True).write_bytes(result.preview_jpeg)
         if result.before_jpeg:
             (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
+        for name in ('before','after','mask'):
+            if name in result.cleaner_assets:
+                (config.PHOTO_DIR / f"{pid}_clean_{name}.png").write_bytes(result.cleaner_assets[name])
 
 
 def _client_ip(request):
@@ -195,11 +198,7 @@ async def _process_and_store(data, age, source, opts=None, profile=None, layout=
     options.setdefault("crop", _crop_options())
     result = await run_in_threadpool(lambda: processing.process(data, age, country_id=profile["id"], **options))
     pid = db.new_id()
-    if result.jpeg:
-        _photo_path(pid).write_bytes(result.jpeg)
-        _photo_path(pid, True).write_bytes(result.preview_jpeg)
-        if result.before_jpeg:
-            (config.PHOTO_DIR / f"{pid}_before.jpg").write_bytes(result.before_jpeg)
+    _store_result(pid,result)
     # A pending shop photo can be recropped; the source is removed on issue/expiry.
     if source == "shop":
         (config.PHOTO_DIR / f"{pid}_source").write_bytes(data)
@@ -405,6 +404,13 @@ async def admin_reprocess(request):
     options = dict(_opts(form), crop=_crop_options(form))
     with _edit_job(pid) as token:
         row = db.get(pid)
+        previous = json.loads(row['options'])
+        if (options['enhancement_options']['blemish_keep'] and
+            str(form.get('cleaner_revision',row['revision']))!=str(row['revision'])):
+            raise HTTPException(409,'Photo changed; refresh before using saved keep areas')
+        if (row['country_id']!=profile['id'] or previous.get('crop',_crop_options())!=options['crop'] or
+            bool(previous.get('print_only'))!=options['print_only']):
+            options['enhancement_options']['blemish_keep'] = []
         source = config.PHOTO_DIR / f"{pid}_working_source"
         if not source.exists():
             source = config.PHOTO_DIR / f"{pid}_source"
@@ -412,7 +418,6 @@ async def admin_reprocess(request):
             raise HTTPException(409, "Upload a new photo to change this crop")
         result = await run_in_threadpool(lambda: processing.process(source.read_bytes(), row["age_group"], country_id=profile["id"], **options))
         db.assert_edit(pid, token)
-        previous = json.loads(row["options"])
         if previous.get("ai"):
             options["ai"] = previous["ai"]
         _store_result(pid, result)
@@ -749,6 +754,20 @@ async def admin_before(request):
     return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
+async def admin_cleaner_asset(request):
+    _require_admin(request)
+    pid,name=request.path_params['pid'],request.path_params['name']
+    row=db.get(pid) if ID_RE.fullmatch(pid) else None
+    if name not in ('before','after','mask') or not row or row['status']=='rejected' or row['expires']<=time.time():
+        raise HTTPException(404)
+    if row['edit_token']:raise HTTPException(409,'Photo is being processed')
+    revision=request.query_params.get('revision')
+    if revision is not None and revision!=str(row['revision']):raise HTTPException(409,'Repair preview changed; refresh the photo')
+    path=config.PHOTO_DIR/f'{pid}_clean_{name}.png'
+    if not path.is_file():raise HTTPException(404)
+    return Response(path.read_bytes(),media_type='image/png',headers={'Cache-Control':'no-store'})
+
+
 async def admin_sheet(request):
     _require_admin(request)
     pid = request.path_params["pid"]
@@ -886,6 +905,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
     Route("/admin/p/{pid}/before.jpg", admin_before),
+    Route("/admin/p/{pid}/cleaner/{name}.png", admin_cleaner_asset),
     Route("/admin/p/{pid}/sheet.jpg", admin_sheet),
     Route("/admin/p/{pid}/save.jpg", admin_save),
     Route("/admin/p/{pid}/email", admin_email, methods=["POST"]),

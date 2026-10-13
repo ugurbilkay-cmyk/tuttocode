@@ -1,6 +1,11 @@
 """Pinned optional local restoration assets; no model downloads during editing."""
 VERSION = "local-enhancer-v1"
 MODELS = {
+    "blemish": dict(label="Advanced skin cleaning · ModelScope",licence="Apache-2.0",
+        repository="https://www.modelscope.cn/models/damo/cv_unet_skin-retouching",
+        revision="b84ee0341a26f9cf440a47ba38133ed181fd51b1",
+        files={"joint_20210926.pth":"c9e1388b19d9334c90db08308c86de208f535920ee381ae8a9cb63484a78351a"},
+        urls={"joint_20210926.pth":"https://www.modelscope.cn/api/v1/models/damo/cv_unet_skin-retouching/repo?Revision=b84ee0341a26f9cf440a47ba38133ed181fd51b1&FilePath=joint_20210926.pth"}),
     "retinex": dict(label="Low-light recovery · Retinexformer", licence="MIT",
         repository="https://github.com/caiyuanhao1998/Retinexformer",
         revision="1e9a0efce4b306b6701b824768370ff26066c32a",
@@ -28,3 +33,11 @@ MODELS = {
 EXPORT_RELEASE = "https://github.com/darktable-org/darktable-ai/releases/download/release-5.6.0"
 RETINEX_ARCH_SHA256 = "1567c89d55285a3c1a4d4ca33f288b1fd98dc6b6bbdf971eda02d745f9087631"
 SRVGG_ARCH_SHA256 = "e00a5886004a563c6ca0b9868513ec004687ba7103941fffabf278465a1bec59"
+BLEMISH_CODE_REVISION = "958c3f7da68b700cc671134e267c356a2444398b"
+BLEMISH_ARCH = {
+    "detection_unet_in.py":"c283e9b1e59278f16b7f207be3623a6b70902abc91a6bb749c3c782b3868a032",
+    "detection_module.py":"23fce16544465ef41232ce652fecc95a71db3bb81af575d4aefc472a4e45a2ec",
+    "inpainting_unet.py":"ce821d366ee2e5b46803aef4b4390d87cd62c1807bb924a111a23a474cf9703b",
+    "gconv.py":"fca8ece60d31dabf3d6eda186657efd72328f94aafe7b11fe130259ee873bd20",
+    "weights_init.py":"5feb5da62e7a97cca5e60488c96d76c48074ca7521526dca0a91498880381e5b",
+}

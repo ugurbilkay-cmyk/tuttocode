@@ -74,6 +74,9 @@ $('reset-local-tools')?.addEventListener('click', () => {
   if ($('enhancer-scale')) { $('enhancer-scale').value='1'; $('enhancer-scale').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-engine')) { $('enhancer-engine').value='plksr'; $('enhancer-engine').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-preset')) $('enhancer-preset').value='';
+  if ($('blemish-sensitivity')) $('blemish-sensitivity').value='gentle';
+  if ($('blemish-size')) $('blemish-size').value='medium';
+  if ($('blemish-keep')) $('blemish-keep').value='[]';
 });
 $('enhancer-preset')?.addEventListener('change', event => {
   const preset = JSON.parse($('enhancer-presets').textContent)[event.target.value];
@@ -83,7 +86,7 @@ $('enhancer-preset')?.addEventListener('change', event => {
     input.value=preset.adjustments[input.name] ?? 0;
     input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
+  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
     const input=form.elements.namedItem('enhancer_'+key);
     if (input) { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); }
   }
@@ -104,6 +107,47 @@ function updateJobMode(reset=false) {
 }
 $('print-only')?.addEventListener('change', () => updateJobMode(true)); updateJobMode();
 let hotspotBusy = false;
+let cleanerKeeps=[],cleanerImage=null,cleanerOverlay=null,cleanerDrawing=false;
+function renderCleaner() {
+  const canvas=$('cleaner-canvas'); if (!canvas || !cleanerImage) return;
+  const context=canvas.getContext('2d');context.clearRect(0,0,canvas.width,canvas.height);
+  context.drawImage(cleanerImage,0,0,canvas.width,canvas.height);
+  if ($('cleaner-show-mask').checked && cleanerOverlay) context.drawImage(cleanerOverlay,0,0);
+  context.strokeStyle='#16a34a';context.fillStyle='rgba(22,163,74,0.12)';context.lineWidth=2;
+  for (const [x,y,r] of cleanerKeeps) { context.beginPath();context.arc(x*canvas.width,y*canvas.height,r*Math.min(canvas.width,canvas.height),0,2*Math.PI);context.fill();context.stroke(); }
+  $('cleaner-progress').textContent=`${cleanerKeeps.length} keep areas.${window.stationEditable ? ' Apply changes to recalculate the repairs.' : ' Read-only review.'}`;
+}
+function loadCleanerImage(url) { return new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('Repair preview unavailable. Refresh the photo.'));image.src=url;}); }
+$('open-cleaner')?.addEventListener('click',async()=>{
+  if (jobDirty) { alert('Apply changes before reviewing skin repairs.');return; }
+  $('cleaner-dialog').showModal();$('cleaner-progress').textContent='Loading repairs…';if ($('cleaner-use')) $('cleaner-use').disabled=true;
+  cleanerImage=null;cleanerOverlay=null;cleanerDrawing=false;cleanerKeeps=JSON.parse($('blemish-keep').value);
+  try {
+    const images=await Promise.all([loadCleanerImage(`/admin/p/${window.stationPhotoId}/cleaner/before.png?revision=${window.stationRevision}`),loadCleanerImage(`/admin/p/${window.stationPhotoId}/cleaner/mask.png?revision=${window.stationRevision}`)]);
+    const canvas=$('cleaner-canvas'),ratio=Math.min(1,1280/Math.max(images[0].width,images[0].height));
+    canvas.width=Math.round(images[0].width*ratio);canvas.height=Math.round(images[0].height*ratio);cleanerImage=images[0];
+    cleanerOverlay=document.createElement('canvas');cleanerOverlay.width=canvas.width;cleanerOverlay.height=canvas.height;
+    const context=cleanerOverlay.getContext('2d');context.drawImage(images[1],0,0,canvas.width,canvas.height);
+    const pixels=context.getImageData(0,0,canvas.width,canvas.height);
+    for (let i=0;i<pixels.data.length;i+=4) { const alpha=pixels.data[i];pixels.data[i]=30;pixels.data[i+1]=144;pixels.data[i+2]=255;pixels.data[i+3]=Math.round(alpha*.65); }
+    context.putImageData(pixels,0,0);renderCleaner();if ($('cleaner-use')) $('cleaner-use').disabled=false;
+  } catch(error) {$('cleaner-progress').textContent=error.message;}
+});
+function cleanerMark(event) {
+  if (!window.stationEditable || !cleanerImage || cleanerKeeps.length>=256) return;
+  const bounds=$('cleaner-canvas').getBoundingClientRect(),x=Math.max(0,Math.min(1,(event.clientX-bounds.left)/bounds.width)),y=Math.max(0,Math.min(1,(event.clientY-bounds.top)/bounds.height)),r=Number($('cleaner-radius').value);
+  const previous=cleanerKeeps.at(-1);
+  if (previous && cleanerDrawing && Math.hypot(x-previous[0],y-previous[1])<r/2) return;
+  cleanerKeeps.push([x,y,r]);renderCleaner();
+}
+$('cleaner-canvas')?.addEventListener('pointerdown',event=>{cleanerDrawing=true;event.currentTarget.setPointerCapture(event.pointerId);cleanerMark(event);});
+$('cleaner-canvas')?.addEventListener('pointermove',event=>{if (cleanerDrawing) cleanerMark(event);});
+for (const name of ['pointerup','pointercancel']) $('cleaner-canvas')?.addEventListener(name,()=>cleanerDrawing=false);
+$('close-cleaner')?.addEventListener('click',()=>$('cleaner-dialog').close());
+$('cleaner-show-mask')?.addEventListener('change',renderCleaner);
+$('cleaner-undo')?.addEventListener('click',()=>{cleanerKeeps.pop();renderCleaner();});
+$('cleaner-clear')?.addEventListener('click',()=>{cleanerKeeps=[];renderCleaner();});
+$('cleaner-use')?.addEventListener('click',()=>{$('blemish-keep').value=JSON.stringify(cleanerKeeps);markDirty();$('cleaner-dialog').close();});
 function hotspotElement(tag, text, className) {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
@@ -226,13 +270,14 @@ $('photo-form').addEventListener('submit', () => {
   const button = $('process-button'); if (button) {
     button.disabled=true;
     const detailBackground = document.querySelector('input[name=replace_bg]')?.checked && $('background-engine')?.value === 'hr';
-    const enhancerActive = ['lighting','denoise'].some(key => Number(document.querySelector(`[name=enhancer_${key}]`)?.value)>0) || Number($('enhancer-scale')?.value)>1;
+    const enhancerActive = ['lighting','denoise','blemish'].some(key => Number(document.querySelector(`[name=enhancer_${key}]`)?.value)>0) || Number($('enhancer-scale')?.value)>1;
     button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : enhancerActive ? 'Enhancing locally… This can take several minutes.' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
   }
 });
 $('photo-form').addEventListener('input', event => {
-  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine')) $('enhancer-preset').value='';
+  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine, #blemish-sensitivity, #blemish-size')) $('enhancer-preset').value='';
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();
+  if (['zoom','x','y','rotation','angle','print-only','file-input'].includes(event.target.id) && $('blemish-keep')) $('blemish-keep').value='[]';
 });
 document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.addEventListener('click', event => { if (jobDirty) event.preventDefault(); }));
 

@@ -51,7 +51,7 @@ def main():
             else:download(spec['url'],stage/'model.pth')
             for file,expected in spec['files'].items():
                 if digest(stage/file)!=expected:raise ValueError('Digest mismatch: '+name+'/'+file)
-            licence=Path(__file__).parent/'vendor'/({'retinex':'RETINEXFORMER','nafnet':'NAFNET','plksr':'PLKSR','realesrgan':'REALESRGAN'}[name]+'_LICENSE.txt')
+            licence=Path(__file__).parent/'vendor'/({'retinex':'RETINEXFORMER','nafnet':'NAFNET','plksr':'PLKSR','realesrgan':'REALESRGAN','blemish':'MODELSCOPE'}[name]+'_LICENSE.txt')
             shutil.copyfile(licence,stage/'LICENSE.txt')
             (stage/'bundle.json').write_text(json.dumps(spec,indent=2))
             destination=args.destination/name;destination.mkdir(exist_ok=True)

@@ -13,12 +13,15 @@
 <main class="station">
   <form id="photo-form" method="post" enctype="{% if row %}application/x-www-form-urlencoded{% else %}multipart/form-data{% endif %}" action="{% if row %}/admin/p/{{ row.id }}/reprocess{% else %}/admin/new{% endif %}">
     <input type="hidden" name="opts" value="1">
+    <input type="hidden" name="enhancer_blemish_keep" id="blemish-keep" value='{{ options.get("enhancement_options",{}).get("blemish_keep",[])|tojson }}'>
+    <input type="hidden" name="cleaner_revision" value="{{ row.revision if row else 0 }}">
     <div class="workspace">
       <section class="photo-column" aria-label="Photo workspace">
         <div class="stage-tools">
           <span id="photo-size">{{ profile.width_mm|int }} × {{ profile.height_mm|int }} mm</span>
           <label><input id="show-overlay" type="checkbox" checked> Guides</label>
           {% if has_photo %}<button type="button" id="before-toggle">Before / After</button>{% endif %}
+          {% if row and (row.measurements|fromjson).get('skin_cleaning',{}).get('status')=='applied' %}<button type="button" id="open-cleaner">Review skin repairs</button>{% endif %}
         </div>
         <div class="photo-stage" id="photo-stage" style="--photo-ratio:{{ profile.width_mm }}/{{ profile.height_mm }}">
           {% if has_photo %}
@@ -90,6 +93,13 @@
           {% for control in enhancer_controls %}
           <label class="local-control">{{ control.label }} <output>{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0)|float }} {{ control.unit }}</output><input class="local-slider enhancer-slider" type="range" name="enhancer_{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0) }}" data-unit="{{ control.unit }}"></label>
           {% endfor %}
+          <label class="field-label">Skin cleaning sensitivity<select name="enhancer_blemish_sensitivity" id="blemish-sensitivity">
+          {% for key,label in [('gentle','Gentle · fewer spot candidates'),('standard','Standard'),('strong','Strong · more spot candidates')] %}<option value="{{ key }}" {% if enh.get('blemish_sensitivity','gentle')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select></label>
+          <label class="field-label">Repair spot sizes<select name="enhancer_blemish_size" id="blemish-size">
+          {% for key,label in [('small','Small spots'),('medium','Small and medium spots'),('large','Larger patches'),('all','All detected sizes')] %}<option value="{{ key }}" {% if enh.get('blemish_size','medium')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select></label>
+          <p class="subtle">Advanced cleaning repairs detected spots locally{% if not installed.blemish %} · model needs setup{% endif %}. Apply changes, then review the highlighted repairs. Mark freckles, moles or any area you want to keep.</p>
           <label class="field-label">AI enlargement<select name="enhancer_scale" id="enhancer-scale">
           {% for factor in [1,2,4] %}<option value="{{ factor }}" {% if enh.get('scale',1)==factor %}selected{% endif %}>{{ 'Off · standard master' if factor==1 else factor|string + '× · enlarged master' }}</option>{% endfor %}
           </select></label>
@@ -237,7 +247,18 @@
 </dialog>
 <dialog id="camera-dialog"><div class="dialog-heading"><h2>Camera</h2><button type="button" id="close-camera">Close</button></div><video id="camera-video" autoplay playsinline muted></video><p id="camera-error" class="notice" hidden></p><button type="button" id="capture-photo">Take photo</button></dialog>
 <script id="station-catalog" type="application/json">{{ {'countries':catalog.countries,'prints':catalog.prints}|tojson }}</script>
+{% if row and (row.measurements|fromjson).get('skin_cleaning',{}).get('status')=='applied' %}
+<dialog id="cleaner-dialog">
+  <div class="dialog-heading"><h2>Review skin repairs</h2><button type="button" id="close-cleaner">Close</button></div>
+  <p class="subtle">Blue highlights show spot repairs.{% if editable %} Click or drag on the left photo to mark an area to keep; green circles preserve those pixels when you apply changes.{% else %} This issued or locked photo is available for review.{% endif %}</p>
+  <div class="cleaner-grid"><section><h3>Before cleaning · mark areas to keep</h3><canvas id="cleaner-canvas"></canvas></section><section><h3>After spot cleaning</h3><img id="cleaner-after" loading="lazy" src="/admin/p/{{ row.id }}/cleaner/after.png?revision={{ row.revision }}" alt="After local spot repairs"></section></div>
+  <label class="tick"><input id="cleaner-show-mask" type="checkbox" checked> Show repair highlights</label>
+  {% if editable %}<label class="local-control">Keep-area brush size <input id="cleaner-radius" type="range" min="0.005" max="0.06" step="0.005" value="0.015"></label>{% endif %}
+  <p id="cleaner-progress" class="subtle"></p>
+  {% if editable %}<button type="button" id="cleaner-undo">Undo last keep area</button><button type="button" id="cleaner-clear">Clear keep areas</button><button type="button" id="cleaner-use">Use keep areas · then Apply changes</button>{% endif %}
+</dialog>
+{% endif %}
 <script id="enhancer-presets" type="application/json">{{ enhancer_presets|tojson }}</script>
-<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationEditable={{ editable|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};</script>
+<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationRevision={{ (row.revision if row else 0)|tojson }};window.stationEditable={{ editable|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};</script>
 <script src="/static/station.js" defer></script>
 </body></html>

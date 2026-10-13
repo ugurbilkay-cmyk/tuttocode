@@ -17,9 +17,11 @@ CONTROLS = [
     dict(key="denoise", label="Noise cleanup", unit="%", minimum=0, maximum=100, step=5),
     dict(key="detail", label="Detail sharpening", unit="%", minimum=0, maximum=100, step=5),
     dict(key="skin", label="Skin smoothing · protect hotspots", unit="%", minimum=0, maximum=100, step=5),
+    dict(key="blemish", label="Advanced skin cleaning", unit="%", minimum=0, maximum=100, step=5),
     dict(key="upscale_strength", label="AI upscale strength", unit="%", minimum=0, maximum=100, step=5),
 ]
-DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., scale=1, upscale_strength=70., upscale_engine='plksr')
+DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., blemish=0., blemish_sensitivity='gentle',
+                blemish_size='medium',blemish_keep=[],scale=1,upscale_strength=70.,upscale_engine='plksr')
 PRESETS = {
     "natural": dict(label="Natural portrait", enhancement=dict(lighting=0,denoise=15,detail=10,skin=20,scale=1),
                     adjustments={}, auto_adjust=True, fix_shadows=False),
@@ -39,6 +41,29 @@ def validate(values=None):
     if set(values)-set(DEFAULTS): raise ValueError("Unknown enhancer setting")
     result = {}
     for key, default in DEFAULTS.items():
+        if key=='blemish_keep':
+            value=values.get(key,[])
+            if isinstance(value,str):
+                if len(value)>24000: raise ValueError('Too many preserved skin areas')
+                try:value=json.loads(value)
+                except (ValueError,TypeError):raise ValueError('Invalid preserved skin areas') from None
+            if not isinstance(value,list) or len(value)>256:raise ValueError('Invalid preserved skin areas')
+            cleaned=[]
+            for circle in value:
+                if not isinstance(circle,list) or len(circle)!=3:raise ValueError('Invalid preserved skin area')
+                try:x,y,r=map(float,circle)
+                except (ValueError,TypeError):raise ValueError('Invalid preserved skin area') from None
+                if not all(math.isfinite(n) for n in (x,y,r)) or not (0<=x<=1 and 0<=y<=1 and .002<=r<=.15):
+                    raise ValueError('Invalid preserved skin area')
+                cleaned.append([x,y,r])
+            result[key]=cleaned
+            continue
+        if key in ('blemish_sensitivity','blemish_size'):
+            value=values.get(key,default)
+            allowed=('gentle','standard','strong') if key=='blemish_sensitivity' else ('small','medium','large','all')
+            if value not in allowed:raise ValueError('Invalid advanced skin setting')
+            result[key]=value
+            continue
         if key=='upscale_engine':
             value=values.get(key,default)
             if value not in ('plksr','realesrgan','lanczos'): raise ValueError('Unknown enlargement engine')
@@ -54,7 +79,7 @@ def validate(values=None):
 
 def active(values=None):
     v=validate(values)
-    return bool(v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['scale']!=1)
+    return bool(v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['blemish'] or v['scale']!=1)
 
 
 def choices():

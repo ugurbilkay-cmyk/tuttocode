@@ -20,6 +20,11 @@
 .local-control{display:block;margin:12px 0;font-size:13px}
 .local-control output{float:right;color:var(--blue)}
 .manual-tools{margin-top:14px;border-top:1px solid var(--edge);padding-top:10px}
+.cleaner-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.cleaner-grid canvas,.cleaner-grid img{display:block;width:100%;height:auto}
+#cleaner-canvas{touch-action:none;cursor:crosshair}
+#cleaner-dialog{width:min(1200px,96vw);max-width:96vw}
+@media(max-width:650px){.cleaner-grid{grid-template-columns:1fr}}
 .premium-tools>summary{font-size:18px;color:var(--blue);cursor:pointer}
 
 *{

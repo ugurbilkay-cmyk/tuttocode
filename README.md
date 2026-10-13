@@ -81,5 +81,6 @@ python3 tests/test_local_tools.py
 python3 tests/test_background.py
 python3 tests/test_enhancement.py
 python3 tests/test_skin.py
+python3 tests/test_blemishes.py
 python3 tests/test_e2e.py
 ```

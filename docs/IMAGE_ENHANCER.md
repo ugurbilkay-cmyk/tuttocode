@@ -15,6 +15,7 @@ accumulate sharpening or exposure changes. Restore original clears the tools.
 | Noise cleanup | NAFNet SIDD, model/source blend | Off |
 | Detail sharpening | Thresholded, bounded Lab-lightness unsharp mask | Off |
 | Skin smoothing | Landmark-guided, edge-aware texture softening with hotspot preservation | Off |
+| Advanced skin cleaning | ModelScope local blemish detector + gated-convolution repair | Off |
 | AI enlargement | RealPLKSR natural detail, Real-ESRGAN fast smooth detail, or standard Lanczos; 2× or 4× | Off |
 | AI upscale strength | Blend learned enlargement with Lanczos | 70%, used only when enlargement is selected |
 
@@ -87,6 +88,77 @@ runtime and input/output RGB digests. Unsupported ICAO/Photomatic measurements
 remain untested; enhancement does not establish checker parity or certification.
 
 ## Setup
+
+### Advanced skin cleaning
+
+The separate Advanced skin cleaning slider uses ModelScope's local detection and
+inpainting networks. It repairs selected pixels rather than filtering the entire
+face. No stock global blend-layer, whitening, TensorFlow skin segmentation or
+additional face detector is loaded. Existing MediaPipe landmarks locate the
+face and the protected skin regions.
+
+Sensitivity selects the detector threshold: Gentle 0.5, Standard 0.35, Strong
+0.25. These are model-output thresholds, not calibrated probabilities of a skin
+condition. Spot-size choices retain connected candidates up to 0.25%, 1% or 3%
+of the permitted skin area; All detected sizes removes that size filter. A
+two-pixel minimum rejects isolated single pixels. Strength blends each permitted
+repair with the original working pixels.
+
+After Apply changes, Review skin repairs opens the before/after cleaning images
+and a blue overlay of pixels actually repaired after feature/highlight guards.
+Staff can click or drag green keep areas, then Use keep areas and Apply changes.
+Those areas retain their pre-cleaning pixels through both repair and smoothing.
+Undo and Clear keep areas are available. Keep coordinates use the native cleaning
+preview, including for full-frame jobs; they are cleared when country/framing
+changes. Stale preview revisions are rejected, so marks cannot be silently applied
+to a different photo revision. These operational protections do not add a quality
+gate or remove the existing staff responsibility override.
+
+The model can classify permanent marks or facial hair as repair candidates. It
+does not reliably distinguish a temporary blemish from a mole/freckle, and the
+review mask is needed to choose what to retain. Later lighting/enlargement/export
+remain separate operations. The exact final JPEG diagnostics are still recorded.
+
+Model and adapted architecture digests are pinned in `enhancement_models.py`.
+Only relative package imports were changed in the upstream architecture; its
+Apache-2.0 notice is retained. The model card lists Apache License 2.0. The
+upstream RetouchingNet overrides `train()` without returning self, so the worker
+calls `eval()` separately rather than chaining it. Weights load with
+`weights_only=True`; no ModelScope SDK, automatic downloads or remote inference
+are used. The repair worker shares the existing heavy-inference lock and
+credential-free environment. Missing/corrupt models, invalid outputs, timeouts or
+uncertain landmarks preserve the source stage and show a warning.
+
+Install it explicitly with `python3 scripts/download_enhancement_models.py blemish`.
+The existing optional Torch runtime is sufficient. Three authenticated PNG assets
+(before, after, actual repair mask) are stored per prepared job and removed on
+reprocess/reset/rejection/retention expiry. Binaries and customer images remain
+outside Git. Original source retention already includes all local-enhanced jobs.
+
+On the prepared 1050×1200 normal portrait, Gentle at 60% selected 18 connected spot
+candidates, repaired 3,305 pixels and took 4.48 seconds of worker inference;
+Standard selected 19, repaired 3,347 pixels and took 4.15 seconds. No regional
+highlight guard rollback was needed on those trials. The 355×388 test photo had
+zero eligible candidates at Gentle/Standard, so it stayed unchanged. These are
+two exploratory samples, not a validated blemish-detection accuracy estimate.
+
+Live reprocessing on the actual 746×852 passport working grid found 18 candidates
+and repaired 1,639 pixels at 60% strength, with 2.28 seconds of repair-worker
+inference (84.24 seconds for the whole job including HR matting and the other
+selected tools). The prepared 355×388 print-only source found one two-pixel
+candidate (1.26 seconds repair inference, 28.45 seconds overall) and retained its
+source-resolution failure. Both jobs preserved all five regional highlight peaks
+and bright/near-clipped percentages during repair. Before/after/mask, master and
+digital print-sheet routes returned usable files. A second live reprocess verified
+that a marked keep circle retained its pixels exactly. No live code, email,
+physical print or OpenAI call was made. These CPU timings are from this Mac;
+Windows shop performance is not yet measured.
+
+Sources: [model card](https://www.modelscope.cn/models/damo/cv_unet_skin-retouching/summary)
+and [upstream local detection/repair pipeline](https://github.com/modelscope/modelscope/blob/958c3f7da68b700cc671134e267c356a2444398b/modelscope/pipelines/cv/skin_retouching_pipeline.py).
+Run `python3 tests/test_blemishes.py` for mask support, keep areas, highlight
+preservation, worker isolation/provenance/fallback, authenticated previews,
+revision handling and deletion lifecycle.
 
 The web environment needs no Torch or ONNX dependency. Reuse the isolated
 background runtime, or create one and install `requirements-background.txt`:

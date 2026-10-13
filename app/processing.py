@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots
+from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -68,6 +68,7 @@ class Result:
     preview_jpeg: bytes | None = None
     before_jpeg: bytes | None = None
     measurements: dict = field(default_factory=dict)
+    cleaner_assets: dict = field(default_factory=dict)
 
     def as_dict(self):
         return {
@@ -454,7 +455,7 @@ def _smooth_skin(rgb, points, values, measurements, checks):
     if not v['skin']: return rgb
     try:
         if points is None: raise ValueError('Face landmarks unavailable')
-        out,evidence = skin.apply(rgb,points,v['skin'])
+        out,evidence = skin.apply(rgb,points,v['skin'],v['blemish_keep'])
         checks.append(Check('enhancement_skin','Skin smoothing','pass',evidence['message']))
     except (ValueError,cv2.error):
         out = rgb
@@ -462,6 +463,18 @@ def _smooth_skin(rgb, points, values, measurements, checks):
             message='Skin smoothing skipped: facial regions could not be located reliably')
         checks.append(Check('enhancement_skin','Skin smoothing','warn',evidence['message']))
     measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))['stages'].append(evidence)
+    return out
+
+
+def _clean_skin(rgb,points,values,measurements,checks,assets):
+    v = enhancement.validate(values)
+    if not v['blemish']:return rgb
+    out,record,images = blemishes.apply(rgb,points,v)
+    measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))['stages'].append(record)
+    measurements['skin_cleaning'] = record
+    assets.update(images)
+    checks.append(Check('enhancement_blemish','Advanced skin cleaning',
+        'warn' if record['status']=='unavailable' else 'pass',record.get('message','No repair needed')))
     return out
 
 
@@ -488,6 +501,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     master_size = (out_w,out_h)
     crop = crop or {"zoom": 1, "x": 0, "y": 0, "rotation": 0}
     checks: list[Check] = []
+    cleaner_assets = {}
     measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
     adjustments = local_adjustments.validate(adjustments)
     enhancement_options = enhancement.validate(enhancement_options)
@@ -544,12 +558,13 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
                 rgb = _composite_background(rgb,alpha,profile["background"],background_engine)
         rgb, notes = local_adjustments.apply(rgb, adjustments)
         skin_points = None
-        if enhancement_options['skin']:
+        if enhancement_options['skin'] or enhancement_options['blemish']:
             try:
                 faces = (analyzer or get_analyzer()).analyze(original_rgb).faces
                 if len(faces)==1: skin_points=faces[0].points
             except Exception:
                 pass
+        rgb = _clean_skin(rgb,skin_points,enhancement_options,measurements,checks,cleaner_assets)
         rgb = _smooth_skin(rgb,skin_points,enhancement_options,measurements,checks)
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
         out = np.asarray(im)
@@ -558,7 +573,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         out = _enlarge_master(out,enhancement_options,measurements,checks)
         jpeg = _encode_jpeg(out)
         _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
-        return Result(True, checks, jpeg, _small_jpeg(out), before, measurements)
+        return Result(True, checks, jpeg, _small_jpeg(out), before, measurements,cleaner_assets)
     analyzer = analyzer or get_analyzer()
     an = analyzer.analyze(rgb)
 
@@ -725,6 +740,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out, adjustments)
     notes += manual_notes
+    out = _clean_skin(out,tp,enhancement_options,measurements,checks,cleaner_assets)
     out = _smooth_skin(out,tp,enhancement_options,measurements,checks)
     if auto_adjust or fix_shadows or replace_bg or even_bg or manual_notes:
         add("adjust", "Auto enhance", "pass",
@@ -878,7 +894,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["digital_size"] = list(photomatic.save_size(profile))
     measurements["digital_kib"] = round(size_kb, 2)
     _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
-    return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements)
+    return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements,cleaner_assets)
 
 
 def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options):
@@ -887,6 +903,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
     before = _small_jpeg(rgb)
     out = rgb.copy()
     measurements = {}
+    cleaner_assets = {}
     notes, checks = [], [Check("print_only", "Full-frame / print job", "warn",
                               "The whole photograph is fitted to the selected format. Passport framing has not been approved.")]
     mask, box, skin_points = None, None, None
@@ -922,6 +939,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out,adjustments)
     notes += manual_notes
+    out = _clean_skin(out,skin_points,enhancement_options,measurements,checks,cleaner_assets)
     out = _smooth_skin(out,skin_points,enhancement_options,measurements,checks)
     if notes: checks.append(Check("adjust", "Local photo tools", "warn", "; ".join(notes)))
     out_w, out_h = photomatic.output_size(profile)
@@ -948,7 +966,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
                             f"{w} × {h} px; enlarging for print does not add real source detail"))
     jpeg = _encode_jpeg(master)
     _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
-    return Result(False,checks,jpeg,_small_jpeg(master),before,measurements)
+    return Result(False,checks,jpeg,_small_jpeg(master),before,measurements,cleaner_assets)
 
 
 def code_photo(jpeg, country_id, staff_override=False):

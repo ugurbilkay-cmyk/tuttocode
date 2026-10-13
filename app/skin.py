@@ -13,11 +13,9 @@ def _diagnostic(report):
     return {key:report[key] for key in ('regions','patch_count','near_clip_all_percent','inspected_pixels')}
 
 
-def apply(rgb,points,strength):
-    """Work on skin texture, not geometric features or a lighting correction."""
+def protection(rgb,points,keep_areas=None):
+    """Shared editable skin alpha and exact protected highlights/features."""
     from .processing import FACE_L,FACE_R,L_IRIS,R_IRIS,NOSE
-    if not 0<=strength<=100:raise ValueError('Invalid skin smoothing strength')
-    if not strength:return rgb,dict(status='unchanged',phase='skin',models=[],strength=0)
     before=hotspots.measure(rgb,points,include_masks=True)
     points=np.asarray(points)
     width=float(np.linalg.norm(points[FACE_R]-points[FACE_L]))
@@ -25,7 +23,7 @@ def apply(rgb,points,strength):
     kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2*radius+1,)*2)
     valid=before['_skin_mask']
     alpha=cv2.erode(valid.astype(np.uint8),kernel).astype(np.float32)
-    alpha=cv2.GaussianBlur(alpha,(0,0),max(.6,width*.008))
+    alpha=np.clip(cv2.GaussianBlur(alpha,(0,0),max(.6,width*.008)),0,1)
     alpha[~valid]=0
     lab=cv2.cvtColor(rgb.astype(np.float32)/255,cv2.COLOR_RGB2LAB)
     # Keep current hotspot candidates, near-clipped channels and high highlights
@@ -43,23 +41,20 @@ def apply(rgb,points,strength):
     cv2.ellipse(feature,tuple(np.rint(points[NOSE]).astype(int)),
                 (max(1,round(width*.065)),max(1,round(width*.04))),0,0,360,1,-1)
     protected |= feature.astype(bool)
+    for x,y,r in keep_areas or []:
+        feature=np.zeros(rgb.shape[:2],np.uint8)
+        cv2.circle(feature,(round(x*rgb.shape[1]),round(y*rgb.shape[0])),
+                   max(1,round(r*min(rgb.shape[:2]))),1,-1)
+        protected |= feature.astype(bool)
     protected=cv2.dilate(protected.astype(np.uint8),cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))).astype(bool)
     alpha[protected]=0
-    gradient=cv2.magnitude(cv2.Sobel(lab[...,0],cv2.CV_32F,1,0,ksize=3),cv2.Sobel(lab[...,0],cv2.CV_32F,0,1,ksize=3))
-    alpha *= 1/(1+(gradient/18)**4)
-    # A small, edge-aware base removes fine texture while retaining the broad
-    # illumination field. Chroma filtering is weaker than lightness filtering.
-    sigma=max(1.,min(4.,width/100))
-    filtered=lab.copy()
-    for channel in range(3):
-        filtered[...,channel]=cv2.bilateralFilter(lab[...,channel],9,8 if channel==0 else 6,sigma)
-    weight=alpha[...,None]*strength/100*np.array([1,.35,.35],np.float32)
-    mixed=lab*(1-weight)+filtered*weight
-    rendered=np.rint(np.clip(cv2.cvtColor(mixed,cv2.COLOR_LAB2RGB),0,1)*255).astype(np.uint8)
-    out=rgb.copy();editable=alpha>.001;out[editable]=rendered[editable]
-    # Bright candidate classifications also depend on regional medians. Restore
-    # a region if smoothing changes its diagnostic highlight/clip counts or peak.
-    # This is an edit safeguard, not a code-issuance restriction.
+    return before,alpha,protected,lab
+
+
+def guard(rgb,out,points,before,protected):
+    """Preserve regional highlight evidence after either smoothing or spot repair."""
+    valid=before['_skin_mask']
+    out=out.copy();out[protected | ~valid]=rgb[protected | ~valid]
     reverted=set()
     guards=('peak_lightness','bright_percent','near_clip_any_percent','near_clip_all_percent')
     for _ in range(3):
@@ -77,6 +72,34 @@ def apply(rgb,points,strength):
         out[before['_inspected_mask']]=rgb[before['_inspected_mask']]
         after=hotspots.measure(out,points,include_masks=True)
         reverted.update(row['key'] for row in before['regions'])
+    return out,after,sorted(reverted)
+
+
+def apply(rgb,points,strength,keep_areas=None):
+    """Work on skin texture, not geometric features or a lighting correction."""
+    if not 0<=strength<=100:raise ValueError('Invalid skin smoothing strength')
+    if not strength:return rgb,dict(status='unchanged',phase='skin',models=[],strength=0)
+    points=np.asarray(points)
+    before,alpha,protected,lab=protection(rgb,points,keep_areas)
+    valid=before['_skin_mask']
+    from .processing import FACE_L,FACE_R
+    width=float(np.linalg.norm(points[FACE_R]-points[FACE_L]))
+    gradient=cv2.magnitude(cv2.Sobel(lab[...,0],cv2.CV_32F,1,0,ksize=3),cv2.Sobel(lab[...,0],cv2.CV_32F,0,1,ksize=3))
+    alpha *= 1/(1+(gradient/18)**4)
+    # A small, edge-aware base removes fine texture while retaining the broad
+    # illumination field. Chroma filtering is weaker than lightness filtering.
+    sigma=max(1.,min(4.,width/100))
+    filtered=lab.copy()
+    for channel in range(3):
+        filtered[...,channel]=cv2.bilateralFilter(lab[...,channel],9,8 if channel==0 else 6,sigma)
+    weight=alpha[...,None]*strength/100*np.array([1,.35,.35],np.float32)
+    mixed=lab*(1-weight)+filtered*weight
+    rendered=np.rint(np.clip(cv2.cvtColor(mixed,cv2.COLOR_LAB2RGB),0,1)*255).astype(np.uint8)
+    out=rgb.copy();editable=alpha>.001;out[editable]=rendered[editable]
+    # Bright candidate classifications also depend on regional medians. Restore
+    # a region if smoothing changes its diagnostic highlight/clip counts or peak.
+    # This is an edit safeguard, not a code-issuance restriction.
+    out,after,reverted=guard(rgb,out,points,before,protected)
     # Pixel values at protected highlights and facial features remain exact.
     out[protected | ~valid]=rgb[protected | ~valid]
     delta=cv2.cvtColor(out.astype(np.float32)/255,cv2.COLOR_RGB2LAB)[...,0]-lab[...,0]
