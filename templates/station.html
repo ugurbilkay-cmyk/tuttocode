@@ -8,7 +8,7 @@
 <body>
 <header class="station-header">
   <a class="brand" href="/admin/new"><span class="wordmark">{{ cfg.SHOP_NAME }}<small>Photo Studio</small></span><span>AI <small>passport and ID photos</small></span></a>
-  <nav><a href="/admin/history">Photo history</a><a href="/admin/new">New photo</a><a href="/privacy">Privacy</a></nav>
+  <nav><a href="/admin/history">Photo history</a><a href="/admin/new">New photo</a><a href="/admin/import">Import Photomatic export</a><a href="/privacy">Privacy</a></nav>
 </header>
 <main class="station">
   <form id="photo-form" method="post" enctype="{% if row %}application/x-www-form-urlencoded{% else %}multipart/form-data{% endif %}" action="{% if row %}/admin/p/{{ row.id }}/reprocess{% else %}/admin/new{% endif %}">
@@ -151,6 +151,7 @@
           {% if has_photo %}
             <button type="button" id="print-button">Print</button>
             <a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save</a>
+            {% if row.status=='pending' %}<a class="action-button photomatic-handoff" href="/admin/p/{{ row.id }}/photomatic.jpg">Save for Photomatic</a><a class="action-button photomatic-handoff" href="/admin/import?parent={{ row.id }}">Import reviewed export</a>{% endif %}
             <button type="submit" form="email-form" {% if not row.email or not cfg.SMTP_HOST %}disabled title="Add an email address and configure SMTP to send"{% endif %}>Email</button>
           {% endif %}
         </div>

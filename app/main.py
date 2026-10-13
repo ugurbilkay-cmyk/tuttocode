@@ -21,6 +21,7 @@ from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
 from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models, enhancement
+from . import reviewed_import
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -49,6 +50,37 @@ def _photo_path(pid, preview=False):
     if not ID_RE.match(pid):
         raise HTTPException(404)
     return config.PHOTO_DIR / (f"{pid}_prev.jpg" if preview else f"{pid}.jpg")
+
+
+def _available_row(pid):
+    if not ID_RE.fullmatch(pid):
+        raise HTTPException(404)
+    row = db.get(pid)
+    if not row or row['status'] == 'rejected' or row['expires'] <= time.time():
+        raise HTTPException(404)
+    if row['edit_token']:
+        raise HTTPException(409, 'Wait for the current photo operation to finish')
+    return row
+
+
+def _external_record(row):
+    return json.loads(row['external_review'])
+
+
+def _preserved_bytes(row):
+    if row['status'] == 'rejected' or row['expires'] <= time.time():
+        raise HTTPException(404)
+    try:
+        data = _photo_path(row['id']).read_bytes()
+        reviewed_import.verify(data, _external_record(row))
+        return data
+    except (OSError, ValueError, KeyError):
+        raise HTTPException(409, 'The imported JPEG is missing or changed. Import and review the correct file.') from None
+
+
+def _require_preparation_job(row):
+    if _external_record(row):
+        raise HTTPException(409, 'This is a preserved Photomatic export. Start a new preparation job to edit a photo.')
 
 
 @contextlib.contextmanager
@@ -299,7 +331,7 @@ async def upload(request):
 async def result_page(request):
     pid = request.path_params["pid"]
     row = db.get(pid) if ID_RE.match(pid) else None
-    if not row:
+    if not row or _external_record(row):
         raise HTTPException(404)
     return templates.TemplateResponse(request, "result.html", {"row": row, "checks": json.loads(row["checks"])})
 
@@ -307,7 +339,7 @@ async def result_page(request):
 async def result_submit(request):
     pid = request.path_params["pid"]
     row = db.get(pid) if ID_RE.match(pid) else None
-    if not row or not row["ok"]:
+    if not row or _external_record(row) or not row["ok"]:
         raise HTTPException(404)
     form = await request.form()
     name = (form.get("name") or "").strip()[:100]
@@ -320,6 +352,9 @@ async def result_submit(request):
 
 
 async def preview(request):
+    row = db.get(request.path_params['pid'])
+    if row and _external_record(row):
+        raise HTTPException(404)
     path = _photo_path(request.path_params["pid"], preview=True)
     if not path.exists():
         raise HTTPException(404)
@@ -364,11 +399,166 @@ async def admin_new(request):
     return RedirectResponse(f"/admin/p/{pid}", status_code=303)
 
 
+async def admin_photomatic_candidate(request):
+    _require_admin(request)
+    row = _available_row(request.path_params['pid'])
+    state = json.loads(row['ai_state'])
+    if state.get('status') in ('ready', 'running'):
+        raise HTTPException(409, 'Accept or discard the AI preview before saving for Photomatic')
+    try:
+        data = _preserved_bytes(row) if _external_record(row) else _photo_path(row['id']).read_bytes()
+    except OSError:
+        raise HTTPException(404) from None
+    return Response(data, media_type='image/jpeg', headers={'Cache-Control': 'no-store',
+        'Content-Disposition': f'attachment; filename="photomatic-{row["id"]}.jpg"',
+        'X-Photo-Revision': str(row['revision']), 'X-Photo-SHA256': hashlib.sha256(data).hexdigest()})
+
+
+async def admin_import(request):
+    _require_admin(request)
+    if request.method == 'GET':
+        parent_id = request.query_params.get('parent')
+        parent = _available_row(parent_id) if parent_id else None
+        if parent:
+            _require_preparation_job(parent)
+        profile = photomatic.country(parent['country_id'] if parent else None)
+        return templates.TemplateResponse(request, 'reviewed_import.html', {
+            'parent': parent, 'profile': profile, 'ages': AGE_GROUPS})
+    form = await request.form(max_files=1, max_fields=15, max_part_size=64 * 1024)
+    try:
+        up = form.get('photo')
+        if up is None or not hasattr(up, 'read'):
+            raise HTTPException(400, 'Choose the exported digital JPEG portrait')
+        limit = config.MAX_UPLOAD_MB * 1024 * 1024
+        if up.size is not None and up.size > limit:
+            raise HTTPException(413, 'Photo exceeds upload limit')
+        data = await up.read(limit + 1)
+        if len(data) > limit:
+            raise HTTPException(413, 'Photo exceeds upload limit')
+        try:
+            profile = photomatic.country(form.get('country_id'))
+            age = form.get('age_group', 'adult')
+            if age not in AGE_GROUPS:
+                raise ValueError('Choose a valid age group')
+            record = await run_in_threadpool(reviewed_import.initial, data)
+            record['imported_by'] = config.ADMIN_USER
+        except (KeyError, ValueError) as exc:
+            raise HTTPException(400, str(exc)) from None
+        if form.get('portrait_confirmed') != 'on':
+            raise HTTPException(400, 'Confirm this is a digital portrait, not a print sheet')
+        camera_source = None
+        parent_id = form.get('parent_id')
+        if parent_id:
+            with _edit_job(parent_id, pending_only=False):
+                parent = db.get(parent_id)
+                _require_preparation_job(parent)
+                if str(parent['revision']) != str(form.get('parent_revision')):
+                    raise HTTPException(409, 'The preparation job changed. Open its current import link.')
+                if json.loads(parent['ai_state']).get('status') in ('ready', 'running'):
+                    raise HTTPException(409, 'Finish the AI preview review before importing its Photomatic export')
+                try:
+                    prepared = _photo_path(parent_id).read_bytes()
+                except OSError:
+                    raise HTTPException(409, 'The prepared photo is missing') from None
+                source = config.PHOTO_DIR / f'{parent_id}_source'
+                if source.exists():
+                    camera_source = source.read_bytes()
+                record['parent'] = {'id': parent_id, 'revision': parent['revision'],
+                    'prepared_sha256': hashlib.sha256(prepared).hexdigest(),
+                    'camera_sha256': hashlib.sha256(camera_source).hexdigest() if camera_source else None,
+                    'processing_options': json.loads(parent['options']),
+                    'preparation_checks': json.loads(parent['checks']),
+                    'preparation_measurements': json.loads(parent['measurements'])}
+        check_values = reviewed_import.checks(record, profile['id'])
+        preview = await run_in_threadpool(reviewed_import.preview, data)
+        result = processing.Result(False, check_values, data, preview,
+                                   measurements={'preserved_export': record['file']})
+        pid = db.new_id()
+        try:
+            _store_result(pid, result)
+            if camera_source:
+                (config.PHOTO_DIR / f'{pid}_source').write_bytes(camera_source)
+            db.create(pid, 'photomatic', age, result, country_id=profile['id'],
+                      print_template_id=photomatic.default_print(profile)['id'], options={'delivery_mode': 'preserved'}, external_review=record,
+                      name=str(form.get('name') or '').strip()[:100] or None,
+                      email=str(form.get('email') or '').strip()[:200] or None,
+                      phone=str(form.get('phone') or '').strip()[:40] or None)
+        except Exception:
+            db.reject(pid)
+            for suffix in db.PHOTO_SUFFIXES:
+                (config.PHOTO_DIR / f'{pid}{suffix}').unlink(missing_ok=True)
+            raise
+    finally:
+        await form.close()
+    return RedirectResponse(f'/admin/p/{pid}', status_code=303)
+
+
+async def admin_external_review(request):
+    _require_admin(request)
+    pid = request.path_params['pid']
+    form = await request.form(max_fields=150, max_part_size=64 * 1024)
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        record = _external_record(row)
+        if not record:
+            raise HTTPException(400, 'Import a Photomatic export first')
+        if str(form.get('review_revision')) != str(row['revision']) or form.get('photo_sha256') != record['file']['sha256']:
+            raise HTTPException(409, 'The review changed. Refresh and review the current imported file.')
+        await run_in_threadpool(_preserved_bytes, row)
+        try:
+            record = reviewed_import.reviewed(record, form, config.ADMIN_USER, row['revision'] + 1)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from None
+        db.assert_edit(pid, token)
+        db.set_external_review(pid, record, reviewed_import.checks(record, row['country_id']), token)
+    return RedirectResponse(f'/admin/p/{pid}', status_code=303)
+
+
+async def _issue_preserved(pid, form):
+    with _edit_job(pid) as token:
+        row = db.get(pid)
+        record = _external_record(row)
+        if (str(form.get('review_revision')) != str(row['revision']) or not record.get('reviewed') or
+            record.get('review_revision') != row['revision'] or form.get('photo_sha256') != record['file']['sha256']):
+            raise HTTPException(409, 'Save and review the current imported file before issuing its code')
+        if form.get('issue_reviewed_export') != 'on':
+            raise HTTPException(400, 'Confirm the recorded review and exact exported photo')
+        override = form.get('staff_override') == 'on'
+        if reviewed_import.needs_responsibility(record, row['country_id']) and not override:
+            raise HTTPException(400, 'Review the failed or untested results and confirm staff responsibility to proceed')
+        data = await run_in_threadpool(_preserved_bytes, row)
+        review = {'staff': config.ADMIN_USER, 'operator': record['operator'], 'reviewed_at': time.time(),
+                  'revision': row['revision'], 'country_id': row['country_id'], 'age_group': row['age_group'],
+                  'photo_sha256': record['file']['sha256'], 'delivery_mode': 'preserved',
+                  'external_review': record, 'confirmations': record['confirmations'],
+                  'final_checks': [c.__dict__ for c in reviewed_import.checks(record, row['country_id'])],
+                  'decision': 'staff_override' if override else 'staff_attested_photomatic_review',
+                  'staff_override': {'confirmed_by': config.ADMIN_USER, 'operator': record['operator'],
+                      'confirmed_at': time.time(), 'reason': str(form.get('override_reason') or '').strip()[:1000],
+                      'failed_checks': [c.key for c in reviewed_import.checks(record, row['country_id']) if c.status == 'fail'],
+                      'unmeasured_groups': [k for k, s in record['groups'].items() if s == 'not_tested']} if override else None}
+        db.assert_edit(pid, token)
+        (config.PHOTO_DIR / f'{pid}_code.jpg').write_bytes(data)
+        code = db.issue(pid, review, token)
+    emailed = await run_in_threadpool(_send_code_email, db.get(pid), code)
+    return RedirectResponse(f'/admin/p/{pid}?emailed={int(emailed)}', status_code=303)
+
+
 async def admin_photo(request):
     _require_admin(request)
     row = db.get(request.path_params["pid"])
     if not row:
         raise HTTPException(404)
+    if _external_record(row):
+        _available_row(row['id'])
+        await run_in_threadpool(_preserved_bytes, row)
+        record = _external_record(row)
+        return templates.TemplateResponse(request, 'reviewed_photo.html', {
+            'row': row, 'record': record, 'profile': photomatic.country(row['country_id']),
+            'groups': reviewed_import.GROUPS, 'metrics': reviewed_import.METRICS, 'states': reviewed_import.STATES,
+            'checks': json.loads(row['checks']), 'needs_responsibility': reviewed_import.needs_responsibility(record, row['country_id']),
+            'emailed': request.query_params.get('emailed'),
+        })
     profile = photomatic.country(row["country_id"])
     layout = photomatic.PRINTS.get(row["print_template_id"]) or photomatic.default_print(profile)
     checks = json.loads(row["checks"])
@@ -404,6 +594,7 @@ async def admin_reprocess(request):
     options = dict(_opts(form), crop=_crop_options(form))
     with _edit_job(pid) as token:
         row = db.get(pid)
+        _require_preparation_job(row)
         previous = json.loads(row['options'])
         if (options['enhancement_options']['blemish_keep'] and
             str(form.get('cleaner_revision',row['revision']))!=str(row['revision'])):
@@ -429,6 +620,7 @@ async def admin_reprocess(request):
 async def _prepare_candidate(pid, *, lighting, colour):
     with _edit_job(pid) as token:
         row = db.get(pid)
+        _require_preparation_job(row)
         options = json.loads(row["options"])
         _clear_candidate(pid)
         db.set_ai_state(pid, token, {"status": "running", "started": time.time()})
@@ -506,6 +698,7 @@ async def admin_ai_accept(request):
         raise HTTPException(400, "Compare the original and AI photo and confirm the person's appearance")
     with _edit_job(pid) as token:
         row = db.get(pid)
+        _require_preparation_job(row)
         state = json.loads(row["ai_state"])
         if state.get("status") != "ready" or state.get("revision") != row["revision"]:
             raise HTTPException(409, "Prepare a new AI preview for the current photo version")
@@ -545,6 +738,7 @@ async def admin_restore_original(request):
     pid = request.path_params["pid"]
     with _edit_job(pid) as token:
         row = db.get(pid)
+        _require_preparation_job(row)
         options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
                        background_engine=json.loads(row["options"]).get("background_engine",config.BACKGROUND_ENGINE),
                        print_only=json.loads(row["options"]).get("print_only",False),
@@ -564,6 +758,7 @@ async def admin_original(request):
     pid = request.path_params["pid"]
     if not ID_RE.fullmatch(pid):
         raise HTTPException(404)
+    _available_row(pid)
     source = config.PHOTO_DIR / f"{pid}_source"
     if not source.exists():
         raise HTTPException(404)
@@ -640,6 +835,8 @@ async def admin_issue(request):
         raise HTTPException(400, "Online photo codes are only for UK and Irish passports. Other templates can be printed, saved or emailed.")
     if row["code"]:
         return RedirectResponse(f"/admin/p/{pid}", status_code=303)
+    if _external_record(row):
+        return await _issue_preserved(pid, form)
     with _edit_job(pid) as token:
         row = db.get(pid)
         state = json.loads(row["ai_state"])
@@ -740,7 +937,9 @@ async def admin_full(request):
     path = _photo_path(request.path_params["pid"])
     if not path.exists():
         raise HTTPException(404)
-    return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+    row = db.get(request.path_params['pid'])
+    photo = await run_in_threadpool(_preserved_bytes, row) if row and _external_record(row) else path.read_bytes()
+    return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 async def admin_before(request):
@@ -785,7 +984,10 @@ async def admin_sheet(request):
         layout = photomatic.PRINTS[requested]
     if request.query_params.get("page") == "1":
         return templates.TemplateResponse(request, "print.html", {"row": row, "layout": layout})
-    sheet = await run_in_threadpool(processing.print_sheet, path.read_bytes(), code_text, layout["id"])
+    data = _preserved_bytes(row) if _external_record(row) else path.read_bytes()
+    if _external_record(row) and _external_record(row)['file']['exif_orientation'] != 1:
+        data = await run_in_threadpool(reviewed_import.preview, data, (10000, 10000))
+    sheet = await run_in_threadpool(processing.print_sheet, data, code_text, layout["id"])
     return Response(
         sheet, media_type="image/jpeg",
         headers={"Content-Disposition": f'inline; filename="passport-{pid[:6]}-6x4.jpg"'},
@@ -798,7 +1000,7 @@ async def admin_save(request):
     row = db.get(pid)
     if not row or not _photo_path(pid).exists():
         raise HTTPException(404)
-    photo = await run_in_threadpool(processing.save_photo, _photo_path(pid).read_bytes(), row["country_id"])
+    photo = _preserved_bytes(row) if _external_record(row) else await run_in_threadpool(processing.save_photo, _photo_path(pid).read_bytes(), row["country_id"])
     return Response(photo, media_type="image/jpeg", headers={
         "Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="{row["country_id"]}-{pid[:6]}.jpg"'})
 
@@ -812,7 +1014,7 @@ def _email_photo(row):
     msg["From"], msg["To"] = config.SMTP_FROM or config.SMTP_USER, row["email"]
     code = f"\nPhoto code: {config.SHORT_DOMAIN}/{row['code']}\n" if row["code"] else ""
     msg.set_content(f"Your {profile['name']} photo is attached.{code}\n{config.SHOP_NAME}\n{config.SHOP_CONTACT}")
-    photo = processing.save_photo(_photo_path(row["id"]).read_bytes(), row["country_id"], email=True)
+    photo = _preserved_bytes(row) if _external_record(row) else processing.save_photo(_photo_path(row["id"]).read_bytes(), row["country_id"], email=True)
     msg.add_attachment(photo, maintype="image", subtype="jpeg", filename=f"{profile['id']}.jpg")
     try:
         with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=20) as server:
@@ -892,7 +1094,10 @@ main_routes = public_routes + [
     Route("/admin", admin_new),
     Route("/admin/history", admin_home),
     Route("/admin/new", admin_new, methods=["GET", "POST"]),
+    Route("/admin/import", admin_import, methods=["GET", "POST"]),
     Route("/admin/p/{pid}", admin_photo),
+    Route("/admin/p/{pid}/photomatic.jpg", admin_photomatic_candidate),
+    Route("/admin/p/{pid}/external-review", admin_external_review, methods=["POST"]),
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
     Route("/admin/p/{pid}/reprocess", admin_reprocess, methods=["POST"]),
     Route("/admin/p/{pid}/ai/prepare", admin_ai_prepare, methods=["POST"]),

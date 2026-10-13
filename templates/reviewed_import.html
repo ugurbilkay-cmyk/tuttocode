@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Import Photomatic export{% endblock %}
+{% block home %}/admin/new{% endblock %}
+{% block nav %}<a href="/admin/history">Photo history</a>{% endblock %}
+{% block content %}
+<h1>Import Photomatic export</h1>
+<p>Choose the final digital portrait saved by Photomatic. We preserve its JPEG exactly. Record the checks on the next screen.</p>
+<div class="card">
+<form method="post" enctype="multipart/form-data">
+  {% if parent %}<p>Linked preparation: <a href="/admin/p/{{ parent.id }}">{{ profiles[parent.country_id].name }} · {{ parent.id }}</a></p>
+  <input type="hidden" name="parent_id" value="{{ parent.id }}"><input type="hidden" name="parent_revision" value="{{ parent.revision }}">{% endif %}
+  <label for="photo">Final exported JPEG portrait</label><input id="photo" name="photo" type="file" accept="image/jpeg,.jpg,.jpeg" required>
+  <label for="country-id">Country and document checked in Photomatic</label>
+  <select name="country_id" id="country-id">{% for id,p in profiles|dictsort %}<option value="{{ id }}" {% if id==profile.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+  <label for="age-group">Age group</label><select name="age_group" id="age-group">{% for k,v in ages.items() %}<option value="{{ k }}" {% if parent and parent.age_group==k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+  <div class="row"><div><label for="name">Customer name</label><input name="name" id="name" type="text" maxlength="100" value="{{ parent.name or '' if parent else '' }}"></div>
+  <div><label for="email">Customer email</label><input name="email" id="email" type="email" maxlength="200" value="{{ parent.email or '' if parent else '' }}"></div></div>
+  <label for="phone">Customer phone</label><input name="phone" id="phone" type="tel" maxlength="40" value="{{ parent.phone or '' if parent else '' }}">
+  <label class="check"><input name="portrait_confirmed" type="checkbox" required> This is the single digital portrait for this customer, not a print sheet or screenshot.</label>
+  <p><button class="btn" type="submit">Import unchanged JPEG</button> <a class="btn secondary" href="/admin/new">Back to preparation</a></p>
+</form></div>
+{% endblock %}

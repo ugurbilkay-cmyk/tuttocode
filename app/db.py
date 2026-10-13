@@ -59,6 +59,7 @@ def init():
             "edit_started": "REAL",
             "ai_state": "TEXT NOT NULL DEFAULT '{}'",
             "issue_review": "TEXT NOT NULL DEFAULT '{}'",
+            "external_review": "TEXT NOT NULL DEFAULT '{}'",
         }.items():
             if name not in columns:
                 c.execute(f"ALTER TABLE photos ADD COLUMN {name} {definition}")
@@ -76,7 +77,7 @@ def new_code(c):
 
 
 def create(photo_id, source, age_group, result, name=None, email=None, phone=None,
-           country_id='united-kingdom-passport', print_template_id=None, options=None):
+           country_id='united-kingdom-passport', print_template_id=None, options=None, external_review=None):
     now = time.time()
     with conn() as c:
         c.execute(
@@ -86,8 +87,9 @@ def create(photo_id, source, age_group, result, name=None, email=None, phone=Non
              json.dumps(result.as_dict()["checks"]), int(result.ok), now,
              now + config.PENDING_RETENTION_HOURS * 3600),
         )
-        c.execute("UPDATE photos SET country_id=?, print_template_id=?, options=?, measurements=? WHERE id=?",
-                  (country_id, print_template_id, json.dumps(options or {}), json.dumps(result.measurements), photo_id))
+        c.execute("UPDATE photos SET country_id=?, print_template_id=?, options=?, measurements=?,external_review=? WHERE id=?",
+                  (country_id, print_template_id, json.dumps(options or {}), json.dumps(result.measurements),
+                   json.dumps(external_review or {}), photo_id))
 
 
 def update_processing(photo_id, country_id, print_template_id, options, result, token=None):
@@ -136,6 +138,15 @@ def assert_edit(photo_id, token):
 def update_contact(photo_id, name, email, phone):
     with conn() as c:
         c.execute("UPDATE photos SET name=?, email=?, phone=? WHERE id=?", (name, email, phone, photo_id))
+
+
+def set_external_review(photo_id, record, checks, token):
+    with conn() as c:
+        changed = c.execute("UPDATE photos SET external_review=?,checks=?,ok=?,revision=revision+1 WHERE id=? AND edit_token=? AND status='pending' AND expires>?",
+            (json.dumps(record), json.dumps([item.__dict__ for item in checks]),
+             int(record['reviewed'] and not any(item.status != 'pass' for item in checks)), photo_id, token, time.time())).rowcount
+        if changed != 1:
+            raise ValueError('The photo changed or expired during review')
 
 
 def issue(photo_id, review=None, token=None):

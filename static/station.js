@@ -11,6 +11,7 @@ function markDirty() {
   if ($('pending-changes')) $('pending-changes').hidden = false;
   document.querySelectorAll('form[action$="/issue"] button[type="submit"], form[action$="/ai/accept"] button[type="submit"], #ai-prepare-form button[type="submit"], #print-button, button[form="email-form"]').forEach(button => button.disabled = true);
   document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.setAttribute('aria-disabled','true'));
+  document.querySelectorAll('.photomatic-handoff').forEach(link=>link.setAttribute('aria-disabled','true'));
 }
 function updatePrints() {
   const previous = printTemplate.value;
@@ -280,6 +281,7 @@ $('photo-form').addEventListener('input', event => {
   if (['zoom','x','y','rotation','angle','print-only','file-input'].includes(event.target.id) && $('blemish-keep')) $('blemish-keep').value='[]';
 });
 document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.addEventListener('click', event => { if (jobDirty) event.preventDefault(); }));
+document.querySelectorAll('.photomatic-handoff').forEach(link=>link.addEventListener('click',event=>{if(jobDirty)event.preventDefault();}));
 
 // Keep country/printer choices when opening the next shop photo.
 if (!window.stationPhotoId) {

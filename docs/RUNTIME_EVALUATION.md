@@ -103,9 +103,9 @@ and untested results, staff decision, and exact exported digital JPEG. Do not
 print, upload for a provider code or change the production station's configuration
 as part of a read/check/export test unless specifically requested.
 
-Any transfer to TuttoCode needs an explicit reviewed-file import path that
-preserves the approved JPEG and links review evidence to its SHA-256. Our current
-pipeline can recrop/re-encode imports; it is not yet that transfer path. Code
+Transfer to TuttoCode uses the separate reviewed-file import path that
+preserves the exported JPEG and links staff review evidence to its SHA-256. The
+normal preparation pipeline can recrop/re-encode uploads. Code
 hosting and real HMPO retrieval must be verified separately. Photomatic's local
 check is not an authority acceptance certificate.
 
@@ -134,9 +134,9 @@ image SHA-256, review time, observed results and any specific permitted allowanc
 Label manual evidence as staff-attested Photomatic review. Missing, failed and
 untested required checks cannot be silently converted to machine-verified passes.
 
-The reviewed import requires a new server path. Current uploads invoke our own
-processing, and issuance may resize/re-encode the JPEG. Those paths must not be
-used unchanged for an externally reviewed deliverable. Validate JPEG decode,
+The reviewed import now has a separate server path. Normal preparation uploads
+invoke our processing, and their issuance may resize/re-encode the JPEG. Those
+paths are separate from the preserved import. Validate JPEG decode,
 dimensions and file bytes without editing the delivered image, and require
 review of the current hash before issuance. An edit, replacement or country
 change cancels prior approval; technical failures still block issuance.
@@ -153,4 +153,33 @@ review remains mandatory.
 Before shop use, verify the second Windows installation independently, final
 export behaviour, review/byte-change failure cases, public HTTPS hosting, signed
 HMPO retrieval, expiry and code-slip printing. This companion/import workflow
-is a proposed integration, not an implemented bridge.
+is not yet validated against a real Photomatic export. The local manual import
+and exact-file issuance implementation is described in [staff instructions](REVIEWED_IMPORT.md).
+
+## Local Windows demo export test on 13 October 2026
+
+The local Windows installation displayed a loaded sample under United Kingdom
+Online Renewal and working detailed measurements. Observed values included
+input size 2133 by 3200, ID photo data 2005 by 2807, measurement confidence 100,
+general quality 79, sharpness 58, motion blur 92, contrast 67 and hotspots 59.
+Hotspots appeared light green. Neutral expression, mouth closed and smiling
+displayed -1 with grey indicators; red eyes, glasses, age and gender displayed
+not tested. These are vendor outputs, not independent accuracy estimates.
+
+Clicking Save opened Enter a Demo License. The licence supplied by the user was
+entered completely, but submission displayed: No printer detected. Please make
+sure your printer is connected and turned ON! This system requires a valid
+printer or a USB dongle! Closing the licence dialog also returned the hardware
+notice. Successful licence activation and saving were not confirmed.
+
+The user confirmed neither a printer nor a dongle is available at this test
+location. No exported JPEG was obtained, so export dimensions, encoding,
+repeatability and the subsequent review remain unverified. Resume this test
+with vendor-authorized saving on the demo installation or through normal export
+on the equipped shop installation. Do not interpret the working measurements
+as proof that the complete companion workflow is operational.
+
+The private baseline record is in ignored
+output/photomatic-export-evaluation-20261013/baseline-and-export-status.json.
+Licence keys, contact details and remote identifiers are excluded. No provider
+code, physical print, email or OpenAI request was initiated by this test.

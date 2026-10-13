@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Photomatic photo review{% endblock %}
+{% block home %}/admin/new{% endblock %}
+{% block nav %}<a href="/admin/import">Import another export</a>{% endblock %}
+{% block content %}
+<style>
+.vendor-pass{background:#dff3e7;color:#127a3f}.vendor-caution{background:#fff2d6;color:#865300}.vendor-fail{background:#fbe3e1;color:#a52218}.vendor-not_tested{background:#eef0f4;color:#555}
+.review-table{overflow-x:auto}.review-table input{min-width:110px}.review-table select{min-width:145px}.review-table th:first-child{width:44%}
+.digest{font-size:.8rem;word-break:break-all}textarea{width:100%;min-height:90px;padding:10px;font:inherit;border:1px solid #c9ccd4;border-radius:8px}fieldset{border:0;padding:0;margin:0}fieldset:disabled{opacity:.85}
+</style>
+<h1>{{ profile.name }} · Photomatic review</h1>
+<p>Staff-recorded Photomatic results. The imported digital portrait stays unchanged through saving and UK code delivery.</p>
+<div class="card row">
+  <div><img class="photo" src="/admin/p/{{ row.id }}/full.jpg" alt="Exact imported digital portrait">
+  <p>{{ record.file.display_size[0] }} × {{ record.file.display_size[1] }} pixels · {{ record.file.bytes }} bytes</p>
+  <details><summary>File identity</summary><p class="muted digest">SHA-256: {{ record.file.sha256 }}</p></details></div>
+  <div><h2>{{ row.name or 'Walk-in customer' }}</h2><p>Status: {{ row.status }} · {{ row.created|dt }}</p>
+    {% if record.parent %}<p><a href="/admin/p/{{ record.parent.id }}">Linked preparation job</a></p>{% endif %}
+    <p><a class="btn secondary" href="/admin/p/{{ row.id }}/save.jpg">Save exact JPEG</a></p>
+    <p><a class="btn secondary" href="/admin/p/{{ row.id }}/sheet.jpg?page=1" target="_blank">Print sheet</a></p>
+    <p class="muted">Print sheets are separate derivatives. Verify the first physical print at actual size.</p>
+    {% if row.email and cfg.SMTP_HOST %}<form action="/admin/p/{{ row.id }}/email" method="post"><button class="btn secondary" type="submit">Email exact JPEG</button></form>{% endif %}
+    {% if record.reviewed %}<p>Reviewed by {{ record.operator }} under account {{ record.account }} · {{ record.reviewed_at|dt }}</p>{% else %}<p class="muted">Review has not been recorded yet.</p>{% endif %}
+    {% if row.code %}<p class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</p><p>Valid until {{ row.expires|dt }}</p><a href="/admin/p/{{ row.id }}/slip" target="_blank">Print branded code slip</a>
+    {% if (row.issue_review|fromjson).staff_override %}<p>Issued under recorded staff responsibility. Failed and untested results remain visible.</p>{% endif %}{% endif %}
+  </div>
+</div>
+<div class="card"><h2>File checks and recorded categories</h2>{% include '_checks.html' %}
+{% if record.parent and record.parent.get('preparation_checks') %}<details><summary>Preparation checks before Photomatic</summary>{% set checks=record.parent.preparation_checks %}{% include '_checks.html' %}</details>{% endif %}</div>
+<div class="card">
+<h2>Photomatic results</h2>
+<p>Enter the values and statuses shown by Photomatic for the final saved portrait. These are vendor scores, not our calculated measurements. Keep grey or unmeasured fields as Not tested.</p>
+<form id="vendor-review-form" action="/admin/p/{{ row.id }}/external-review" method="post">
+<input type="hidden" name="review_revision" value="{{ row.revision }}"><input type="hidden" name="photo_sha256" value="{{ record.file.sha256 }}">
+<fieldset {% if row.status!='pending' %}disabled{% endif %}>
+<div class="row"><div><label for="operator">Operator name</label><input id="operator" name="operator" type="text" maxlength="100" value="{{ record.get('operator','') }}" required></div>
+<div><label for="software-version">Photomatic version if known</label><input id="software-version" name="software_version" type="text" maxlength="100" value="{{ record.get('software_version','') }}"></div></div>
+<label for="vendor-profile">Exact document profile selected in Photomatic</label><input id="vendor-profile" name="vendor_profile" type="text" maxlength="200" value="{{ record.get('vendor_profile',profile.name) }}" required>
+<label for="quality-profile">Quality profile if known</label><input id="quality-profile" name="quality_profile" type="text" maxlength="200" value="{{ record.get('quality_profile','') }}">
+<div class="review-table"><table><tr><th>Category</th><th>Status recorded by staff</th></tr>
+{% for key,label in groups %}<tr><td>{{ label }}</td><td><select aria-label="{{ label }} status" name="group_{{ key }}" class="vendor-{{ record.groups[key] }}">{% for status,name in states.items() %}<option value="{{ status }}" {% if record.groups[key]==status %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></td></tr>{% endfor %}</table></div>
+<details><summary>Individual measurements and statuses</summary><div class="review-table"><table><tr><th>Photomatic measurement</th><th>Displayed value</th><th>Status</th></tr>
+{% for key,label in metrics %}<tr><td>{{ label }}</td><td><input aria-label="{{ label }} displayed value" name="metric_{{ key }}" type="text" maxlength="100" value="{{ record.metrics[key].value }}" placeholder="Not recorded"></td><td><select aria-label="{{ label }} status" name="status_{{ key }}" class="vendor-{{ record.metrics[key].status }}">{% for status,name in states.items() %}<option value="{{ status }}" {% if record.metrics[key].status==status %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></td></tr>{% endfor %}</table></div></details>
+<label for="decision-context">Decision context</label><select name="decision_context" id="decision-context">{% for key,label in [('normal','Standard review'),('child','Child / baby'),('disability','Disability'),('health','Health / medical'),('other','Other documented allowance')] %}<option value="{{ key }}" {% if record.get('decision_context','normal')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<label for="review-notes">Review notes and any allowance</label><textarea id="review-notes" name="review_notes" maxlength="2000">{{ record.get('review_notes','') }}</textarea>
+{% for key,label in [('review_export','I reopened and reviewed this final saved digital portrait in Photomatic.'),('review_document','The customer and selected country/document match this export.'),('review_likeness','I reviewed likeness, recency, framing and background.'),('review_visibility','I reviewed eye visibility, glare, red eye and head coverings.'),('customer_permission','The customer is informed and agrees to photo storage and code delivery.')] %}<label class="check"><input type="checkbox" name="{{ key }}" {% if key in record.get('confirmations',[]) %}checked{% endif %} required> {{ label }}</label>{% endfor %}
+{% if row.status=='pending' %}<p><button class="btn" type="submit">Save staff review</button></p>{% endif %}
+</fieldset></form></div>
+{% if row.status=='pending' and profile.code_service=='uk' %}
+<div class="card"><h2>Issue our UK photo code</h2>
+{% if record.reviewed %}<form id="preserved-issue-form" action="/admin/p/{{ row.id }}/issue" method="post">
+<input type="hidden" name="review_revision" value="{{ row.revision }}"><input type="hidden" name="photo_sha256" value="{{ record.file.sha256 }}">
+<label class="check"><input type="checkbox" name="issue_reviewed_export" required> I confirm this exact photo and its recorded staff review.</label>
+<label class="check"><input type="checkbox" name="staff_override" {% if needs_responsibility %}required{% endif %}> Issue despite failed or untested category checks — I take responsibility.</label>
+<label for="override-reason">Optional responsibility note</label><input id="override-reason" name="override_reason" type="text" maxlength="1000">
+<p id="review-dirty" class="muted" hidden>Save the changed review before issuing.</p><button class="btn" id="issue-preserved" type="submit">Issue UK code from exact JPEG</button></form>
+{% else %}<p>Record the final exported photo review above first.</p>{% endif %}
+<p class="muted">Quality warnings are advisory. Public HMPO retrieval still needs production verification.</p></div>
+{% elif profile.code_service=='ie' %}<div class="card"><p>Irish codes remain with your external provider. Use Save exact JPEG to submit the reviewed photo.</p></div>{% endif %}
+<p><a href="/admin/history">Photo history</a> · <a href="/admin/new">New preparation</a></p>
+<script>
+document.querySelectorAll('#vendor-review-form select').forEach(s=>s.addEventListener('change',()=>{if(s.name.startsWith('group_')||s.name.startsWith('status_')) s.className='vendor-'+s.value;}));
+document.getElementById('vendor-review-form').addEventListener('input',()=>{const b=document.getElementById('issue-preserved');if(b)b.disabled=true;const n=document.getElementById('review-dirty');if(n)n.hidden=false;});
+</script>
+{% endblock %}
