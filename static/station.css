@@ -7,6 +7,16 @@
   --ink:#f4f4f4;
   --muted:#b4b4b4
 }
+.hotspot-stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin:20px 0}
+.hotspot-stage{min-width:0;border:1px solid var(--edge);padding:12px;overflow:auto}
+.hotspot-view{position:relative;max-width:480px;margin:auto}
+.hotspot-view>img{display:block;width:100%;height:auto}
+.hotspot-regions{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hotspot-regions[hidden]{display:none}
+.hotspot-regions polygon{fill:none;stroke:#4cc9ff;stroke-width:2;vector-effect:non-scaling-stroke}
+.hotspot-regions .hotspot-patch{fill:#ffc24733;stroke:#ffc247;stroke-width:2;vector-effect:non-scaling-stroke}
+.hotspot-table th,.hotspot-table td{font-size:12px;padding:8px 5px;white-space:normal}
+#hotspots-dialog{width:min(1450px,96vw);max-width:96vw}
 
 *{
   box-sizing:border-box

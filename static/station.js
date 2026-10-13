@@ -65,6 +65,79 @@ document.querySelectorAll('[data-measurements]').forEach(button => button.addEve
 $('close-measurements')?.addEventListener('click', () => $('measurements-dialog').close());
 $('open-ai-measurements')?.addEventListener('click', () => $('ai-measurements-dialog').showModal());
 $('close-ai-measurements')?.addEventListener('click', () => $('ai-measurements-dialog').close());
+let hotspotBusy = false;
+function hotspotElement(tag, text, className) {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+function showHotspotStage(stage) {
+  const panel = hotspotElement('section', undefined, 'hotspot-stage');
+  panel.append(hotspotElement('h3', stage.label));
+  if (stage.preview) {
+    const view = hotspotElement('div', undefined, 'hotspot-view');
+    const image = hotspotElement('img'); image.src = stage.preview; image.alt = stage.label;
+    view.append(image);
+    if (stage.outlines) {
+      const ns = 'http://www.w3.org/2000/svg';
+      const overlay = document.createElementNS(ns, 'svg');
+      overlay.setAttribute('viewBox', '0 0 1000 1000'); overlay.setAttribute('preserveAspectRatio', 'none');
+      overlay.classList.add('hotspot-regions'); overlay.toggleAttribute('hidden', !$('hotspot-overlay').checked);
+      for (const region of stage.outlines) {
+        const polygon = document.createElementNS(ns, 'polygon');
+        polygon.setAttribute('points', region.points.map(p => `${p[0]*1000},${p[1]*1000}`).join(' '));
+        const title = document.createElementNS(ns, 'title'); title.textContent = region.label;
+        polygon.append(title); overlay.append(polygon);
+      }
+      for (const patch of stage.patches) {
+        const rect = document.createElementNS(ns, 'rect');
+        ['x','y','width','height'].forEach((name, index) => rect.setAttribute(name, patch.box[index]*1000));
+        rect.classList.add('hotspot-patch'); overlay.append(rect);
+      }
+      view.append(overlay);
+    }
+    panel.append(view);
+  }
+  if (stage.status !== 'diagnostic') {
+    panel.append(hotspotElement('p', stage.message || 'Measurements unavailable. Staff review needed.', 'notice'));
+    return panel;
+  }
+  panel.append(hotspotElement('p', `${stage.image_size.join(' × ')} px · ${stage.patch_count} candidate patches · diagnostic only`));
+  const table = hotspotElement('table', undefined, 'measurements hotspot-table');
+  const head = hotspotElement('tr');
+  ['Region','Bright area','Near clip · any channel','Near clip · all channels'].forEach(label => head.append(hotspotElement('th',label)));
+  const thead = hotspotElement('thead'); thead.append(head); table.append(thead);
+  const tbody = hotspotElement('tbody');
+  for (const region of stage.regions) {
+    const tr = hotspotElement('tr'); tr.append(hotspotElement('td',region.label));
+    for (const key of ['bright_percent','near_clip_any_percent','near_clip_all_percent'])
+      tr.append(hotspotElement('td',region.status === 'measured' ? `${region[key]}%` : 'Unavailable'));
+    tbody.append(tr);
+  }
+  table.append(tbody); panel.append(table);
+  if (stage.overlay_truncated) panel.append(hotspotElement('p','Only the 100 largest patches are outlined.'));
+  panel.append(hotspotElement('p',`Image reference: ${stage.image_sha256.slice(0,12)} · ${stage.engine}`, 'subtle'));
+  return panel;
+}
+async function inspectHotspots() {
+  if (hotspotBusy) return;
+  if (jobDirty) { $('hotspot-progress').textContent = 'Apply changes and refresh before inspecting the photo.'; return; }
+  hotspotBusy = true; $('refresh-hotspots').disabled = true;
+  $('hotspot-results').replaceChildren(); $('hotspot-progress').textContent = 'Measuring facial regions…';
+  try {
+    const response = await fetch(`/admin/p/${window.stationPhotoId}/hotspots`, {cache:'no-store'});
+    if (!response.ok) throw new Error(response.status === 409 ? 'The photo changed or is being processed. Refresh and inspect again.' : 'Inspection unavailable. Check your staff login and refresh.');
+    const result = await response.json();
+    $('hotspot-results').replaceChildren(...result.stages.map(showHotspotStage));
+    $('hotspot-progress').textContent = 'Measurements complete. Compare the regions and review the original detail.';
+  } catch (error) { $('hotspot-progress').textContent = error.message; }
+  finally { hotspotBusy = false; $('refresh-hotspots').disabled = false; }
+}
+$('open-hotspots')?.addEventListener('click', () => { $('hotspots-dialog').showModal(); inspectHotspots(); });
+$('close-hotspots')?.addEventListener('click', () => $('hotspots-dialog').close());
+$('refresh-hotspots')?.addEventListener('click', inspectHotspots);
+$('hotspot-overlay')?.addEventListener('change', () => document.querySelectorAll('.hotspot-regions').forEach(overlay => overlay.toggleAttribute('hidden', !$('hotspot-overlay').checked)));
 function updateAiConsent() { if ($('upload-ai-consent')) $('upload-ai-consent').required = $('use-ai').checked; }
 $('use-ai')?.addEventListener('change', updateAiConsent); updateAiConsent();
 $('ai-prepare-form')?.addEventListener('submit', async event => {

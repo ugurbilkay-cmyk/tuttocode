@@ -13,6 +13,10 @@ are reference settings, not connected devices or a calibrated DE100-XD profile.
 Fine rotation and a detailed measurements inspector are now available. Full native
 quality-score parity, template-policy handling and DE100-XD calibration remain
 incomplete.
+The staff **Inspect hotspots** control compares estimated facial regions on the
+camera original, current photo and any pending AI candidate. It reports actual
+native-pixel highlight measurements with matching overlays. These diagnostics
+are not calibrated approval scores; see [the hotspot inspector](docs/HOTSPOT_INSPECTOR.md).
 
 The existing UK HMPO code service is retained. Irish passport templates are available
 for photo export; Irish codes are **outsourced for now**. Save the photo and
@@ -60,5 +64,6 @@ Reverse proxy must pass the original `Host` header.
 pip install -r requirements-dev.txt
 python3 tests/test_photomatic.py
 python3 tests/test_ai_preparation.py
+python3 tests/test_hotspots.py
 python3 tests/test_e2e.py
 ```

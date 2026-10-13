@@ -61,7 +61,7 @@
         </div>
         <p class="subtle">Local checks support staff review. Full Photomatic score equivalence has not been established.</p>
         <p id="pending-changes" class="notice" hidden>Apply changes to recheck the photo before AI preparation, code issuance or output.</p>
-        {% if row %}<button type="button" data-measurements>Detailed measurements</button>{% endif %}
+        {% if row %}<button type="button" data-measurements>Detailed measurements</button><button type="button" id="open-hotspots">Inspect hotspots</button>{% endif %}
         {% if checks %}<details class="check-details"><summary>View all checks</summary>{% include '_checks.html' %}</details>{% endif %}
         {% if profile.special_mode %}<p class="notice">This template also needs its external document submission/signature step.</p>{% endif %}
         <label class="field-label" for="printer">Layout family</label>
@@ -166,6 +166,18 @@
   </section>
   {% endif %}
 </main>
+{% if row %}
+<dialog id="hotspots-dialog">
+  <div class="dialog-heading"><h2>Regional hotspot inspector</h2><button type="button" id="close-hotspots">Close</button></div>
+  <p>Compare bright patches on the forehead, nose, cheeks and chin. Outlines are estimated facial regions; amber boxes locate candidate bright patches.</p>
+  <p class="notice">Diagnostic measurements only. These values do not certify a passport photo or change code approval. Near-clipped pixels can indicate lost detail; a darker edited patch does not prove that detail was recovered.</p>
+  <button type="button" id="refresh-hotspots">Measure current images</button>
+  <label class="tick"><input type="checkbox" id="hotspot-overlay" checked> Show regions and candidate patches</label>
+  <p id="hotspot-progress" role="status"></p>
+  <div id="hotspot-results" class="hotspot-stages"></div>
+  <details><summary>How these measurements work</summary><p>Bright candidates: at least 80 L* and 15 L* above the regional median, or a colour channel at 250 or above. Near-clipped values count channels at 250–255 in the decoded 8-bit image. These diagnostic thresholds need calibration against shop photographs; they are not country pass limits or Photomatic scores. Eye regions and lips are excluded. Glasses glare needs a separate check. The preview is reduced for display; counts use native image pixels.</p></details>
+</dialog>
+{% endif %}
 {% if row %}<dialog id="measurements-dialog"><div class="dialog-heading"><h2>{{ measurement_title }}</h2><button type="button" id="close-measurements">Close</button></div><p class="subtle">Eye positions refer to the print master. Source distance refers to the oriented camera / AI image. Values use our measurement methods; they are not Photomatic's proprietary 0–100 scores.</p><p class="measurement-legend">Green: passed · Amber: review · Red: failed · Grey: measured without a calibrated limit, or not tested</p>{% include '_measurements.html' %}</dialog>{% endif %}
 {% if ai_status.status == 'ready' %}
 <dialog id="ai-measurements-dialog">

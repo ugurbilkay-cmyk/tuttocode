@@ -20,7 +20,7 @@ from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements
+from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -532,6 +532,47 @@ async def admin_original(request):
     return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
+async def admin_hotspots(request):
+    """Staff-only, read-only diagnostics on a consistent per-job image snapshot."""
+    _require_admin(request)
+    pid = request.path_params["pid"]
+    if not ID_RE.fullmatch(pid):
+        raise HTTPException(404)
+    row = db.get(pid)
+    if not row or row["expires"] <= time.time() or row["status"] == "rejected":
+        raise HTTPException(404)
+    if row["edit_token"]:
+        raise HTTPException(409, "Wait for the current photo operation to finish")
+    state = json.loads(row["ai_state"])
+    paths = [("Camera original", config.PHOTO_DIR / f"{pid}_source")]
+    if row["status"] == "issued":
+        paths.append(("Final code JPEG", config.PHOTO_DIR / f"{pid}_code.jpg"))
+    else:
+        paths.append(("Current prepared photo", _photo_path(pid)))
+    if state.get("status") == "ready" and state.get("revision") == row["revision"]:
+        paths.append(("AI candidate · not accepted", config.PHOTO_DIR / f"{pid}_ai_source"))
+    snapshots = []
+    try:
+        for label, path in paths:
+            if path.exists():
+                snapshots.append((label, path.read_bytes()))
+    except OSError:
+        raise HTTPException(409, "The photo changed. Refresh and inspect again") from None
+    if not snapshots:
+        raise HTTPException(404, "No photograph is available for inspection")
+    reports = []
+    for label, data in snapshots:
+        report = await run_in_threadpool(hotspots.inspect_photo, data)
+        reports.append(dict(report, label=label))
+    current = db.get(pid)
+    if (not current or current["expires"] <= time.time() or current["status"] != row["status"] or
+            current["revision"] != row["revision"] or current["edit_token"] or current["ai_state"] != row["ai_state"]):
+        raise HTTPException(409, "The photo changed. Refresh and inspect again")
+    return Response(json.dumps({"revision": row["revision"], "stages": reports,
+                               "approval": "not_assessed", "calibrated": False}),
+                    media_type="application/json", headers={"Cache-Control": "no-store"})
+
+
 async def admin_ai_preview(request):
     _require_admin(request)
     pid = request.path_params["pid"]
@@ -785,6 +826,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/ai/discard", admin_ai_discard, methods=["POST"]),
     Route("/admin/p/{pid}/restore-original", admin_restore_original, methods=["POST"]),
     Route("/admin/p/{pid}/original.jpg", admin_original),
+    Route("/admin/p/{pid}/hotspots", admin_hotspots),
     Route("/admin/p/{pid}/ai-preview.jpg", admin_ai_preview),
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
