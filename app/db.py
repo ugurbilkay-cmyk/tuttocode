@@ -107,7 +107,7 @@ def claim_edit(photo_id, *, pending_only=True):
             raise ValueError("Photo is missing or expired")
         if pending_only and row["status"] != "pending":
             raise ValueError("Issued photos cannot be edited")
-        if row["edit_token"] and row["edit_started"] > now - max(900, config.OPENAI_TIMEOUT_SECONDS + 120, 2*config.BACKGROUND_TIMEOUT_SECONDS + 120):
+        if row["edit_token"] and row["edit_started"] > now - max(900, config.OPENAI_TIMEOUT_SECONDS + 120, 2*config.BACKGROUND_TIMEOUT_SECONDS + 4*config.ENHANCER_TIMEOUT_SECONDS + 120):
             raise ValueError("This photo is being processed. Wait for it to finish.")
         c.execute("UPDATE photos SET edit_token=?,edit_started=? WHERE id=?", (token, now, photo_id))
     return token

@@ -1,7 +1,8 @@
 """Passport photo processing: face analysis, HMPO crop, compliance checks.
 
 Auto enhance: colour/exposure, face-shadow softening, background evening or
-replacement. Facial features are never reshaped.
+replacement, with optional learned restoration. Geometry is measured from the
+source; staff compare the enhanced detail before output.
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments, background, background_models
+from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -411,18 +412,85 @@ def _crown_y(points, person_mask):
     return float(low + starts[0]) if len(starts) else estimate
 
 
+def _local_enhancement(rgb, values, phase, measurements, checks):
+    v = enhancement.validate(values)
+    if phase == "restore" and not (v['lighting'] or v['denoise'] or v['detail']): return rgb
+    if phase == "upscale" and v['scale'] == 1: return rgb
+    out, evidence = enhancement.apply(rgb,v,phase)
+    record = measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))
+    record['stages'].append(evidence)
+    if evidence['status'] == 'unavailable':
+        checks.append(Check('enhancement_'+phase,'Local enhancer','warn',evidence['message']))
+    else:
+        description = ', '.join(m['label'] for m in evidence['models']) or evidence.get('method','Detail sharpening')
+        checks.append(Check('enhancement_'+phase,'Local enhancer','pass',description))
+    return out
+
+
+def _enlarge_master(rgb, values, measurements, checks, target_size=None):
+    old_h,old_w = rgb.shape[:2]
+    out = _local_enhancement(rgb,values,'upscale',measurements,checks)
+    enlargement = out.shape[1]/old_w
+    if target_size:
+        target = tuple(round(v*enlargement) for v in target_size)
+        if (out.shape[1],out.shape[0]) != target:
+            out = cv2.resize(out,target,interpolation=cv2.INTER_LANCZOS4)
+    if (out.shape[1],out.shape[0]) != (old_w,old_h):
+        # Quality uses the working crop grid above. Exact code JPEG checks run
+        # again at issuance. Source resolution and eye-detail verdicts never change.
+        measurements['quality_sampling_size'] = [old_w,old_h]
+        measurements['output_size'] = [out.shape[1],out.shape[0]]
+        factors = (out.shape[1]/old_w,out.shape[0]/old_h)
+        for key in ('eye1','eye2'):
+            if key in measurements: measurements[key] = [round(v*f,2) for v,f in zip(measurements[key],factors)]
+        if 'output_eye_distance' in measurements:
+            measurements['output_eye_distance'] = round(float(np.linalg.norm(
+                np.array(measurements['eye1'])-np.array(measurements['eye2']))),2)
+    return out
+
+
+def _smooth_skin(rgb, points, values, measurements, checks):
+    v = enhancement.validate(values)
+    if not v['skin']: return rgb
+    try:
+        if points is None: raise ValueError('Face landmarks unavailable')
+        out,evidence = skin.apply(rgb,points,v['skin'])
+        checks.append(Check('enhancement_skin','Skin smoothing','pass',evidence['message']))
+    except (ValueError,cv2.error):
+        out = rgb
+        evidence = dict(phase='skin',models=[],status='unavailable',strength=v['skin'],
+            message='Skin smoothing skipped: facial regions could not be located reliably')
+        checks.append(Check('enhancement_skin','Skin smoothing','warn',evidence['message']))
+    measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))['stages'].append(evidence)
+    return out
+
+
+def _encoded_highlight_review(jpeg, values, measurements, analyzer=None, always=False):
+    if not always and not enhancement.active(values): return
+    report = hotspots.inspect_photo(jpeg,analyzer)
+    # Keep native-pixel measurements and exact JPEG digest, not duplicate images
+    # or overlay geometry in the database. The inspector renders overlays on demand.
+    measurements['final_highlights'] = {key:value for key,value in report.items()
+        if key not in ('preview','outlines','patches')}
+    if report.get('status')=='diagnostic':
+        measurements['regional_near_clip'] = report['near_clip_all_percent']
+        measurements['regional_bright_patches'] = report['patch_count']
+
+
 def process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
             country_id: str | None = None, crop=None, framed=False,
-            adjustments=None, print_only=False, background_engine=None) -> Result:
+            adjustments=None, print_only=False, background_engine=None, enhancement_options=None) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     profile = photomatic.country(country_id)
     out_w, out_h = photomatic.output_size(profile)
+    master_size = (out_w,out_h)
     crop = crop or {"zoom": 1, "x": 0, "y": 0, "rotation": 0}
     checks: list[Check] = []
     measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
     adjustments = local_adjustments.validate(adjustments)
+    enhancement_options = enhancement.validate(enhancement_options)
     background_engine = background_models.validate(background_engine or config.BACKGROUND_ENGINE)
     measurements["local_adjustments"] = {"engine": local_adjustments.VERSION, "values": adjustments}
 
@@ -439,7 +507,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["input_size"] = [w, h]
     if print_only:
         return _print_only_result(rgb, profile, analyzer, adjustments,
-                                  auto_adjust, fix_shadows, even_bg, replace_bg, background_engine)
+                                  auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options)
     rotation = int(crop.get("rotation", 0)) % 360
     if rotation:
         rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
@@ -462,22 +530,35 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
         before = _small_jpeg(np.asarray(ImageOps.fit(Image.fromarray(rgb),(out_w,out_h),method=Image.LANCZOS)))
+        original_rgb = rgb
+        rgb = _local_enhancement(rgb,enhancement_options,'restore',measurements,checks)
         if replace_bg:
             baseline = None
             if background_engine == "mediapipe":
                 try:
-                    baseline = (analyzer or get_analyzer()).analyze(rgb).person_mask
+                    baseline = (analyzer or get_analyzer()).analyze(original_rgb).person_mask
                 except Exception:
                     pass
-            alpha = _background_mask(rgb,baseline,background_engine,measurements,checks)
+            alpha = _background_mask(original_rgb,baseline,background_engine,measurements,checks)
             if alpha is not None:
                 rgb = _composite_background(rgb,alpha,profile["background"],background_engine)
         rgb, notes = local_adjustments.apply(rgb, adjustments)
+        skin_points = None
+        if enhancement_options['skin']:
+            try:
+                faces = (analyzer or get_analyzer()).analyze(original_rgb).faces
+                if len(faces)==1: skin_points=faces[0].points
+            except Exception:
+                pass
+        rgb = _smooth_skin(rgb,skin_points,enhancement_options,measurements,checks)
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
         out = np.asarray(im)
         add("framing", "Free-style crop", "pass", "No face-size target in this template")
         measurements["output_size"] = [out_w, out_h]
-        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), before, measurements)
+        out = _enlarge_master(out,enhancement_options,measurements,checks)
+        jpeg = _encode_jpeg(out)
+        _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
+        return Result(True, checks, jpeg, _small_jpeg(out), before, measurements)
     analyzer = analyzer or get_analyzer()
     an = analyzer.analyze(rgb)
 
@@ -588,6 +669,11 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     add("framing", "Head and shoulders in frame", "pass")
     add("resolution", "Resolution", "pass", f"{int(crop_w)}x{int(crop_h)}px source")
 
+    if enhancement.active(enhancement_options):
+        # Do not feed an artificially enlarged small crop into the learned
+        # enhancer. Restore on the source crop grid, then prepare the print master.
+        working_scale = min(1.,crop_w/out_w,crop_h/out_h)
+        out_w,out_h = max(1,round(out_w*working_scale)),max(1,round(out_h*working_scale))
     M = np.array([[out_w / crop_w, 0, -x0 * out_w / crop_w],
                   [0, out_h / crop_h, -y0 * out_h / crop_h]], dtype=np.float32)
     out = cv2.warpAffine(rgb, M, (out_w, out_h), flags=cv2.INTER_AREA,
@@ -616,6 +702,14 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
 
     raw = out.copy()  # unadjusted crop, used for glare detection
     before = _small_jpeg(out)
+    if enhancement.active(enhancement_options):
+        original_face = raw[max(int(tp[FOREHEAD][1]),0):int(tp[CHIN][1]),
+                            max(int(min(tp[FACE_L][0],tp[FACE_R][0])),0):int(max(tp[FACE_L][0],tp[FACE_R][0]))]
+        if original_face.size:
+            original_gray = cv2.cvtColor(original_face,cv2.COLOR_RGB2GRAY)
+            original_gray = cv2.resize(original_gray,(300,max(1,int(300*original_gray.shape[0]/original_gray.shape[1]))))
+            measurements['unadjusted_sharpness'] = round(float(cv2.Laplacian(original_gray,cv2.CV_64F).var()),2)
+    out = _local_enhancement(out,enhancement_options,'restore',measurements,checks)
     fb = (min(tp[FACE_L][0], tp[FACE_R][0]), tp[FOREHEAD][1],
           max(tp[FACE_L][0], tp[FACE_R][0]), tp[CHIN][1])
     notes = []
@@ -631,6 +725,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out, adjustments)
     notes += manual_notes
+    out = _smooth_skin(out,tp,enhancement_options,measurements,checks)
     if auto_adjust or fix_shadows or replace_bg or even_bg or manual_notes:
         add("adjust", "Auto enhance", "pass",
             ("Applied: " + ", ".join(notes)) if notes else "No correction needed")
@@ -769,6 +864,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     ok = not any(c.status == "fail" for c in checks)
     max_kb = profile["digital_kb"][1] if profile["digital_kb"][1] > 0 else 9500
     min_kb = profile["digital_kb"][0] if profile["digital_kb"][0] > 0 else (50 if profile["hmpo_code"] else 0)
+    out = _enlarge_master(out,enhancement_options,measurements,checks,master_size)
     jpeg = _encode_jpeg(out)
     if all(v > 0 for v in profile["digital_size"]):
         digital = ImageOps.fit(Image.fromarray(out), photomatic.save_size(profile), method=Image.LANCZOS)
@@ -781,10 +877,11 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         ok = False
     measurements["digital_size"] = list(photomatic.save_size(profile))
     measurements["digital_kib"] = round(size_kb, 2)
+    _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
     return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements)
 
 
-def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine):
+def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options):
     """Full-frame editing for staff output, without a passport framing verdict."""
     h, w = rgb.shape[:2]
     before = _small_jpeg(rgb)
@@ -792,12 +889,13 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
     measurements = {}
     notes, checks = [], [Check("print_only", "Full-frame / print job", "warn",
                               "The whole photograph is fitted to the selected format. Passport framing has not been approved.")]
-    mask, box = None, None
+    mask, box, skin_points = None, None, None
     try:
         analysis = (analyzer or get_analyzer()).analyze(rgb)
         mask = analysis.person_mask
         if len(analysis.faces) == 1:
             points = analysis.faces[0].points
+            skin_points = points
             box = (min(points[FACE_L][0], points[FACE_R][0]), points[FOREHEAD][1],
                    max(points[FACE_L][0], points[FACE_R][0]), points[CHIN][1])
             checks.append(Check("face", "Face found", "pass"))
@@ -811,6 +909,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         replacement_mask = _background_mask(rgb,mask,background_engine,measurements,checks)
         if replacement_mask is not None:
             mask = replacement_mask
+    out = _local_enhancement(out,enhancement_options,'restore',measurements,checks)
     if fix_shadows and box is not None:
         out, amount = soften_face_shadows(out, box, mask)
         if amount: notes.append("face shadow softened")
@@ -823,6 +922,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out,adjustments)
     notes += manual_notes
+    out = _smooth_skin(out,skin_points,enhancement_options,measurements,checks)
     if notes: checks.append(Check("adjust", "Local photo tools", "warn", "; ".join(notes)))
     out_w, out_h = photomatic.output_size(profile)
     # Fit rather than stretch or invent framing. Borders retain the whole image.
@@ -831,6 +931,12 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         background_pixels = out[mask < .15]
         if len(background_pixels) >= 100:
             border_colour = tuple(int(v) for v in np.median(background_pixels,axis=0))
+    # Enlarge the prepared source, before fitting it to the print grid. Small
+    # camera files therefore reach RealPLKSR with their actual native pixels.
+    prepared_w = out.shape[1]
+    out = _local_enhancement(out,enhancement_options,'upscale',measurements,checks)
+    enlargement = out.shape[1]/prepared_w
+    out_w,out_h = round(out_w*enlargement),round(out_h*enlargement)
     master = np.asarray(ImageOps.pad(Image.fromarray(out),(out_w,out_h),
                                     method=Image.Resampling.LANCZOS,color=border_colour))
     measurements.update({"method":"Full-frame local editing", "country_id":profile["id"],
@@ -840,7 +946,9 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
     if w < MIN_SRC_W or h < MIN_SRC_H:
         checks.append(Check("resolution", "Original source resolution", "fail",
                             f"{w} × {h} px; enlarging for print does not add real source detail"))
-    return Result(False,checks,_encode_jpeg(master),_small_jpeg(master),before,measurements)
+    jpeg = _encode_jpeg(master)
+    _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
+    return Result(False,checks,jpeg,_small_jpeg(master),before,measurements)
 
 
 def code_photo(jpeg, country_id, staff_override=False):
@@ -877,6 +985,7 @@ def check_code_photo(jpeg, country_id, age_group):
         result = Result(False,[Check("quality_unavailable","Final quality assessment","fail",
                                     "The checker is unavailable; staff visual review and responsibility are required")],
                         measurements={"method":"Quality assessment unavailable","input_size":list(size)})
+    _encoded_highlight_review(jpeg,None,result.measurements,always=True)
     profile = photomatic.country(country_id)
     target = photomatic.save_size(profile)
     if (size[0] < 600 or size[1] < 750 or not 50_000 <= len(jpeg) <= 10_000_000 or

@@ -36,6 +36,9 @@ Local background removal now offers HR-matting (default maximum detail),
 BiRefNet-portrait, MODNet and the existing basic mask. See the
 [background-removal setup and evaluation](docs/BACKGROUND_REMOVAL.md) for
 the optional worker runtime, model installation and measured limitations.
+The [local image enhancer](docs/IMAGE_ENHANCER.md) adds editable portrait presets,
+Retinexformer lighting, NAFNet noise cleanup, detail sharpening and optional
+RealPLKSR or Real-ESRGAN 2×/4× enlargement. All are off until selected; OpenAI remains optional.
 
 Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
 this prototype as a replacement for the current shop software. See also
@@ -76,5 +79,7 @@ python3 tests/test_ai_preparation.py
 python3 tests/test_hotspots.py
 python3 tests/test_local_tools.py
 python3 tests/test_background.py
+python3 tests/test_enhancement.py
+python3 tests/test_skin.py
 python3 tests/test_e2e.py
 ```

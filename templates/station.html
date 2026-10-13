@@ -81,6 +81,25 @@
           {% for tool in background_choices() %}<option value="{{ tool.key }}" {% if tool.key == options.get('background_engine',cfg.BACKGROUND_ENGINE) %}selected{% endif %}>{{ tool.label }}{% if not tool.installed %} · needs setup{% endif %}</option>{% endfor %}
           </select></label>
           <p class="subtle">All background tools run locally. Maximum detail can take about a minute on a CPU. Apply changes to compare hair and clothing edges.</p>
+          <details class="manual-tools" id="enhancer-tools"><summary>Image enhancer · local AI and detail</summary>
+          {% set enh = options.get('enhancement_options',{}) %}
+          {% set installed = enhancer_available() %}
+          <label class="field-label">Quick starting point<select id="enhancer-preset"><option value="">Custom settings</option>
+          {% for key,preset in enhancer_presets.items() %}<option value="{{ key }}">{{ preset.label }}</option>{% endfor %}
+          </select></label>
+          {% for control in enhancer_controls %}
+          <label class="local-control">{{ control.label }} <output>{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0)|float }} {{ control.unit }}</output><input class="local-slider enhancer-slider" type="range" name="enhancer_{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0) }}" data-unit="{{ control.unit }}"></label>
+          {% endfor %}
+          <label class="field-label">AI enlargement<select name="enhancer_scale" id="enhancer-scale">
+          {% for factor in [1,2,4] %}<option value="{{ factor }}" {% if enh.get('scale',1)==factor %}selected{% endif %}>{{ 'Off · standard master' if factor==1 else factor|string + '× · enlarged master' }}</option>{% endfor %}
+          </select></label>
+          <label class="field-label">Enlargement tool<select name="enhancer_upscale_engine" id="enhancer-engine">
+          {% for key,label in [('plksr','Natural detail · RealPLKSR'),('realesrgan','Fast smooth detail · Real-ESRGAN'),('lanczos','Standard enlargement · Lanczos')] %}<option value="{{ key }}" {% if enh.get('upscale_engine','plksr')==key %}selected{% endif %}>{{ label }}{% if key!='lanczos' and not installed[key] %} · needs setup{% endif %}</option>{% endfor %}
+          </select></label>
+          <p class="subtle">Lighting: Retinexformer{% if not installed.retinex %} · needs setup{% endif %}. Noise: NAFNet{% if not installed.nafnet %} · needs setup{% endif %}. These tools run locally with no API charge. Strength 0 keeps that correction off; enlargement strength 0 uses standard interpolation.</p>
+          <p class="subtle">Use Before / After and Camera original to compare. AI enlargement improves presentation; original pixel and focus evidence remains available. Detailed processing can take several minutes on a CPU.</p>
+          <p class="subtle">Skin smoothing softens fine texture locally, with eyes, lips, facial edges and existing bright hotspots protected. It keeps regional highlight counts and peaks from before smoothing; lighting adjustments and AI enlargement are checked separately.</p>
+          </details>
           <details class="manual-tools"><summary>Fine-tune lighting and colour</summary>
           {% set local = options.get('adjustments',{}) %}
           {% for control in adjustment_controls %}
@@ -105,6 +124,10 @@
         {% endif %}
         {% endif %}
         {% if row %}{% set bg_info = (row.measurements|fromjson).get('background_removal',{}) %}{% if bg_info %}<p class="subtle" id="background-result">Background: {{ bg_info.label }} · {{ bg_info.status }}{% if bg_info.cache_hit %} · reused source mask{% elif bg_info.inference_seconds is defined %} · {{ bg_info.inference_seconds }} s inference{% endif %}</p>{% endif %}{% endif %}
+        {% if row %}{% set enh_info = (row.measurements|fromjson).get('local_enhancement',{}) %}{% if enh_info %}<div class="subtle" id="enhancer-result">
+        {% for stage in enh_info.stages %}<p>Enhancer {{ stage.phase }}: {{ stage.status }}{% for model in stage.models %} · {{ model.label }}{% endfor %}{% if stage.inference_seconds is defined %} · {{ stage.inference_seconds }} s inference{% endif %}{% if stage.output_size is defined %} · {{ stage.output_size[0] }} × {{ stage.output_size[1] }} px{% endif %}{% if stage.message is defined %} · {{ stage.message }}{% endif %}</p>{% endfor %}
+        {% set final_hl = (row.measurements|fromjson).get('final_highlights',{}) %}{% if final_hl %}<p id="enhancer-final-highlights">Final JPEG regional highlights: {% if final_hl.status=='diagnostic' %}{{ final_hl.near_clip_all_percent }}% near-clipped in all channels · {{ final_hl.patch_count }} candidate patches{% else %}unavailable · {{ final_hl.message }}{% endif %}. Regional diagnostics; use the hotspot inspector to compare.</p>{% endif %}
+        </div>{% endif %}{% endif %}
         <div class="station-actions">
           {% if not row %}
             <input type="file" name="photo" id="file-input" accept="image/*" required class="file-input">
@@ -214,6 +237,7 @@
 </dialog>
 <dialog id="camera-dialog"><div class="dialog-heading"><h2>Camera</h2><button type="button" id="close-camera">Close</button></div><video id="camera-video" autoplay playsinline muted></video><p id="camera-error" class="notice" hidden></p><button type="button" id="capture-photo">Take photo</button></dialog>
 <script id="station-catalog" type="application/json">{{ {'countries':catalog.countries,'prints':catalog.prints}|tojson }}</script>
+<script id="enhancer-presets" type="application/json">{{ enhancer_presets|tojson }}</script>
 <script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationEditable={{ editable|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};</script>
 <script src="/static/station.js" defer></script>
 </body></html>

@@ -1,5 +1,10 @@
 """Honest operator measurements: native values and explicitly untested fields."""
 def report(values, checks, profile):
+    values = dict(values)
+    final_highlights = values.get('final_highlights',{})
+    if final_highlights.get('status')=='diagnostic':
+        values.setdefault('regional_near_clip',final_highlights['near_clip_all_percent'])
+        values.setdefault('regional_bright_patches',final_highlights['patch_count'])
     by_key = {c["key"]: c["status"] for c in checks}
 
     def row(label, key=None, unit="", check=None, limits="", status=None):
@@ -43,6 +48,7 @@ def report(values, checks, profile):
             row("Input image size · after EXIF orientation", "input_size", "px", status="measured"),
             row("ID photo source crop", "source_crop_size", "px", "resolution"),
             row("ID photo output", "output_size", "px", status="measured"),
+            row("Quality sampling grid · before enlargement", "quality_sampling_size", "px", status="measured"),
             row("Digital export dimensions", "digital_size", "px", status="measured"),
             row("Checked JPEG file size", "digital_kib", "KiB", status="measured"),
             row("Measurement confidence"), row("General image quality"),
@@ -50,12 +56,15 @@ def report(values, checks, profile):
         {"name": "Biometric measurements", "rows": geometry},
         {"name": "Image quality measurements", "rows": [
             row("Sharpness · Laplacian variance", "sharpness", "variance", "sharp", "≥25; warning below 50"),
+            row("Unadjusted crop sharpness", "unadjusted_sharpness", "variance", limits="Before local enhancement · 300 px face reference", status="measured"),
             row("Motion blur"), row("Contrast · face lightness deviation", "contrast", "L*", status="measured"),
             row("Artefacts"), row("Noise"), row("Compression"),
         ]},
         {"name": "Lighting measurements", "rows": [
             row("Exposure · mean face lightness", "face_lightness", "L*", "exposure", "30–88 L*"),
             row("Under exposed score"), row("Over exposed score"), row("Natural skin colour"), row("Hotspots"),
+            row("Final JPEG · regional near-clipping in all channels", "regional_near_clip", "%", status="measured", limits="Native-pixel diagnostic; not a Photomatic score"),
+            row("Final JPEG · regional bright candidate patches", "regional_bright_patches", "patches", status="measured"),
             row("Uniform lighting / face shadow", "lighting_imbalance", "%", "shadow", "≤30%; warning above 18%"),
             row("Shadow in eyes"),
             row("Background median colour", "background_rgb", "RGB", "background"),

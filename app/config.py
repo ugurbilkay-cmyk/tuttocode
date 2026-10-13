@@ -47,6 +47,9 @@ BACKGROUND_ENGINE = os.getenv("BACKGROUND_ENGINE", "hr")
 BACKGROUND_MODEL_DIR = Path(os.getenv("BACKGROUND_MODEL_DIR", MODEL_DIR / "background"))
 BACKGROUND_PYTHON = os.getenv("BACKGROUND_PYTHON", sys.executable)
 BACKGROUND_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("BACKGROUND_TIMEOUT_SECONDS", "300"))))
+ENHANCER_MODEL_DIR = Path(os.getenv("ENHANCER_MODEL_DIR", MODEL_DIR / "enhancement"))
+ENHANCER_PYTHON = os.getenv("ENHANCER_PYTHON", BACKGROUND_PYTHON)
+ENHANCER_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("ENHANCER_TIMEOUT_SECONDS", "300"))))
 
 # Customer self-upload page. Off = shop/staff use only.
 PUBLIC_UPLOADS = _bool("PUBLIC_UPLOADS", False)

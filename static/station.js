@@ -69,8 +69,28 @@ document.querySelectorAll('.local-slider').forEach(input => input.addEventListen
   input.closest('label').querySelector('output').textContent = `${input.value} ${input.dataset.unit}`;
 }));
 $('reset-local-tools')?.addEventListener('click', () => {
-  document.querySelectorAll('#local-tools .local-slider').forEach(input => { input.value=0; input.dispatchEvent(new Event('input',{bubbles:true})); });
+  document.querySelectorAll('#local-tools .local-slider').forEach(input => { input.value=input.name==='enhancer_upscale_strength' ? 70 : 0; input.dispatchEvent(new Event('input',{bubbles:true})); });
   document.querySelectorAll('#local-tools input[type=checkbox]').forEach(input => { input.checked=false; input.dispatchEvent(new Event('input',{bubbles:true})); });
+  if ($('enhancer-scale')) { $('enhancer-scale').value='1'; $('enhancer-scale').dispatchEvent(new Event('input',{bubbles:true})); }
+  if ($('enhancer-engine')) { $('enhancer-engine').value='plksr'; $('enhancer-engine').dispatchEvent(new Event('input',{bubbles:true})); }
+  if ($('enhancer-preset')) $('enhancer-preset').value='';
+});
+$('enhancer-preset')?.addEventListener('change', event => {
+  const preset = JSON.parse($('enhancer-presets').textContent)[event.target.value];
+  if (!preset) return;
+  const form = $('photo-form');
+  document.querySelectorAll('#local-tools .local-slider:not(.enhancer-slider)').forEach(input => {
+    input.value=preset.adjustments[input.name] ?? 0;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
+    const input=form.elements.namedItem('enhancer_'+key);
+    if (input) { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); }
+  }
+  for (const key of ['auto_adjust','fix_shadows']) {
+    const input=form.elements.namedItem(key);
+    if (input) { input.checked=preset[key];input.dispatchEvent(new Event('input',{bubbles:true})); }
+  }
 });
 function updateJobMode(reset=false) {
   const fullFrame = $('print-only')?.checked ?? Boolean(window.stationFullFrame);
@@ -206,10 +226,12 @@ $('photo-form').addEventListener('submit', () => {
   const button = $('process-button'); if (button) {
     button.disabled=true;
     const detailBackground = document.querySelector('input[name=replace_bg]')?.checked && $('background-engine')?.value === 'hr';
-    button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
+    const enhancerActive = ['lighting','denoise'].some(key => Number(document.querySelector(`[name=enhancer_${key}]`)?.value)>0) || Number($('enhancer-scale')?.value)>1;
+    button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : enhancerActive ? 'Enhancing locally… This can take several minutes.' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
   }
 });
 $('photo-form').addEventListener('input', event => {
+  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine')) $('enhancer-preset').value='';
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();
 });
 document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.addEventListener('click', event => { if (jobDirty) event.preventDefault(); }));

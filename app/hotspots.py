@@ -36,7 +36,7 @@ def _polygon_mask(shape, points):
     return mask.astype(bool)
 
 
-def measure(rgb, points, person_mask=None):
+def measure(rgb, points, person_mask=None, include_masks=False):
     """Return diagnostics and normalized overlay coordinates for one face."""
     from .processing import L_IRIS, R_IRIS, FOREHEAD, CHIN, NOSE, FACE_L, FACE_R, LEFT_EYE_RING, RIGHT_EYE_RING
     h, w = rgb.shape[:2]
@@ -120,11 +120,15 @@ def measure(rgb, points, person_mask=None):
         if area >= minimum:
             patches.append({"box": [round(x / w, 6), round(y / h, 6), round(width / w, 6), round(height / h, 6)], "pixels": int(area)})
     patches.sort(key=lambda p: p["pixels"], reverse=True)
-    return {"status": "diagnostic", "image_size": [w, h], "regions": rows,
+    result = {"status": "diagnostic", "image_size": [w, h], "regions": rows,
             "outlines": outlines, "patches": patches[:100], "patch_count": len(patches),
             "overlay_truncated": len(patches) > 100, "inspected_pixels": int(union.sum()),
             "near_clip_all_percent": round(float((near_all & union).sum()) * 100 / int(union.sum()), 3),
             "protected_features": "Eye regions and lips excluded; glasses glare needs a separate check"}
+    if include_masks:
+        # Internal callers only. Public diagnostics retain their JSON schema.
+        result.update(_candidate_mask=candidates,_inspected_mask=union,_skin_mask=valid)
+    return result
 
 
 def inspect_photo(data, analyzer=None):

@@ -20,7 +20,7 @@ from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models
+from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models, enhancement
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -28,7 +28,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 templates = Jinja2Templates(directory=str(config.BASE_DIR / "templates"))
 templates.env.globals.update(cfg=config, short_url=hmpo_auth.short_url, catalog=photomatic.CATALOG,
                              profiles=photomatic.COUNTRIES, printers=photomatic.PRINTERS,
-                             adjustment_controls=local_adjustments.CONTROLS, background_choices=background.choices)
+                             adjustment_controls=local_adjustments.CONTROLS, background_choices=background.choices,
+                             enhancer_controls=enhancement.CONTROLS, enhancer_presets=enhancement.PRESETS,
+                             enhancer_available=enhancement.choices)
 templates.env.filters["dt"] = lambda t: time.strftime("%d %b %Y %H:%M", time.localtime(t)) if t else ""
 templates.env.filters["fromjson"] = json.loads
 
@@ -151,6 +153,8 @@ def _opts(form=None):
     options["print_only"] = bool(form and form.get("print_only") == "on")
     try:
         options["background_engine"] = background_models.validate((form.get("background_engine") if form else None) or config.BACKGROUND_ENGINE)
+        options["enhancement_options"] = enhancement.validate({key:form.get('enhancer_'+key,default)
+            for key,default in enhancement.DEFAULTS.items()} if form else None)
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from None
     return options
@@ -709,8 +713,8 @@ async def admin_issue(request):
                       age_group=row["age_group"], age_allowances=age_allowances,
                       decision="staff_override" if staff_override else "approved_with_exception" if exception else "approved_with_age_allowance" if age_allowances else "checks_passed_and_reviewed")
         code = db.issue(pid, review, token)
-        # Keep AI and staff-overridden originals as review evidence until expiry.
-        if not options.get("ai") and not staff_override:
+        # Retain enhancement originals as review evidence until normal expiry.
+        if not options.get("ai") and not staff_override and not enhancement.active(options.get('enhancement_options')):
             (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
         (config.PHOTO_DIR / f"{pid}_working_source").unlink(missing_ok=True)
         _clear_candidate(pid)
