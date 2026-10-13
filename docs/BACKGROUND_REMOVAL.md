@@ -1,8 +1,8 @@
 # Background-removal selection for the independent studio
 
-Research and initial local evaluation: 13 October 2026. This is a selection
-experiment, not an integrated replacement or a validated claim of best accuracy.
-The studio still uses MediaPipe Selfie Segmenter and a Gaussian-blurred mask.
+Research, initial local evaluation and integration: 13 October 2026. The studio
+now offers the three tested matting engines alongside the existing MediaPipe
+baseline. The selection experiment is not a validated claim of best accuracy.
 No paid provider was called during this evaluation. Model downloads contain no
 customer images; inference uses local files with Hugging Face offline mode.
 
@@ -12,8 +12,9 @@ Use specialist continuous-alpha **portrait matting** for the included offline
 background tool. BiRefNet HR-matting and BiRefNet-portrait are the leading
 candidates to evaluate first. Keep face landmarks and document measurements as
 separate tasks; neither a good matte nor a white background proves compliance.
-Select the default using measured shop-photo performance and target hardware,
-with an alternate result and staff edge refinement for difficult images.
+The user's selected default is HR-matting, with portrait and MODNet alternatives.
+Continue evaluating shop-photo performance and target hardware. Staff can
+compare results; a manual mask-brush/refinement interface is not implemented.
 Do not declare a universal winner from two examples or model-card rankings.
 
 | Candidate | Relevant evidence | Proposed role / limitation |
@@ -64,9 +65,10 @@ link the tested community export on Google Drive (file ID
 `07c308cf0fc7e6e8b2065a12ed7fc07e1de8febb7dc7839d7b7f15dd66584df9`
 and size is 25,888,640 bytes. This is a local artifact digest, not an upstream
 signature. `--engine modnet` selects this snapshot without `--resolution`.
-The isolated evaluation environment uses Python 3.12, torch 2.8.0,
+The isolated matting environment uses Python 3.12, torch 2.8.0,
 torchvision 0.23.0, transformers 4.51.3, timm 1.0.16, einops 0.8.1 and
-kornia 0.8.0. The application runtime and requirements remain unchanged.
+kornia 0.8.0. Heavy dependencies stay outside the web runtime; optional
+`requirements-background.txt` reproduces them, including ONNX Runtime 1.22.1.
 
 Run with that isolated environment after obtaining and reviewing the pinned
 snapshot and verifying the model digest:
@@ -104,7 +106,7 @@ Selection from this small test: **HR-matting for maximum detail; portrait as the
 faster high-detail alternative**. MODNet remains a useful low-resource contender.
 This is subjective visual evidence, not an absolute ranking of every available
 tool. BEN2, withoutBG, BRIA and guided refiners were researched but not executed.
-CPU speed, memory and alternate edge refinement remain integration work.
+Windows speed/memory optimization and manual edge refinement remain future work.
 
 Ignored `comparison.png` and `hair-comparison.png` show the original alongside
 all four engine outputs. Small approximate inner-face alpha diagnostics were
@@ -133,3 +135,71 @@ JPEG. Flag uncertainty or feature loss without turning it into a machine pass;
 staff retain their recorded responsibility override. Missing high-detail models
 must visibly identify any baseline fallback. OpenAI remains a separately requested
 optional upgrade, never an automatic paid background-removal fallback.
+
+## Integrated staff workflow
+
+Under **Local photo tools**, select **Replace background**, then the tool:
+Maximum detail (HR-matting, the default), Faster detail (portrait), Fast
+(MODNet), or the existing basic MediaPipe mask. Apply changes uses the chosen
+engine and the document's configured plain background colour. It runs for
+passport crops, full-frame print jobs and freestyle templates. HR/portrait/MODNet
+retain continuous alpha without the baseline's Gaussian edge blur. The source
+matte is computed before tone adjustments and follows the exact existing crop
+transform; head/crown crop calculations still use the existing landmark/mask
+engine, keeping geometry behavior independent of the replacement tool.
+
+The one-shot worker verifies pinned model, configuration and architecture hashes
+before loading anything. Inference is explicitly offline and CPU FP32. No API
+or shop credentials are passed into its environment. Private temporary source
+and mask files are deleted after each invocation. A bounded single-entry
+in-memory cache reuses the same source mask for subsequent lighting/crop changes,
+with source/model changes invalidating it. Models are not retained in the web
+process. Expiry/rejection purges clear its in-memory mask. An OS file lock serializes expensive workers across threads/web workers;
+queue/execution timeouts are bounded. This also bounds background-model RAM use.
+
+If an engine is missing, corrupt, unavailable or times out, the photo remains
+usable, its background is left in place, and a visible warning identifies that
+engine. The system never silently substitutes a lower-detail tool. Staff can
+choose another tool and retain their responsibility override. Regular quality
+checks are rerun on the result. Model revision/digest, native source and matte
+hashes, processing version, input sizes, measured inference time and cache use
+are stored as `background_removal` evidence. These identify processing; alpha
+values and runtime timings are not passport approval scores.
+
+## Installation
+
+Use Python 3.12 for the separate worker environment. On macOS/Linux:
+
+```sh
+python3.12 -m venv .background-venv
+.background-venv/bin/python -m pip install -r requirements-background.txt
+python3 scripts/download_background_models.py hr portrait modnet
+```
+
+On Windows, create the environment with `py -3.12 -m venv .background-venv`
+and install using `.background-venv\Scripts\python.exe -m pip install -r
+requirements-background.txt`. Set server `BACKGROUND_PYTHON` to that Python's
+absolute path; `BACKGROUND_ENGINE=hr` is the default. `BACKGROUND_MODEL_DIR`
+defaults to `models/background`. `BACKGROUND_TIMEOUT_SECONDS` defaults to 300
+(execution and queue each bounded separately). Restart the app after config
+changes. The installer verifies fixed asset hashes and installs pinned licence
+texts/notices with every model. The installer requires download access; ordinary
+photo processing does not. Model binaries and the worker environment are ignored
+by Git. The development preview is configured and all three bundles are installed.
+
+Automated tests cover opaque/soft-edge composition, native crop geometry,
+selection persistence, no OpenAI requests, credential-free offline workers,
+source/model cache invalidation, serialization, cleanup, corrupt bundles,
+invalid results, timeouts and visible availability warnings. These are integration
+tests, separate from real model execution and wider accuracy calibration.
+
+Live integration verification: all three tools were exercised through authenticated
+reprocess requests on the existing demonstration jobs, including normal cropped
+output and the deliberately low-resolution full-frame photo. The requested engine
+was recorded as applied in every successful run; the poor source retained its
+resolution failure. End-to-end times were 1.129 s (MODNet), 15.515 s (portrait),
+58.533 s (HR), and 0.378 s for a repeat HR adjustment reusing the source mask.
+These are local examples, not latency guarantees. Master JPEG and print-sheet
+routes succeeded. No provider code, physical print, email or OpenAI request was
+initiated. A first setup-path failure was shown as unavailable with the background
+left unchanged, then corrected and retested.

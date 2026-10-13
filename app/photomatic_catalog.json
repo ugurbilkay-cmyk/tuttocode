@@ -15424,22 +15424,6 @@
           "height_mm": 35.0,
           "landscape": false,
           "format": "Format5to5"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
         }
       ],
       "cut_marks": true,
@@ -15490,22 +15474,6 @@
         {
           "x_mm": 55.0,
           "y_mm": 9.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
           "landscape": false,
@@ -15977,14 +15945,6 @@
         },
         {
           "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
           "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
@@ -16874,14 +16834,6 @@
           "height_mm": 65.0,
           "landscape": false,
           "format": "Format5to5"
-        },
-        {
-          "x_mm": 81.0,
-          "y_mm": 16.0,
-          "width_mm": 65.0,
-          "height_mm": 65.0,
-          "landscape": false,
-          "format": "Format5to5"
         }
       ],
       "cut_marks": true,
@@ -17746,22 +17698,6 @@
           "height_mm": 35.0,
           "landscape": false,
           "format": "Format5to5"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
         }
       ],
       "cut_marks": true,
@@ -17812,22 +17748,6 @@
         {
           "x_mm": 55.0,
           "y_mm": 9.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
           "landscape": false,
@@ -18245,14 +18165,6 @@
         },
         {
           "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
           "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
@@ -19746,22 +19658,6 @@
           "height_mm": 35.0,
           "landscape": false,
           "format": "Format5to5"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
         }
       ],
       "cut_marks": true,
@@ -19812,22 +19708,6 @@
         {
           "x_mm": 55.0,
           "y_mm": 9.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
           "landscape": false,
@@ -20245,14 +20125,6 @@
         },
         {
           "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
           "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
@@ -21138,14 +21010,6 @@
         {
           "x_mm": 81.0,
           "y_mm": 19.0,
-          "width_mm": 65.0,
-          "height_mm": 65.0,
-          "landscape": false,
-          "format": "Format5to5"
-        },
-        {
-          "x_mm": 81.0,
-          "y_mm": 16.0,
           "width_mm": 65.0,
           "height_mm": 65.0,
           "landscape": false,
@@ -22102,22 +21966,6 @@
         {
           "x_mm": 55.0,
           "y_mm": 9.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 10.0,
-          "y_mm": 52.0,
-          "width_mm": 35.0,
-          "height_mm": 40.0,
-          "landscape": false,
-          "format": "FormatFree"
-        },
-        {
-          "x_mm": 55.0,
-          "y_mm": 52.0,
           "width_mm": 35.0,
           "height_mm": 40.0,
           "landscape": false,
@@ -23576,14 +23424,6 @@
           "height_mm": 65.0,
           "landscape": false,
           "format": "Format5to5"
-        },
-        {
-          "x_mm": 81.0,
-          "y_mm": 16.0,
-          "width_mm": 65.0,
-          "height_mm": 65.0,
-          "landscape": false,
-          "format": "Format5to5"
         }
       ],
       "cut_marks": false,
@@ -23739,14 +23579,6 @@
         },
         {
           "x_mm": 63.0,
-          "y_mm": 19.0,
-          "width_mm": 51.0,
-          "height_mm": 51.0,
-          "landscape": false,
-          "format": "Format5to5"
-        },
-        {
-          "x_mm": 67.0,
           "y_mm": 19.0,
           "width_mm": 51.0,
           "height_mm": 51.0,

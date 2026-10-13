@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 
@@ -42,6 +43,10 @@ AUTO_ADJUST = _bool("AUTO_ADJUST", False)     # Photomatic p_bAutoedit=false
 FIX_SHADOWS = _bool("FIX_SHADOWS", False)     # AdjustExposureFaceShadows=0
 EVEN_BG = _bool("EVEN_BG", False)
 BG_REPLACE = _bool("BG_REPLACE", False)       # replace background with plain grey
+BACKGROUND_ENGINE = os.getenv("BACKGROUND_ENGINE", "hr")
+BACKGROUND_MODEL_DIR = Path(os.getenv("BACKGROUND_MODEL_DIR", MODEL_DIR / "background"))
+BACKGROUND_PYTHON = os.getenv("BACKGROUND_PYTHON", sys.executable)
+BACKGROUND_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("BACKGROUND_TIMEOUT_SECONDS", "300"))))
 
 # Customer self-upload page. Off = shop/staff use only.
 PUBLIC_UPLOADS = _bool("PUBLIC_UPLOADS", False)

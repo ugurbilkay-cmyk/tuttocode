@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments
+from . import config, photomatic, local_adjustments, background, background_models
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -357,6 +357,34 @@ def replace_background(rgb, mask, colour=(228, 228, 228)):
     return (rgb * soft + plain * (1 - soft)).astype(np.uint8)
 
 
+def _background_mask(rgb, baseline, engine, measurements, checks):
+    """Select an explicit tool; unavailable engines never silently substitute."""
+    try:
+        if engine == "mediapipe":
+            if baseline is None:
+                raise background.Unavailable("Basic foreground mask unavailable")
+            alpha = baseline
+            evidence = dict(engine=engine, label=background_models.LABELS[engine], status="applied",
+                            source_size=[rgb.shape[1],rgb.shape[0]], version="mediapipe-baseline", blur_sigma=2)
+        else:
+            alpha, evidence = background.matte(rgb,engine)
+        measurements["background_removal"] = evidence
+        checks.append(Check("background_tool","Background removal tool","pass",evidence["label"]))
+        return alpha
+    except background.Unavailable as exc:
+        message = str(exc) + "; background left unchanged"
+        measurements["background_removal"] = dict(engine=engine,label=background_models.LABELS[engine],
+                                                    status="unavailable",detail=message)
+        checks.append(Check("background_tool","Background removal tool","warn",message))
+        return None
+
+
+def _composite_background(rgb, alpha, colour, engine):
+    if engine == "mediapipe":
+        return replace_background(rgb,alpha,colour)
+    return background.composite(rgb,alpha,colour)
+
+
 def _crown_y(points, person_mask):
     """Locate the visible head top; use landmarks if segmentation is unavailable.
 
@@ -387,7 +415,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
             country_id: str | None = None, crop=None, framed=False,
-            adjustments=None, print_only=False) -> Result:
+            adjustments=None, print_only=False, background_engine=None) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     profile = photomatic.country(country_id)
     out_w, out_h = photomatic.output_size(profile)
@@ -395,6 +423,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     checks: list[Check] = []
     measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
     adjustments = local_adjustments.validate(adjustments)
+    background_engine = background_models.validate(background_engine or config.BACKGROUND_ENGINE)
     measurements["local_adjustments"] = {"engine": local_adjustments.VERSION, "values": adjustments}
 
     def add(key, label, status, detail=""):
@@ -410,7 +439,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["input_size"] = [w, h]
     if print_only:
         return _print_only_result(rgb, profile, analyzer, adjustments,
-                                  auto_adjust, fix_shadows, even_bg, replace_bg)
+                                  auto_adjust, fix_shadows, even_bg, replace_bg, background_engine)
     rotation = int(crop.get("rotation", 0)) % 360
     if rotation:
         rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
@@ -432,12 +461,23 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["analysis_size"] = [w, h]
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
+        before = _small_jpeg(np.asarray(ImageOps.fit(Image.fromarray(rgb),(out_w,out_h),method=Image.LANCZOS)))
+        if replace_bg:
+            baseline = None
+            if background_engine == "mediapipe":
+                try:
+                    baseline = (analyzer or get_analyzer()).analyze(rgb).person_mask
+                except Exception:
+                    pass
+            alpha = _background_mask(rgb,baseline,background_engine,measurements,checks)
+            if alpha is not None:
+                rgb = _composite_background(rgb,alpha,profile["background"],background_engine)
         rgb, notes = local_adjustments.apply(rgb, adjustments)
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
         out = np.asarray(im)
         add("framing", "Free-style crop", "pass", "No face-size target in this template")
         measurements["output_size"] = [out_w, out_h]
-        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), _small_jpeg(out), measurements)
+        return Result(True, checks, _encode_jpeg(out), _small_jpeg(out), before, measurements)
     analyzer = analyzer or get_analyzer()
     an = analyzer.analyze(rgb)
 
@@ -561,6 +601,13 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if an.person_mask is not None:
         mask = cv2.warpAffine(an.person_mask, M, (out_w, out_h), flags=cv2.INTER_LINEAR,
                               borderMode=cv2.BORDER_REPLICATE)
+    replacement_mask = None
+    if replace_bg:
+        source_alpha = _background_mask(rgb,an.person_mask,background_engine,measurements,checks)
+        if source_alpha is not None:
+            replacement_mask = cv2.warpAffine(source_alpha,M,(out_w,out_h),flags=cv2.INTER_LINEAR,
+                                               borderMode=cv2.BORDER_REPLICATE)
+            mask = replacement_mask
     tp = np.c_[p, np.ones(len(p))] @ M.T  # landmarks in output space
     measurements.update(output_size=[out_w, out_h],
                         eye1=[round(float(v), 2) for v in tp[L_IRIS]],
@@ -579,9 +626,9 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if auto_adjust or even_bg:
         out, n = enhance(out, mask, fb, even_bg=even_bg and not replace_bg, adjust=auto_adjust)
         notes += n
-    if replace_bg and mask is not None:
-        out = replace_background(out, mask, profile["background"])
-        notes.append("background replaced")
+    if replacement_mask is not None:
+        out = _composite_background(out,replacement_mask,profile["background"],background_engine)
+        notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out, adjustments)
     notes += manual_notes
     if auto_adjust or fix_shadows or replace_bg or even_bg or manual_notes:
@@ -669,8 +716,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         bg[top_band, : max(fx0 - 30, 1)] = True
         bg[top_band, min(fx1 + 30, out_w - 1):] = True
 
-    if replace_bg and mask is not None:
-        add("background", "Plain light background", "pass", "Replaced with plain light grey")
+    if replacement_mask is not None:
+        add("background", "Plain light background", "pass", "Replaced with the template background colour")
     elif bg.sum() < 500:
         add("background", "Plain light background", "warn", "Could not measure background.")
     else:
@@ -737,11 +784,12 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements)
 
 
-def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg):
+def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine):
     """Full-frame editing for staff output, without a passport framing verdict."""
     h, w = rgb.shape[:2]
     before = _small_jpeg(rgb)
     out = rgb.copy()
+    measurements = {}
     notes, checks = [], [Check("print_only", "Full-frame / print job", "warn",
                               "The whole photograph is fitted to the selected format. Passport framing has not been approved.")]
     mask, box = None, None
@@ -756,8 +804,13 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         else:
             checks.append(Check("face", "Face found", "fail", "One face is needed for facial preparation; this image can still be printed."))
     except Exception:
-        notes.append("Facial analysis unavailable; only whole-image manual tools applied")
+        notes.append("Facial analysis unavailable; facial tools skipped")
         checks.append(Check("face", "Facial analysis", "fail", "Unavailable; staff review needed"))
+    replacement_mask = None
+    if replace_bg:
+        replacement_mask = _background_mask(rgb,mask,background_engine,measurements,checks)
+        if replacement_mask is not None:
+            mask = replacement_mask
     if fix_shadows and box is not None:
         out, amount = soften_face_shadows(out, box, mask)
         if amount: notes.append("face shadow softened")
@@ -765,27 +818,25 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         out, automatic_notes = enhance(out, mask, box or (0,0,w,h),
                                        even_bg=even_bg and not replace_bg, adjust=auto_adjust)
         notes += automatic_notes
-    if replace_bg and mask is not None:
-        out = replace_background(out,mask,profile["background"])
-        notes.append("background replaced")
-    elif replace_bg:
-        checks.append(Check("background", "Background replacement", "warn", "Foreground mask unavailable; background left in place"))
+    if replacement_mask is not None:
+        out = _composite_background(out,replacement_mask,profile["background"],background_engine)
+        notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out,adjustments)
     notes += manual_notes
     if notes: checks.append(Check("adjust", "Local photo tools", "warn", "; ".join(notes)))
     out_w, out_h = photomatic.output_size(profile)
     # Fit rather than stretch or invent framing. Borders retain the whole image.
     border_colour = tuple(profile["background"])
-    if replace_bg and mask is not None:
+    if replacement_mask is not None:
         background_pixels = out[mask < .15]
         if len(background_pixels) >= 100:
             border_colour = tuple(int(v) for v in np.median(background_pixels,axis=0))
     master = np.asarray(ImageOps.pad(Image.fromarray(out),(out_w,out_h),
                                     method=Image.Resampling.LANCZOS,color=border_colour))
-    measurements = {"method":"Full-frame local editing", "country_id":profile["id"],
+    measurements.update({"method":"Full-frame local editing", "country_id":profile["id"],
                     "input_size":[w,h], "output_size":[out_w,out_h],
                     "local_adjustments":{"engine":local_adjustments.VERSION,"values":adjustments},
-                    "print_only":True, "passport_assessment":"not_assessed"}
+                    "print_only":True, "passport_assessment":"not_assessed"})
     if w < MIN_SRC_W or h < MIN_SRC_H:
         checks.append(Check("resolution", "Original source resolution", "fail",
                             f"{w} × {h} px; enlarging for print does not add real source detail"))

@@ -20,7 +20,7 @@ from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 
-from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments
+from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 templates = Jinja2Templates(directory=str(config.BASE_DIR / "templates"))
 templates.env.globals.update(cfg=config, short_url=hmpo_auth.short_url, catalog=photomatic.CATALOG,
                              profiles=photomatic.COUNTRIES, printers=photomatic.PRINTERS,
-                             adjustment_controls=local_adjustments.CONTROLS)
+                             adjustment_controls=local_adjustments.CONTROLS, background_choices=background.choices)
 templates.env.filters["dt"] = lambda t: time.strftime("%d %b %Y %H:%M", time.localtime(t)) if t else ""
 templates.env.filters["fromjson"] = json.loads
 
@@ -149,6 +149,10 @@ def _opts(form=None):
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from None
     options["print_only"] = bool(form and form.get("print_only") == "on")
+    try:
+        options["background_engine"] = background_models.validate((form.get("background_engine") if form else None) or config.BACKGROUND_ENGINE)
+    except ValueError as exc:
+        raise HTTPException(400,str(exc)) from None
     return options
 
 
@@ -424,6 +428,7 @@ async def _prepare_candidate(pid, *, lighting, colour):
             # Measure original detail/framing for evidence; staff decide whether
             # to request preparation despite quality failures.
             local_options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                                 background_engine=options.get("background_engine",config.BACKGROUND_ENGINE),
                                  print_only=options.get("print_only",False),
                                  crop=options.get("crop", _crop_options()))
             original_result = await run_in_threadpool(lambda: processing.process(
@@ -532,6 +537,7 @@ async def admin_restore_original(request):
     with _edit_job(pid) as token:
         row = db.get(pid)
         options = dict(auto_adjust=False, fix_shadows=False, even_bg=False, replace_bg=False,
+                       background_engine=json.loads(row["options"]).get("background_engine",config.BACKGROUND_ENGINE),
                        print_only=json.loads(row["options"]).get("print_only",False),
                        crop=json.loads(row["options"]).get("crop", _crop_options()))
         data = (config.PHOTO_DIR / f"{pid}_source").read_bytes()

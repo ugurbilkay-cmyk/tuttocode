@@ -21,6 +21,8 @@ describes the contrast-limited histogram operation.
 
 Existing automatic colour/exposure, face-shadow softening, background-light
 evening and foreground-segmented background replacement remain available.
+Background replacement offers the three tested local matting models plus the
+basic mask, with HR-matting as the default tool; see [background setup](BACKGROUND_REMOVAL.md).
 These tools still require validation across shop lighting and customers. The
 white-balance sliders are relative channel adjustments, not a camera-calibrated
 Kelvin correction. Highlight compression reduces bright values; it does not

@@ -141,3 +141,15 @@ printing. Printer colour processing must remain separate from the stored code JP
 The files provide substantial reference evidence. A physical ruler/colour test,
 the exact live queue configuration, native biometric calibration and independent
 Irish service authorization remain separate work.
+
+## Configured print-box count correction, 13 October 2026
+
+The live background-integration test exposed overlapping images in the saved
+35 × 40 four-up preset. Its XML declares `nrBoxes=4` but retains six undeleted
+box records; the last two overlap configured positions. The importer had used
+every undeleted record. It now limits them to a positive declared `nrBoxes`,
+retaining the configured slots in order. Fourteen supplied presets contained
+such trailing records and were corrected in the generated catalogue. A regression
+checks four distinct non-overlapping boxes across the four 35 × 40 four-up
+variants; all 169 layouts continue to render. This corrects digital layout
+generation and does not establish physical DE100-XD calibration.

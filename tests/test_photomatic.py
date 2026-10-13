@@ -47,6 +47,17 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(len(p["boxes"]), 6)
         self.assertTrue(all(b["landscape"] for b in p["boxes"]))
 
+    def test_four_up_templates_have_four_non_overlapping_slots(self):
+        layouts = [p for p in photomatic.PRINTS.values() if p["filename"] == "35x40 4-up.XML"]
+        self.assertEqual(len(layouts),4)
+        for layout in layouts:
+            self.assertEqual(len(layout["boxes"]),4,layout["id"])
+            for index,first in enumerate(layout["boxes"]):
+                for second in layout["boxes"][index+1:]:
+                    overlap_x=min(first["x_mm"]+first["width_mm"],second["x_mm"]+second["width_mm"])-max(first["x_mm"],second["x_mm"])
+                    overlap_y=min(first["y_mm"]+first["height_mm"],second["y_mm"]+second["height_mm"])-max(first["y_mm"],second["y_mm"])
+                    self.assertFalse(overlap_x>0 and overlap_y>0,layout["id"])
+
 
 class ProcessingTests(unittest.TestCase):
     @classmethod

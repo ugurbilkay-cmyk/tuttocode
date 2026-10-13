@@ -111,6 +111,11 @@ def import_catalog(source, destination):
                       "width_mm": number(b, "Width"), "height_mm": number(b, "Height"),
                       "landscape": flag(b, "bLandscape"), "format": value(b, "format")}
                      for b in t.findall("Boxes") if not flag(b, "bDeleted")]
+            # Saved templates can retain undeleted slots after their configured
+            # count (e.g. a 4-up with six records). Do not render stale extras.
+            configured_count = int(number(t, "nrBoxes", len(boxes)))
+            if configured_count > 0:
+                boxes = boxes[:configured_count]
             prints.append({
                 "id": key(printer) + "/" + key(p.stem), "name": p.stem, "filename": p.name,
                 "printer": printer, "width_px": int(number(t, "PrinterWidthPixels")),

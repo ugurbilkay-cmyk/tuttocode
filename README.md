@@ -32,8 +32,10 @@ checks are advisory: staff can explicitly take responsibility for issuing despit
 failed checks, which remain red and are stored in the issue record. Read the
 [AI workflow and validation limits](docs/AI_WORKFLOW.md).
 See [local tools and staff responsibility](docs/LOCAL_TOOLS.md) for the workflow.
-The [background-removal evaluation](docs/BACKGROUND_REMOVAL.md) compares local
-portrait matting candidates; the higher-detail replacement is not yet integrated.
+Local background removal now offers HR-matting (default maximum detail),
+BiRefNet-portrait, MODNet and the existing basic mask. See the
+[background-removal setup and evaluation](docs/BACKGROUND_REMOVAL.md) for
+the optional worker runtime, model installation and measured limitations.
 
 Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
 this prototype as a replacement for the current shop software. See also
@@ -73,5 +75,6 @@ python3 tests/test_photomatic.py
 python3 tests/test_ai_preparation.py
 python3 tests/test_hotspots.py
 python3 tests/test_local_tools.py
+python3 tests/test_background.py
 python3 tests/test_e2e.py
 ```

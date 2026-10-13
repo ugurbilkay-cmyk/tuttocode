@@ -203,7 +203,11 @@ $('capture-photo').addEventListener('click', () => {
   },'image/jpeg',.95);
 });
 $('photo-form').addEventListener('submit', () => {
-  const button = $('process-button'); if (button) { button.disabled=true;button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : 'Processing…'; }
+  const button = $('process-button'); if (button) {
+    button.disabled=true;
+    const detailBackground = document.querySelector('input[name=replace_bg]')?.checked && $('background-engine')?.value === 'hr';
+    button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
+  }
 });
 $('photo-form').addEventListener('input', event => {
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();

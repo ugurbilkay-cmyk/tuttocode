@@ -77,6 +77,10 @@
           <label class="tick"><input type="checkbox" name="fix_shadows" {% if options.fix_shadows %}checked{% endif %}> Soften face shadows</label>
           <label class="tick"><input type="checkbox" name="even_bg" {% if options.even_bg %}checked{% endif %}> Even background light</label>
           <label class="tick"><input type="checkbox" name="replace_bg" {% if options.replace_bg %}checked{% endif %}> Replace background</label>
+          <label class="field-label">Background tool<select name="background_engine" id="background-engine">
+          {% for tool in background_choices() %}<option value="{{ tool.key }}" {% if tool.key == options.get('background_engine',cfg.BACKGROUND_ENGINE) %}selected{% endif %}>{{ tool.label }}{% if not tool.installed %} · needs setup{% endif %}</option>{% endfor %}
+          </select></label>
+          <p class="subtle">All background tools run locally. Maximum detail can take about a minute on a CPU. Apply changes to compare hair and clothing edges.</p>
           <details class="manual-tools"><summary>Fine-tune lighting and colour</summary>
           {% set local = options.get('adjustments',{}) %}
           {% for control in adjustment_controls %}
@@ -100,6 +104,7 @@
         </details>
         {% endif %}
         {% endif %}
+        {% if row %}{% set bg_info = (row.measurements|fromjson).get('background_removal',{}) %}{% if bg_info %}<p class="subtle" id="background-result">Background: {{ bg_info.label }} · {{ bg_info.status }}{% if bg_info.cache_hit %} · reused source mask{% elif bg_info.inference_seconds is defined %} · {{ bg_info.inference_seconds }} s inference{% endif %}</p>{% endif %}{% endif %}
         <div class="station-actions">
           {% if not row %}
             <input type="file" name="photo" id="file-input" accept="image/*" required class="file-input">

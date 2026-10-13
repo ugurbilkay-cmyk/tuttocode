@@ -52,7 +52,7 @@ def save_size(c, email=False):
 def summary(checks):
     groups = {"Image quality": [], "Face size and position": [], "Background": []}
     for c in checks:
-        group = "Background" if c["key"] in ("background", "bgshadow") else (
+        group = "Background" if c["key"] in ("background", "bgshadow", "background_tool") else (
             "Face size and position" if c["key"] in ("face", "tilt", "facing", "framing", "resolution", "headsize", "eyeposition", "facewidth", "eyedistance")
             else "Image quality")
         groups[group].append(c)
