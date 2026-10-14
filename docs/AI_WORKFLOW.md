@@ -1,7 +1,7 @@
 # OpenAI preparation and reviewed UK code issuance
 
 Current user decision, 13 October 2026: staff upload a camera photo and start
-with the included local tools. OpenAI lighting/colour preparation is an optional
+with the included local tools. OpenAI portrait preparation is an optional
 paid add-on. Quality results remain advisory; trained staff may issue under
 explicit recorded responsibility despite red or unapproved checks. Irish codes are outsourced for
 now. The rest of the familiar studio workflow is reproduced in our application.
@@ -19,9 +19,14 @@ request to block issuance on a failed check.
    fits the whole photograph when a passport crop cannot be produced; source
    warnings remain evidence rather than a claim of recovered detail.
 3. Send an orientation-normalized, metadata-stripped PNG to the OpenAI Images
-   edit endpoint. Do not send customer contact details. Request only lighting and
-   colour corrections, with explicit preservation of appearance, face geometry,
-   eyes, expression, distinguishing marks, hair, clothes and composition.
+   edit endpoint. Do not send customer contact details. The single setup requests
+   exposure, lighting and colour correction, gentle skin surface cleanup, reduced
+   excessive shine and natural sharpening of existing detail. It explicitly
+   preserves likeness, facial geometry and feature distances, eyes, expression,
+   identifying marks, natural complexion, pores, wrinkles, age cues, hair, clothes
+   and composition. Uncertain skin marks remain unchanged. Clipped detail must
+   not be darkened to pretend it was recovered; sharpening must not invent
+   texture or intensify glare. Background replacement and crop remain separate.
 4. Independently detect and crop the edited result and rerun our local checks.
    Keep it as an AI preview; never silently overwrite the working photo.
 5. Compare camera original and AI preview. Staff can inspect the preview's own
@@ -55,6 +60,10 @@ Requests on one job are serialized across application processes.
 Source: [OpenAI image edit API](https://developers.openai.com/api/reference/resources/images/methods/edit).
 Preservation instructions express the desired edit; they do not guarantee that a
 generative model preserves every feature or that a passport service accepts it.
+Prompt version `portrait-cleanup-v2` identifies this setup in each new preview
+and accepted/issued review record. Earlier previews retain their original prompt
+version and are not silently regenerated. Local metrics and staff comparison
+still assess the result; no new automated biometric equivalence claim is made.
 
 ## Measurements and exceptions
 

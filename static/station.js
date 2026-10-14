@@ -269,7 +269,7 @@ $('ai-prepare-form')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, button = form.querySelector('button[type=submit]'), progress = $('ai-progress');
   const data = new FormData(form);
-  button.disabled = true; progress.hidden = false; progress.textContent = 'Preparing lighting and colour… This may take a few minutes.';
+  button.disabled = true; progress.hidden = false; progress.textContent = 'Preparing lighting, skin and detail… This may take a few minutes.';
   try {
     const response = await fetch(form.action, {method:'POST', body:data});
     const type = response.headers.get('content-type') || '';

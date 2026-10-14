@@ -15,7 +15,7 @@ from . import config
 
 ENDPOINT = "https://api.openai.com/v1/images/edits"
 MAX_RESPONSE_BYTES = 40 * 1024 * 1024
-PROMPT_VERSION = "lighting-v1"
+PROMPT_VERSION = "portrait-cleanup-v2"
 
 
 class PreparationError(Exception):
@@ -64,15 +64,15 @@ def prepare(data, *, lighting=True, colour=True, print_only=False):
     image.save(blob, "PNG")
     instructions = []
     if lighting:
-        instructions.append("Correct overall exposure and gently balance uneven illumination. Reduce lighting shadows only where existing image detail is available; do not invent hidden detail.")
+        instructions.append("Correct overall exposure and gently balance uneven facial illumination. Soften harsh lighting shadows only where existing image detail is visible. Reduce excessive specular shine and hotspots while preserving visible skin texture and natural shading; do not darken clipped patches to pretend lost detail has been recovered. Do not create new clipped highlights or sharpen glare.")
     if colour:
-        instructions.append("Correct an obvious camera white-balance colour cast, preserving the person's natural skin tone and all real texture.")
+        instructions.append("Correct an obvious camera white-balance colour cast while preserving the person's natural skin tone; do not lighten or recolour their complexion.")
     prompt = (
-        "Edit this existing camera photograph conservatively. " + " ".join(instructions) +
-        " Preserve the exact person's appearance, face geometry, eye and iris colour, nose, mouth, ears, hair, beard, expression, pose, age, clothing and all distinguishing marks."
-        " No beauty retouching, skin smoothing, blemish removal, face reshaping, eye opening, expression changes, sharpening that invents detail, object removal, background replacement, new objects or text."
-        " Keep the original composition, perspective and field of view. Do not crop or rotate; our application will frame the result afterwards."
-        " Return only the corrected photograph."
+        "TASK: Make one gentle, natural photographic enhancement of this existing camera portrait. " + " ".join(instructions) +
+        " SKIN AND DETAIL: Lightly clean skin surface noise and soften distracting fine texture without an airbrushed or plastic finish. Preserve natural pores, skin texture, wrinkles and age cues. Clean only clearly temporary tiny surface spots; retain any uncertain mark. Preserve every mole, freckle, scar, birthmark and other distinguishing mark."
+        " Apply gentle, natural sharpening only to existing visible detail, keeping eyes, eyelashes, hair and facial edges clear. Do not invent pores, eyelashes or texture, reconstruct the face, create sharpening halos, or intensify bright skin patches. Leave genuinely missing, blurred or clipped detail unresolved."
+        " IDENTITY HAS PRIORITY: Preserve the exact person's likeness and facial biometrics: face and head geometry, proportions and distances between features, eye and iris colour, eyelids, nose, mouth, ears, jaw, hairline, hair, beard, expression, pose and age. Do not reshape, slim, enlarge, beautify facial features, open eyes, change an expression, remove identifying marks, add makeup or change clothing. If cleanup conflicts with preserving a feature or mark, leave that area unchanged."
+        " FRAMING AND OUTPUT: Keep the original composition, perspective, field of view and background. Do not crop, rotate, replace the background, remove objects or add objects or text; our application handles framing and background separately. Return only the enhanced photograph."
     )
     payload = {
         "model": config.OPENAI_IMAGE_MODEL,

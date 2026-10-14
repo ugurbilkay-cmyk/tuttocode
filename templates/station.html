@@ -150,7 +150,8 @@
           </details>
           </details>
           {% if not row %}<details class="step-options"><summary>OpenAI · optional extra</summary>
-            <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if not cfg.OPENAI_API_KEY %}disabled{% endif %}> Prepare lighting and colour with OpenAI</label>
+            <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if not cfg.OPENAI_API_KEY %}disabled{% endif %}> Enhance with OpenAI</label>
+            <p class="subtle">One setup: exposure, lighting and colour, gentle skin cleanup, reduced harsh shine and natural detail. Facial features and identifying marks are instructed to stay unchanged. Compare the result before accepting.</p>
             {% if cfg.OPENAI_API_KEY %}<label class="tick"><input type="checkbox" id="upload-ai-consent" name="ai_consent"> Customer agrees to send this photo to OpenAI for preparation</label>{% else %}<p class="subtle">OpenAI needs server setup. Local tools are available.</p>{% endif %}
           </details>{% elif row.status=='pending' %}<button type="button" class="openai-choice" id="open-openai">OpenAI options · optional extra</button>{% endif %}
         </section>
@@ -182,7 +183,7 @@
   <details class="ai-panel premium-tools" id="ai-panel" {% if ai_status.status in ['running','ready','error'] %}open{% endif %}>
     <summary>Optional OpenAI upgrade</summary>
     <p>Use the included local tools first. OpenAI preparation is an optional extra service.</p>
-    {% if ai_status.status == 'running' %}<p role="status">Preparing lighting and colour… This may take a few minutes. Refresh to see the result.</p>
+    {% if ai_status.status == 'running' %}<p role="status">Preparing lighting, skin and detail… This may take a few minutes. Refresh to see the result.</p>
     {% elif ai_status.status == 'ready' %}
       <p>Compare the camera original with the prepared crop. Check eyes, skin texture, hair and all distinguishing marks.</p>
       <div class="ai-comparison"><figure><img src="/admin/p/{{ row.id }}/original.jpg" alt="Camera original"><figcaption>Camera original · full frame</figcaption></figure><figure><img src="/admin/p/{{ row.id }}/ai-preview.jpg" alt="OpenAI preparation preview"><figcaption>AI preparation · proposed crop</figcaption></figure></div>
@@ -198,8 +199,8 @@
       {% if ai_status.status == 'error' %}<p class="notice" role="alert">{{ ai_status.message }}</p>{% endif %}
       {% if options.ai %}<p class="success-message">AI preparation accepted and checked. Staff likeness review recorded.</p>{% endif %}
       <form id="ai-prepare-form" method="post" action="/admin/p/{{ row.id }}/ai/prepare">
-        <label class="tick"><input type="checkbox" name="lighting" checked> Balance exposure and lighting</label>
-        <label class="tick"><input type="checkbox" name="colour" checked> Correct camera colour cast</label>
+        <input type="hidden" name="lighting" value="on"><input type="hidden" name="colour" value="on">
+        <p>One setup: balance exposure, lighting and colour; gently clean skin, reduce harsh shine and improve natural detail. Preserve facial features, proportions and identifying marks. Compare the preview with the original before accepting.</p>
         <label class="tick"><input type="checkbox" name="ai_consent" required> Customer agrees to send this photo to OpenAI for preparation</label>
         <button class="primary" type="submit" {% if not cfg.OPENAI_API_KEY or not editable %}disabled{% endif %}>{{ 'Prepare again from original' if options.ai else 'Prepare with OpenAI' }}</button>
         {% if not cfg.OPENAI_API_KEY %}<p class="subtle">OpenAI connection needs server setup.</p>{% endif %}

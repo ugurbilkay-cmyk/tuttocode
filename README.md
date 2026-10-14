@@ -33,7 +33,10 @@ The existing UK HMPO code service is retained. Irish passport templates are avai
 for photo export; Irish codes are **outsourced for now**. Save the photo and
 submit it through your chosen external provider. No other country can be issued an online passport code.
 
-OpenAI lighting/colour preparation has a separate preview, staff likeness review
+OpenAI preparation uses one setup for exposure, lighting, colour, gentle skin
+cleanup, reduced excessive shine and natural detail. Explicit preservation
+instructions cover facial features, geometry and identifying marks; the result
+has a separate preview, staff likeness review
 and local rechecks before code issuance. Configure `OPENAI_API_KEY` on the server
 to enable the optional upgrade; it is not selected by default. Included local
 tools provide exposure, brightness, white balance, highlights, shadows, contrast,
