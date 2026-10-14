@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ENTRY, STEP_HEADINGS, birthDate, inputRecord, classify, runPrecheck, saveEvidence } from '../scripts/govuk_precheck.mjs';
+import { ENTRY, STEP_HEADINGS, birthDate, inputRecord, classify, accessBlock, runPrecheck, saveEvidence } from '../scripts/govuk_precheck.mjs';
 
 function fakeDriver({ rating = 'Good', unknown = false, queue = false, blocked = false, timeout = false, changedHeading = false, previousResult = false } = {}) {
   const actions = [];
@@ -62,6 +62,24 @@ test('only an actual Photo result with Good qualifies', () => {
   assert.equal(classify({ h1: 'Photo result', h2: ['Good'] }), 'good');
   assert.equal(classify({ h1: 'Instructions', h2: ['Good'] }), 'unavailable');
   assert.equal(classify({ h1: 'Photo result', h2: ['Other rating'] }), 'needs_review');
+});
+test('known-bot diagnostics retain support IDs without copying IP or session secrets', () => {
+  const details = accessBlock('Web Page Blocked!\nClient IP: 192.0.2.1\nAttack ID: 20000051\nMessage ID: 000000041021');
+  assert.deepEqual(details,{attackId:'20000051',messageId:'000000041021',category:'known_bots_detection'});
+  assert.equal(accessBlock('Photo result Good'),null);
+  assert.equal(accessBlock('Access denied\nAttack ID: 20000026').category,'access_blocked');
+  assert.equal(JSON.stringify(details).includes('192.0.2.1'),false);
+});
+test('a known-bot denial is unavailable, not a quality failure or permission to retry', async () => {
+  const driver=fakeDriver();
+  driver.snapshot=async()=>({url:ENTRY,h1:'',h2:[],mainText:'Web Page Blocked! Attack ID: 20000051 Message ID: 000000041021'});
+  const result=await runPrecheck(driver,input);
+  assert.equal(result.status,'unavailable');
+  assert.equal(result.uploaded,false);
+  assert.equal(result.errorCode,'known_bots_detection');
+  assert.equal(result.accessDiagnostics.attackId,'20000051');
+  assert.match(result.error,/not a photo-quality failure/);
+  assert.equal(driver.actions.length,1);
 });
 test('normal workflow uploads once and never continues beyond the photo result', async () => {
   const driver = fakeDriver();

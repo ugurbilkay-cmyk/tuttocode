@@ -291,6 +291,9 @@ function showGovukRuns(runs) {
       const feedback = hotspotElement('pre', run.error || run.text, 'govuk-feedback');
       panel.append(feedback);
     }
+    if (run.access_diagnostics?.category === 'known_bots_detection') {
+      panel.append(hotspotElement('p','Bot-protection block · 20000051. This result does not assess the photo. HMPO-approved automated access is needed; use the ordinary browser route for assisted tests.','notice'));
+    }
     if (run.screenshot) {
       const link = hotspotElement('a', 'View GOV.UK result screenshot', 'action-button');
       link.href = `/admin/p/${window.stationPhotoId}/govuk/${run.id}/result.png`; link.target='_blank';link.rel='noopener';

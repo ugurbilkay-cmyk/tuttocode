@@ -17,7 +17,7 @@ function page(name) {
   // Only the template's own configuration script and our station code execute.
   const config = [...window.document.scripts].find(s => s.textContent.startsWith('window.stationPhotoId='));
   window.eval(config.textContent);
-  window.eval(code);
+  window.eval(code + '\nwindow.testShowGovukRuns = showGovukRuns;');
   return { window, document: window.document, opened, close: () => window.close() };
 }
 
@@ -67,6 +67,9 @@ studio.close();
 const loaded = page('photo');
 loaded.document.getElementById('open-govuk').click();
 assert.ok(loaded.opened.includes('govuk-dialog'));
+loaded.window.testShowGovukRuns([{id:'test-run-reference',status:'unavailable',current:true,photo_sha256:'abc123',synthetic_dob:true,error:'Browser blocked',access_diagnostics:{category:'known_bots_detection',attackId:'20000051'}}]);
+assert.match(loaded.document.getElementById('govuk-results').textContent,/Bot-protection block · 20000051/);
+assert.match(loaded.document.getElementById('govuk-results').textContent,/does not assess the photo/);
 loaded.document.getElementById('close-govuk').click();
 assert.equal(loaded.document.getElementById('govuk-dialog').open,false);
 loaded.document.querySelector('[data-enhance-preset="balanced"]').click();

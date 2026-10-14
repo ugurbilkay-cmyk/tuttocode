@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 
 const ENTRY = 'https://www.passport.service.gov.uk/filter';
 const ORIGIN = 'https://www.passport.service.gov.uk';
-const VERSION = 'govuk-browser-precheck-v1';
+const VERSION = 'govuk-browser-precheck-v2';
 const STEP_HEADINGS = {
   '/filter/overseas': 'Do you live in the UK?',
   '/filter/age': 'Date of birth',
@@ -55,11 +55,24 @@ function classify(state) {
   return state.h2.includes('Good') ? 'good' : 'needs_review';
 }
 
+function accessBlock(text) {
+  if (!/web page blocked|access denied|request blocked/i.test(text || '')) return null;
+  const attackId = text.match(/Attack ID\s*:\s*(\d{1,20})/i)?.[1] || null;
+  const messageId = text.match(/Message ID\s*:\s*(\d{1,30})/i)?.[1] || null;
+  return { attackId, messageId, category: attackId === '20000051' ? 'known_bots_detection' : 'access_blocked' };
+}
+
 function allowed(state) {
   const url = new URL(state.url);
   if (url.origin !== ORIGIN) throw new Error('Outside the normal passport journey; check unavailable.');
-  if (/web page blocked|access denied|request blocked/i.test(state.mainText)) {
-    throw new Error('The public page blocked this browser. No bypass or automatic retry attempted.');
+  const block = accessBlock(state.mainText);
+  if (block) {
+    const error = new Error(block.category === 'known_bots_detection' ?
+      'Automated browser access was blocked by Known Bots Detection (20000051). This is not a photo-quality failure. An approved HMPO automation route is required; use the normal staff-assisted browser check meanwhile.' :
+      'The public page blocked this browser. No bypass or automatic retry attempted.');
+    error.code = block.category;
+    error.diagnostics = block;
+    throw error;
   }
   if (/captcha|verify you are human|waiting room|you are in a queue/i.test(state.mainText)) {
     throw new Error('Queue or human verification encountered; no bypass attempted.');
@@ -74,6 +87,8 @@ async function runPrecheck(driver, input) {
   let uploaded = false;
   let state;
   let error;
+  let errorCode = null;
+  let accessDiagnostics = null;
   try {
     await driver.goto(ENTRY);
     for (let count = 0; count < 12; count++) {
@@ -133,12 +148,15 @@ async function runPrecheck(driver, input) {
     if (state.h1 !== 'Photo result') throw new Error('No photo result received.');
   } catch (failure) {
     error = failure.message;
+    errorCode = failure.code || null;
+    accessDiagnostics = failure.diagnostics || null;
     try { state = await driver.snapshot(); } catch { /* preserve the last observed page */ }
   }
   return {
     version: VERSION, startedAt: started.toISOString(), finishedAt: new Date().toISOString(),
     elapsedSeconds: +( (Date.now() - started.getTime()) / 1000 ).toFixed(2),
     status: error ? 'unavailable' : classify(state), error: error || null,
+    errorCode, accessDiagnostics,
     photoSha256: input.photoSha256, photoBytes: input.photoBytes, photoFile: path.basename(input.photo),
     dob: input.dob, syntheticDob: input.syntheticDob,
     ageContextVerified: input.ageYears >= 18,
@@ -167,7 +185,7 @@ async function saveEvidence(driver, result, directory) {
   return run;
 }
 
-export { ENTRY, VERSION, STEP_HEADINGS, birthDate, inputRecord, classify, runPrecheck, saveEvidence };
+export { ENTRY, VERSION, STEP_HEADINGS, birthDate, inputRecord, classify, accessBlock, runPrecheck, saveEvidence };
 
 if (typeof process !== 'undefined' && process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   (async () => {

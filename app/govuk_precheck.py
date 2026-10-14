@@ -76,6 +76,8 @@ def history(row, master=None):
             'revision': run['revision'], 'photo_sha256': run['photo_sha256'], 'synthetic_dob': bool(run['synthetic_dob']),
             'elapsed_seconds': result.get('elapsedSeconds'), 'text': result.get('resultText', ''),
             'error': result.get('error'), 'screenshot': bool(result.get('screenshot')),
+            'access_diagnostics': result.get('accessDiagnostics') or result.get('access_diagnosis'),
+            'error_code': result.get('errorCode'),
             'comparison_eligible': bool(result.get('referenceComparisonEligible')) and current,
         })
     return records

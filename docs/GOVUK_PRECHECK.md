@@ -17,6 +17,40 @@ was attempted. Earlier Codex-browser success does not establish that this local
 automatic route is usable. No supported public validation API has been confirmed.
 This is a development proof of concept, not a validated bulk supplier service.
 
+### Block diagnosis — 14 October 2026
+
+Reading the saved screenshot at its original resolution identified Attack ID
+**20000051**, with Message ID **000000041021**. Fortinet's published rule mapping
+identifies 20000051 as **Known Bots Detection**, which strongly supports an
+automation/security-policy rejection rather than an ICAO failure. The precise
+site deployment, triggering request signature and any false-positive decision
+still require the operator's logs.
+[Fortinet rule reference](https://docs.fortinet.com/document/fortiweb/8.0.1/log-message-reference/932525/20000051),
+[Attack-ID mapping](https://docs.fortinet.com/document/fortiappsec-cloud/25.4.0/user-guide/806732/attack-logs).
+
+Read-only local diagnostics found no configured macOS proxy, proxy environment
+variables or registered system extensions. One normal TLS-verified HTTP request
+reached a CloudFront/Queue-it redirect rather than the same block; it did not
+reach the upload flow, transmit a photo/DOB, prove automation permission or
+establish that the public precheck adapter is usable. Queue tokens and cookies
+must not be reused as an access workaround or included in support reports.
+
+The runner now preserves the numeric access-denial references, categorises the
+known-bot denial and explicitly distinguishes it from photo-quality rejection.
+The diagnostic summary does not copy IP addresses or session tokens. Existing
+scores and failure records are not converted to passes. No stealth browser,
+identity/header spoofing, proxy routing, TLS weakening or gate bypass was added.
+
+The requested durable resolution is an HMPO-approved supplier validation API,
+test environment or explicitly authorised automated-browser integration. None
+has been confirmed. The user has no existing supplier technical contact or test
+account. A concrete technical enquiry is saved privately at
+`output/govuk-access-diagnostics/hmpo-enquiry-draft.txt`, with no customer photos,
+DOBs, credentials or network addresses. It is not sent. The official general
+enquiry route can be asked to direct it to the photo-supplier/DCS technical team;
+it is not itself a published supplier integration endpoint.
+[HMPO contact options](https://www.gov.uk/passport-advice-line).
+
 ## Studio test button
 
 Prepare/apply the photo, then click **Check with GOV.UK · test**. Enter the birth

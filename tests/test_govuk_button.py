@@ -153,6 +153,20 @@ class ButtonTests(unittest.TestCase):
         self.assertIn('id="govuk-form"',page)
         self.assertGreater(page.index('id="govuk-form"'),page.index('</form>'))
 
+    def test_bot_diagnosis_is_exposed_separately_without_rewriting_the_result(self):
+        response=self.start()
+        run_id=response.json()['id']
+        with db.conn() as c:
+            c.execute("UPDATE govuk_checks SET status='unavailable',result=? WHERE id=?",(json.dumps({
+                'status':'unavailable','error':'Browser blocked','errorCode':'known_bots_detection',
+                'accessDiagnostics':{'category':'known_bots_detection','attackId':'20000051','messageId':'000000041021'},
+                'referenceComparisonEligible':False}),run_id))
+        record=self.client.get(self.path+'/govuk').json()['runs'][0]
+        self.assertEqual(record['status'],'unavailable')
+        self.assertEqual(record['error_code'],'known_bots_detection')
+        self.assertEqual(record['access_diagnostics']['attackId'],'20000051')
+        self.assertFalse(record['comparison_eligible'])
+
 
 if __name__=='__main__':
     unittest.main(verbosity=2)
