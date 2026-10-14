@@ -22,6 +22,7 @@ from starlette.staticfiles import StaticFiles
 
 from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models, enhancement
 from . import reviewed_import
+from . import govuk_precheck
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -43,6 +44,7 @@ EXCEPTION_CATEGORIES = {"child": "Child / baby", "disability": "Disability", "he
 # may separately acknowledge any quality failure with staff_override; that
 # responsibility decision is recorded without converting failed checks to passes.
 EXCEPTION_KEYS = {"eyes", "expression", "tilt", "facing", "headsize", "eyeposition", "facewidth", "glare", "glasses"}
+_govuk_tasks = set()
 
 
 # ---------------------------------------------------------------- helpers
@@ -618,6 +620,72 @@ async def admin_reprocess(request):
     return RedirectResponse(f"/admin/p/{pid}", status_code=303)
 
 
+async def admin_govuk_start(request):
+    _require_admin(request)
+    if not config.GOVUK_PRECHECK_ENABLED:
+        raise HTTPException(503, 'Enable GOVUK_PRECHECK_ENABLED and install the browser runtime for this test tool')
+    form = await request.form()
+    if form.get('govuk_consent') != 'on':
+        raise HTTPException(400, 'Confirm permission to send this photo and birth date to GOV.UK')
+    pid = request.path_params['pid']
+    with _edit_job(pid, pending_only=False):
+        row = db.get(pid)
+        if str(form.get('review_revision')) != str(row['revision']):
+            raise HTTPException(409, 'Photo changed. Apply changes and refresh before checking this export.')
+        if photomatic.country(row['country_id'])['code_service'] != 'uk':
+            raise HTTPException(400, 'The GOV.UK reference check is for UK passport photos. Select a UK profile first.')
+        try:
+            govuk_precheck.validate_dob(form.get('dob'))
+            master = _photo_path(pid).read_bytes()
+            photo = _preserved_bytes(row) if _external_record(row) else await run_in_threadpool(processing.save_photo, master, row['country_id'])
+            run_id = govuk_precheck.start(row, master, photo, form.get('dob'), form.get('synthetic_dob') == 'on')
+        except (ValueError, OSError) as exc:
+            raise HTTPException(400, str(exc)) from None
+    # The snapshot is immutable. Later staff edits/issuance remain available;
+    # history identifies the result as stale rather than relabelling a new photo.
+    task = asyncio.create_task(govuk_precheck.execute(pid, run_id))
+    _govuk_tasks.add(task)
+    task.add_done_callback(_govuk_tasks.discard)
+    return Response(json.dumps({'id': run_id, 'status': 'running'}), status_code=202, media_type='application/json')
+
+
+async def admin_govuk_status(request):
+    _require_admin(request)
+    row = _available_row(request.path_params['pid'])
+    path = _photo_path(row['id'])
+    master = path.read_bytes() if path.exists() else None
+    return Response(json.dumps({'runs': govuk_precheck.history(row, master)}), media_type='application/json', headers={'Cache-Control': 'no-store'})
+
+
+async def admin_govuk_screenshot(request):
+    _require_admin(request)
+    row = _available_row(request.path_params['pid'])
+    run_id = request.path_params['run_id']
+    if not ID_RE.fullmatch(run_id) or not govuk_precheck.get_run(row['id'], run_id):
+        raise HTTPException(404)
+    shot = config.GOVUK_DIR / row['id'] / run_id / 'result.png'
+    if not shot.is_file():
+        raise HTTPException(404)
+    return Response(shot.read_bytes(), media_type='image/png', headers={'Cache-Control': 'no-store'})
+
+
+async def admin_govuk_input(request):
+    _require_admin(request)
+    row = _available_row(request.path_params['pid'])
+    run_id = request.path_params['run_id']
+    run = govuk_precheck.get_run(row['id'], run_id) if ID_RE.fullmatch(run_id) else None
+    if not run:
+        raise HTTPException(404)
+    try:
+        photo = (config.GOVUK_DIR / row['id'] / run_id / 'input.jpg').read_bytes()
+        if hashlib.sha256(photo).hexdigest() != run['photo_sha256']:
+            raise HTTPException(409, 'The frozen test JPEG changed; use a new check')
+    except OSError:
+        raise HTTPException(404) from None
+    return Response(photo, media_type='image/jpeg', headers={
+        'Cache-Control':'no-store','Content-Disposition':f'attachment; filename="govuk-test-{run_id}.jpg"'})
+
+
 async def _prepare_candidate(pid, *, lighting, colour):
     with _edit_job(pid) as token:
         row = db.get(pid)
@@ -1075,6 +1143,10 @@ async def lifespan(app):
     task = asyncio.create_task(_purge_loop())
     yield
     task.cancel()
+    for running in list(_govuk_tasks):
+        running.cancel()
+    if _govuk_tasks:
+        await asyncio.gather(*_govuk_tasks, return_exceptions=True)
 
 
 async def to_admin(request):
@@ -1101,6 +1173,10 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/external-review", admin_external_review, methods=["POST"]),
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
     Route("/admin/p/{pid}/reprocess", admin_reprocess, methods=["POST"]),
+    Route("/admin/p/{pid}/govuk", admin_govuk_start, methods=["POST"]),
+    Route("/admin/p/{pid}/govuk", admin_govuk_status),
+    Route("/admin/p/{pid}/govuk/{run_id}/result.png", admin_govuk_screenshot),
+    Route("/admin/p/{pid}/govuk/{run_id}/input.jpg", admin_govuk_input),
     Route("/admin/p/{pid}/ai/prepare", admin_ai_prepare, methods=["POST"]),
     Route("/admin/p/{pid}/ai/accept", admin_ai_accept, methods=["POST"]),
     Route("/admin/p/{pid}/ai/discard", admin_ai_discard, methods=["POST"]),

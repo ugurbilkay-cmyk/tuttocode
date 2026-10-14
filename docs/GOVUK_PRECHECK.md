@@ -3,15 +3,43 @@
 This optional test runner uploads a specifically selected final JPEG through
 the normal public passport browser journey. It captures the visible rating and
 feedback and stops at **Photo result**. It does not submit an application or
-generate a photo code. It is separate from the shop's current preparation UI;
-no staff code-generation controls or overrides have changed.
+generate a photo code. It is now available in the studio as **Check with GOV.UK ·
+test**, alongside the separate CLI. Staff code-generation controls and overrides
+have not changed.
 
 On 14 October 2026 the shared workflow ran through the Codex browser driver in
 7.12 seconds and returned **Good**. That timing comes from one repeated sample
 with an existing browser session, not a latency guarantee. The same shared
-workflow powers the local CLI; its separate browser launcher has not been
-live-tested on GOV.UK yet. No supported public validation API has been confirmed.
+workflow powers the local CLI and button. A subsequent live button-route test
+using the standalone browser received **Web Page Blocked** before uploading any
+photo or DOB. It was stored as unavailable, with a screenshot; no bypass or retry
+was attempted. Earlier Codex-browser success does not establish that this local
+automatic route is usable. No supported public validation API has been confirmed.
 This is a development proof of concept, not a validated bulk supplier service.
+
+## Studio test button
+
+Prepare/apply the photo, then click **Check with GOV.UK · test**. Enter the birth
+date, label synthetic sample dates where appropriate, and confirm permission
+for the selected photo/DOB transfer. Click **Run GOV.UK check**. The page polls
+for the result; closing the panel leaves the check running, and reopening shows
+its history. Run one photo at a time. New runs explicitly check the saved export,
+not the uncropped original or unaccepted OpenAI preview.
+
+Each run freezes the same JPEG bytes returned by Save, with its profile, revision,
+master and export digests, staff and timestamp. If the photo changes, the result
+is marked as belonging to an earlier version. The panel offers the exact frozen
+JPEG and result screenshot through authenticated routes. Unavailable automated
+access also has a normal GOV.UK browser link for staff-assisted checking; it does
+not turn a manually observed result into an automatic pass.
+
+Enable the optional test feature on the server with `GOVUK_PRECHECK_ENABLED=1`.
+`GOVUK_NODE` can select the Node executable; `GOVUK_TIMEOUT_SECONDS` bounds the
+worker (90 seconds by default). Install the browser as shown below. The worker
+runs locally in the background and receives no OpenAI/SMTP/staff credentials;
+its private input manifest carries the photo path and DOB instead of command-line
+arguments. Files and records follow the photo's expiry/rejection cleanup. This
+feature is enabled in the existing local preview, not deployed to production.
 
 ## Run one selected photo
 
@@ -57,6 +85,8 @@ only to reach the upload check. It submits no final application. Child journeys
 and age-dependent exceptions still need separate live verification; an arbitrary
 adult DOB must not represent a child validation case. The runner records this
 context and marks synthetic birthdays ineligible for customer comparisons.
+Only adult age contexts are currently eligible for the runner's validated
+comparison marker; child results remain separate until those journeys are verified.
 
 The screenshot and JPEG digest establish what was uploaded and what the page
 said. They do not establish the internal government crop, all ICAO metrics,

@@ -32,6 +32,9 @@ function birthDate(value, now = new Date()) {
 async function inputRecord({ photo, dob, syntheticDob = false, authorisedUpload = false }) {
   if (!authorisedUpload) throw new Error('Authorisation to send this photo and DOB to GOV.UK is required.');
   const parsed = birthDate(dob);
+  const today = new Date();
+  const ageYears = today.getUTCFullYear() - parsed.year - Number(
+    today.getUTCMonth()+1 < parsed.month || (today.getUTCMonth()+1 === parsed.month && today.getUTCDate() < parsed.day));
   if (typeof photo !== 'string' || !photo) throw new Error('An explicit --photo JPEG path is required.');
   const file = path.resolve(photo);
   const data = await fs.readFile(file);
@@ -40,7 +43,7 @@ async function inputRecord({ photo, dob, syntheticDob = false, authorisedUpload 
   }
   return {
     photo: file, photoSha256: crypto.createHash('sha256').update(data).digest('hex'),
-    photoBytes: data.length, dob, birth: parsed, syntheticDob: !!syntheticDob,
+    photoBytes: data.length, dob, birth: parsed, ageYears, syntheticDob: !!syntheticDob,
     authorisedUpload: true, destination: ORIGIN, retentionNotice: 'HMPO may retain photo and DOB for up to six months.',
   };
 }
@@ -55,6 +58,9 @@ function classify(state) {
 function allowed(state) {
   const url = new URL(state.url);
   if (url.origin !== ORIGIN) throw new Error('Outside the normal passport journey; check unavailable.');
+  if (/web page blocked|access denied|request blocked/i.test(state.mainText)) {
+    throw new Error('The public page blocked this browser. No bypass or automatic retry attempted.');
+  }
   if (/captcha|verify you are human|waiting room|you are in a queue/i.test(state.mainText)) {
     throw new Error('Queue or human verification encountered; no bypass attempted.');
   }
@@ -135,7 +141,8 @@ async function runPrecheck(driver, input) {
     status: error ? 'unavailable' : classify(state), error: error || null,
     photoSha256: input.photoSha256, photoBytes: input.photoBytes, photoFile: path.basename(input.photo),
     dob: input.dob, syntheticDob: input.syntheticDob,
-    referenceComparisonEligible: !input.syntheticDob && !error,
+    ageContextVerified: input.ageYears >= 18,
+    referenceComparisonEligible: !input.syntheticDob && !error && input.ageYears >= 18,
     testNavigationContext: { residentInUK: true, previousUKPassport: false },
     uploaded, resultPath: state ? new URL(state.url).pathname : null,
     observedHeadings: state ? [state.h1, ...state.h2] : [],
@@ -167,18 +174,22 @@ if (typeof process !== 'undefined' && process.argv[1] && path.resolve(process.ar
     const { values } = parseArgs({ options: {
       photo: { type: 'string' }, dob: { type: 'string' }, output: { type: 'string', default: 'output/govuk-prechecks' },
       'synthetic-dob': { type: 'boolean', default: false }, 'authorised-upload': { type: 'boolean', default: false },
+      'input-manifest': { type: 'string' }, headless: { type: 'boolean', default: false },
     } });
-    const input = await inputRecord({ photo: values.photo, dob: values.dob,
-      syntheticDob: values['synthetic-dob'], authorisedUpload: values['authorised-upload'] });
+    const settings = values['input-manifest'] ? JSON.parse(await fs.readFile(values['input-manifest'], 'utf8')) :
+      { photo: values.photo, dob: values.dob, syntheticDob: values['synthetic-dob'], authorisedUpload: values['authorised-upload'] };
+    const input = await inputRecord(settings);
     const { chromium } = await import('playwright');
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: values.headless });
+    process.once('SIGTERM', () => { browser.close().finally(() => process.exit(2)); });
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(15000);
       const driver = {
         goto: url => page.goto(url),
-        snapshot: async () => ({ url: page.url(), h1: await page.locator('h1').first().innerText(),
-          h2: await page.locator('h2').allTextContents(), mainText: await page.locator('#main-content').innerText() }),
+        snapshot: async () => ({ url: page.url(), h1: await page.locator('h1').count() ? await page.locator('h1').first().innerText() : '',
+          h2: await page.locator('h2').allTextContents(), mainText: await page.locator('#main-content').count() ?
+            await page.locator('#main-content').innerText() : await page.locator('body').innerText() }),
         hasButton: name => page.getByRole('button', { name, exact: true }).isVisible(),
         clickButton: name => page.getByRole('button', { name, exact: true }).click(),
         checkRadio: name => page.getByRole('radio', { name, exact: true }).check(),

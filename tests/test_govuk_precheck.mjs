@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { ENTRY, STEP_HEADINGS, birthDate, inputRecord, classify, runPrecheck, saveEvidence } from '../scripts/govuk_precheck.mjs';
 
-function fakeDriver({ rating = 'Good', unknown = false, queue = false, timeout = false, changedHeading = false, previousResult = false } = {}) {
+function fakeDriver({ rating = 'Good', unknown = false, queue = false, blocked = false, timeout = false, changedHeading = false, previousResult = false } = {}) {
   const actions = [];
   const paths = ['/filter/overseas', '/filter/age', '/filter/previous-passport', '/filter/how-to-apply',
     '/photo/digital-photo', '/photo/choose-photo-method', '/photo/how-to-take-a-photo', '/photo/upload',
@@ -17,7 +17,7 @@ function fakeDriver({ rating = 'Good', unknown = false, queue = false, timeout =
     goto: async url => { assert.equal(url, ENTRY); actions.push(['goto', url]); },
     snapshot: async () => ({ url: `https://www.passport.service.gov.uk${unknown ? '/unexpected' : paths[index]}`,
       h1: index === 8 ? 'Photo result' : changedHeading ? 'Accept declaration' : STEP_HEADINGS[paths[index]], h2: index === 8 ? ['Your photo', rating] : [],
-      mainText: queue ? 'You are in a queue' : index === 8 ? `Photo result\n${rating}\nActual feedback` : 'Input page' }),
+      mainText: blocked ? 'Web Page Blocked!' : queue ? 'You are in a queue' : index === 8 ? `Photo result\n${rating}\nActual feedback` : 'Input page' }),
     hasButton: async () => cookie,
     clickButton: async name => { actions.push(['click', name]); if (name.includes('cookies')) cookie = false; else index++; },
     checkRadio: async name => actions.push(['radio', name]),
@@ -80,7 +80,7 @@ test('non-Good result preserves feedback without inventing Photomatic scores', a
   assert.equal('photomatic' in result, false);
 });
 test('unknown page, queue and timeout never become a pass', async () => {
-  for (const scenario of [{ unknown: true }, { queue: true }, { timeout: true }, { changedHeading: true }]) {
+  for (const scenario of [{ unknown: true }, { queue: true }, { blocked: true }, { timeout: true }, { changedHeading: true }]) {
     const driver = fakeDriver(scenario);
     const result = await runPrecheck(driver, input);
     assert.equal(result.status, 'unavailable');
@@ -102,6 +102,12 @@ test('a previous browser result cannot validate a different selected photo', asy
   assert.equal(result.status, 'unavailable');
   assert.equal(result.uploaded, false);
   assert.match(result.error, /previous photo result/);
+});
+test('unverified child context remains separate from validated adult comparisons', async () => {
+  const result = await runPrecheck(fakeDriver(),{...input,syntheticDob:false,ageYears:3});
+  assert.equal(result.status,'good');
+  assert.equal(result.ageContextVerified,false);
+  assert.equal(result.referenceComparisonEligible,false);
 });
 test('evidence writes preserve separate runs rather than overwrite', async () => {
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'govuk-evidence-'));

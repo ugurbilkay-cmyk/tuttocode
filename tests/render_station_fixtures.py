@@ -9,7 +9,7 @@ import tempfile
 from unittest.mock import patch
 
 os.environ.update(DATA_DIR=tempfile.mkdtemp(prefix='tuttocode-studio-dom-'),
-                  ADMIN_PASSWORD='test-only', OPENAI_API_KEY='', HMPO_KEY_URL='')
+                  ADMIN_PASSWORD='test-only', OPENAI_API_KEY='', HMPO_KEY_URL='', GOVUK_PRECHECK_ENABLED='1')
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from starlette.testclient import TestClient

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -61,6 +62,12 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2")
 OPENAI_TIMEOUT_SECONDS = int(os.getenv("OPENAI_TIMEOUT_SECONDS", "180"))
 IRISH_PROVIDER_URL = os.getenv("IRISH_PROVIDER_URL", "").strip()
+
+# Optional development reference check; it never gates staff code issuance.
+GOVUK_PRECHECK_ENABLED = _bool("GOVUK_PRECHECK_ENABLED", False)
+GOVUK_NODE = os.getenv("GOVUK_NODE", shutil.which("node") or "node")
+GOVUK_TIMEOUT_SECONDS = min(180, max(30, int(os.getenv("GOVUK_TIMEOUT_SECONDS", "90"))))
+GOVUK_DIR = DATA_DIR / "govuk-prechecks"
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))

@@ -580,3 +580,8 @@ dialog::backdrop{
 #openai-dialog .ai-comparison img{height:min(380px,48vh)}
 @media(max-width:850px){.workspace{grid-template-columns:minmax(240px,1fr) 340px;gap:24px}.workflow-step{padding:13px}.enhance-levels small{font-size:9px}}
 @media(max-width:700px){.workspace{grid-template-columns:1fr}.photo-column{position:static}.workflow-heading{align-items:flex-start}.local-badge{display:none}.photo-stage{max-width:310px}.workflow-step{padding:16px}.enhance-levels small{font-size:11px}.station-header nav{flex-direction:row}.brand .wordmark{font-size:25px}.station-header{align-items:center}.results-panel{max-width:440px}}
+/* Temporary reference-test panel, kept separate from preparation and issuance. */
+#govuk-dialog{width:min(760px,90vw)}
+#govuk-dialog input[type=date]{color-scheme:dark;max-width:280px}
+.govuk-run{border-top:1px solid #555;margin-top:18px;padding-top:8px}
+.govuk-feedback{white-space:pre-wrap;font-family:inherit;font-size:14px;max-height:260px;overflow:auto}

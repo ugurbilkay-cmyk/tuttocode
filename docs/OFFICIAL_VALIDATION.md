@@ -120,6 +120,16 @@ directory. It is not published in Git or attached to the PR. The standalone
 runner has focused tests for provenance, date validation, stop behaviour,
 failure handling and preserving separate evidence files.
 
+The subsequent studio-button implementation froze the identical Save export,
+stored its revision/digests and started a local background browser check. That
+standalone browser encountered **Web Page Blocked** before the birthday or
+JPEG upload steps. Its result is unavailable, with a private screenshot; no
+access-control bypass or automatic retry was attempted. This live result
+supersedes the earlier statement that the separate launcher had not been tested.
+The working Codex-browser trial is not proof of a reliable automatic app adapter.
+The studio offers the frozen JPEG and normal public browser entry for assisted
+tests while an appropriate automation/integration route remains unresolved.
+
 ## Ireland
 
 The paper profile's 35 × 45 mm is within the published size range. Online output

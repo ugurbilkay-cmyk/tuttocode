@@ -162,6 +162,7 @@
           {% elif editable %}<button class="primary" id="process-button" type="submit">Apply changes</button>{% endif %}
           {% if has_photo %}<div class="output-actions"><button type="button" id="print-button">Print</button><a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save</a><button type="submit" form="email-form" {% if not row.email or not cfg.SMTP_HOST %}disabled title="Add an email address and configure SMTP to send"{% endif %}>Email</button></div>{% endif %}
         </div>
+        {% if has_photo and profile.code_service=='uk' %}<button type="button" id="open-govuk">Check with GOV.UK · test</button>{% endif %}
         <details class="step-options delivery-options"><summary>Print and delivery options</summary>
         <label class="field-label" for="printer">Layout family</label>
         <select id="printer" name="printer">{% for printer in printers %}<option {% if printer == layout.printer %}selected{% endif %}>{{ printer }}</option>{% endfor %}</select>
@@ -178,6 +179,24 @@
       </aside>
     </div>
   </form>
+  {% if has_photo and profile.code_service=='uk' %}
+  <dialog id="govuk-dialog"><div class="dialog-heading"><h2>GOV.UK photo test</h2><button type="button" id="close-govuk">Close</button></div>
+    <p>Check the exact saved export through GOV.UK's basic photo precheck. Results are separate from our measurements and Photomatic review.</p>
+    <form id="govuk-form" method="post" action="/admin/p/{{ row.id }}/govuk">
+      <input type="hidden" name="review_revision" value="{{ row.revision }}">
+      <label class="field-label">Date of birth<input type="date" name="dob" id="govuk-dob" required></label>
+      <label class="tick"><input type="checkbox" name="synthetic_dob" id="govuk-synthetic"> Placeholder birthday for a sample test · excluded from customer validation counts</label>
+      <p class="subtle">Use the customer's correct birthday for comparisons. Child allowances depend on age; child journeys still need verification.</p>
+      <label class="tick"><input type="checkbox" name="govuk_consent" required> I am authorised to send this photo and birthday to GOV.UK</label>
+      <p class="subtle">GOV.UK may retain the photo and birthday for up to six months. This test stops at the photo result and submits no passport application.</p>
+      <button class="primary" id="govuk-submit" type="submit" {% if not cfg.GOVUK_PRECHECK_ENABLED %}disabled{% endif %}>Run GOV.UK check</button>
+      {% if not cfg.GOVUK_PRECHECK_ENABLED %}<p class="notice">This optional test tool needs local browser setup.</p>{% endif %}
+    </form>
+    <p id="govuk-progress" role="status"></p><div id="govuk-results"></div>
+    <p class="subtle">If automatic access is unavailable, download the frozen test JPEG below and use the normal browser journey.</p>
+    <a class="action-button" href="https://www.gov.uk/apply-renew-passport" target="_blank" rel="noopener">Open GOV.UK in your browser</a>
+  </dialog>
+  {% endif %}
   {% if row and row.status == 'pending' %}
   <dialog id="openai-dialog"><div class="dialog-heading"><h2>OpenAI preparation</h2><button type="button" id="close-openai">Close</button></div>
   <details class="ai-panel premium-tools" id="ai-panel" {% if ai_status.status in ['running','ready','error'] %}open{% endif %}>

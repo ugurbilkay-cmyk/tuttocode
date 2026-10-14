@@ -9,7 +9,7 @@ function markDirty() {
   if (!window.stationPhotoId || !window.stationEditable) return;
   jobDirty = true;
   if ($('pending-changes')) $('pending-changes').hidden = false;
-  document.querySelectorAll('form[action$="/issue"] button[type="submit"], form[action$="/ai/accept"] button[type="submit"], #ai-prepare-form button[type="submit"], #print-button, button[form="email-form"]').forEach(button => button.disabled = true);
+  document.querySelectorAll('form[action$="/issue"] button[type="submit"], form[action$="/ai/accept"] button[type="submit"], #ai-prepare-form button[type="submit"], #print-button, #open-govuk, #govuk-submit, button[form="email-form"]').forEach(button => button.disabled = true);
   document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.setAttribute('aria-disabled','true'));
   document.querySelectorAll('.photomatic-handoff').forEach(link=>link.setAttribute('aria-disabled','true'));
 }
@@ -278,6 +278,64 @@ $('ai-prepare-form')?.addEventListener('submit', async event => {
     progress.textContent = result.message || 'Preparation failed. Your current photo is unchanged.';
   } catch (_) { progress.textContent = 'Connection interrupted. Refresh to check the result before preparing again.'; }
   button.disabled = false;
+});
+let govukTimer = null;
+const govukEnabled = $('govuk-submit') && !$('govuk-submit').disabled;
+function showGovukRuns(runs) {
+  const panels = runs.map(run => {
+    const panel = hotspotElement('section', undefined, 'govuk-run');
+    const labels = {good:'GOV.UK: Good',needs_review:'GOV.UK: Review feedback',unavailable:'GOV.UK: Unavailable',running:'Checking with GOV.UK…'};
+    panel.append(hotspotElement('h3', labels[run.status] || 'GOV.UK: Unavailable'));
+    panel.append(hotspotElement('p', `${run.current ? 'Current saved photo' : 'Earlier photo version · apply a new check after changes'} · ${run.photo_sha256.slice(0,12)}${run.synthetic_dob ? ' · placeholder birthday' : ''}${run.elapsed_seconds != null ? ` · ${run.elapsed_seconds} s` : ''}`, 'subtle'));
+    if (run.error || run.text) {
+      const feedback = hotspotElement('pre', run.error || run.text, 'govuk-feedback');
+      panel.append(feedback);
+    }
+    if (run.screenshot) {
+      const link = hotspotElement('a', 'View GOV.UK result screenshot', 'action-button');
+      link.href = `/admin/p/${window.stationPhotoId}/govuk/${run.id}/result.png`; link.target='_blank';link.rel='noopener';
+      panel.append(link);
+    }
+    const saved = hotspotElement('a','Download this exact test JPEG','action-button');
+    saved.href = `/admin/p/${window.stationPhotoId}/govuk/${run.id}/input.jpg`;
+    panel.append(saved);
+    return panel;
+  });
+  $('govuk-results').replaceChildren(...panels);
+  const running = runs.some(run => run.status === 'running');
+  $('govuk-submit').disabled = !govukEnabled || running || jobDirty;
+  $('govuk-progress').textContent = running ? 'Uploading the saved JPEG and waiting for GOV.UK’s result…' : runs.length ? 'Result saved. This is a basic precheck, not final passport approval.' : 'No GOV.UK test recorded for this photo yet.';
+  return running;
+}
+async function refreshGovuk() {
+  clearTimeout(govukTimer);
+  try {
+    const response = await fetch(`/admin/p/${window.stationPhotoId}/govuk`, {cache:'no-store'});
+    if (!response.ok) throw new Error('Cannot refresh the test result. Refresh this photo after processing finishes.');
+    const state = await response.json();
+    if (showGovukRuns(state.runs) && $('govuk-dialog').open) govukTimer = setTimeout(refreshGovuk, 2000);
+  } catch (error) { $('govuk-progress').textContent = error.message; }
+}
+$('open-govuk')?.addEventListener('click', () => {
+  if (jobDirty) return;
+  $('govuk-dialog').showModal(); refreshGovuk();
+});
+$('close-govuk')?.addEventListener('click', () => $('govuk-dialog').close());
+$('govuk-dialog')?.addEventListener('close', () => clearTimeout(govukTimer));
+$('govuk-form')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (jobDirty || !govukEnabled) return;
+  const form = event.currentTarget;
+  $('govuk-submit').disabled = true;
+  $('govuk-progress').textContent = 'Starting the GOV.UK check on this saved export…';
+  try {
+    const response = await fetch(form.action, {method:'POST',body:new FormData(form)});
+    if (!response.ok) throw new Error((await response.text()) || 'The test could not start.');
+    await refreshGovuk();
+  } catch (error) {
+    $('govuk-progress').textContent = error.message;
+    $('govuk-submit').disabled = !govukEnabled || jobDirty;
+  }
 });
 $('print-button')?.addEventListener('click', () => {
   const query = new URLSearchParams({page:'1',template:printTemplate.value,printer:printer.value});

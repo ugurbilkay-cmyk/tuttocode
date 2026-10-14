@@ -1,5 +1,6 @@
 import json
 import secrets
+import shutil
 import sqlite3
 import time
 from contextlib import contextmanager
@@ -30,6 +31,14 @@ CREATE INDEX IF NOT EXISTS idx_photos_expires ON photos(expires);
 CREATE TABLE IF NOT EXISTS fetch_log (
     ts REAL NOT NULL, code TEXT, ok INTEGER, reason TEXT, ip TEXT
 );
+CREATE TABLE IF NOT EXISTS govuk_checks (
+    id TEXT PRIMARY KEY, photo_id TEXT NOT NULL, revision INTEGER NOT NULL,
+    country_id TEXT NOT NULL, master_sha256 TEXT NOT NULL, photo_sha256 TEXT NOT NULL,
+    status TEXT NOT NULL, created REAL NOT NULL, finished REAL,
+    staff TEXT NOT NULL, synthetic_dob INTEGER NOT NULL,
+    result TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_govuk_photo ON govuk_checks(photo_id, created);
 """
 
 
@@ -211,6 +220,8 @@ def purge_expired():
         for r in rows:
             for suffix in PHOTO_SUFFIXES:
                 (config.PHOTO_DIR / f"{r['id']}{suffix}").unlink(missing_ok=True)
+            shutil.rmtree(config.GOVUK_DIR / r['id'], ignore_errors=True)
+            c.execute("DELETE FROM govuk_checks WHERE photo_id=?", (r['id'],))
         c.execute("DELETE FROM photos WHERE expires<=? OR status='rejected'", (now,))
         c.execute("DELETE FROM fetch_log WHERE ts<?", (now - 90 * 86400,))
         if rows:

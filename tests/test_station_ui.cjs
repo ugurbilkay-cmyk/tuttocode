@@ -11,6 +11,7 @@ function page(name) {
   const dom = new JSDOM(html, { url: 'http://localhost:8767/admin/new', runScripts: 'outside-only' });
   const { window } = dom;
   const opened = [];
+  window.fetch = async () => ({ok:true,json:async()=>({runs:[]})});
   window.HTMLDialogElement.prototype.showModal = function () { this.open = true; opened.push(this.id); };
   window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   // Only the template's own configuration script and our station code execute.
@@ -64,9 +65,15 @@ assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-rat
 studio.close();
 
 const loaded = page('photo');
+loaded.document.getElementById('open-govuk').click();
+assert.ok(loaded.opened.includes('govuk-dialog'));
+loaded.document.getElementById('close-govuk').click();
+assert.equal(loaded.document.getElementById('govuk-dialog').open,false);
 loaded.document.querySelector('[data-enhance-preset="balanced"]').click();
 assert.equal(loaded.document.getElementById('pending-changes').hidden, false);
 assert.equal(loaded.document.getElementById('print-button').disabled, true);
+assert.equal(loaded.document.getElementById('open-govuk').disabled,true);
+assert.equal(loaded.document.getElementById('govuk-submit').disabled,true);
 assert.equal(loaded.document.querySelector('a[href$="/save.jpg"]').getAttribute('aria-disabled'), 'true');
 loaded.document.getElementById('open-openai').click();
 assert.ok(loaded.opened.includes('openai-dialog'));

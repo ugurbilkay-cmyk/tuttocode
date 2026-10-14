@@ -33,6 +33,49 @@ The normal preparation upload, Save and code paths can process or re-encode an i
 
 An edit after review creates a new candidate and requires a new review. The original and earlier evidence remain associated with the job until its normal retention expiry.
 
+## Requested batch testing — 14 October 2026
+
+The intended comparison is our engine's final JPEG, an independent GOV.UK
+precheck where available, and separate Photomatic reference results. Start with
+five cases processed sequentially, then test ten and twenty once matching and
+result capture are reliable. A larger queue does not require simultaneous
+Photomatic sessions. The 200/1000 customer validation conditions below remain
+unchanged; a GOV.UK Good rating does not satisfy the three dark-green categories.
+
+Static inspection of the supplied `AutoProcess Tool.exe` button handlers shows
+photo-operation defaults and archive settings, rather than a batch quality
+runner: it reads/writes PhotomaticSettings and selects an archive folder. The
+main executable does contain scan-folder routines, a worker/preprocess path and
+captured-image → StartProcessing calls. These are promising input mechanisms,
+but their method names do not establish a supported headless quality API.
+
+In particular, `Form1.ProcessFileinHotfolder` constructs `FormPrintMode`, shows
+its dialog and updates print/session fields. Do not use that as a quality-only
+batch route before a controlled Windows test confirms the mode and side effects.
+No shop settings, files or printer were changed during this static inspection.
+
+The first Windows queue experiment should use five explicitly selected test
+photos in a dedicated input/output directory with unique case IDs and immutable
+JPEG hashes. For each, open under the chosen country/profile, wait for completed
+checks, capture all three category colours and detailed values with screenshots,
+and record the assessed crop/dimensions. Save separately if needed; never trigger
+print, email or provider upload for this comparison. Failed or interrupted cases
+stay in the queue log, without guessing a pass or advancing a stale result to
+the next photo. Retries remain linked to the same case, and original/export
+matching must address Photomatic's observed recropping on reopen.
+
+Result capture still needs live verification on the licensed, hardware-equipped
+Windows installation: an exposed result/export route is preferable; otherwise
+normal UI automation may capture the screens one photo at a time. It must
+distinguish dark green from light green, amber, red and Not tested. Five successful
+imports alone would not demonstrate five verified quality passes. No automated
+Photomatic batch runner or batch measurement import is implemented yet.
+
+Private redacted static inspection evidence is retained in
+`output/autoprocess-static-inspection.json` and
+`output/photomatic-batch-static-inspection.json`. String literals and activation
+details were omitted, and no vendor executable was run on this Mac.
+
 ## First milestone verify the digital export
 
 Use the local Windows test installation. Start with the loaded sample portrait, then one of our prepared portraits. Record the running software version, active country profile, quality profile and Save settings before changing configuration.
