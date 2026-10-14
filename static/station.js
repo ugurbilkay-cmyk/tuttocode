@@ -33,17 +33,28 @@ function updateDimensions() {
   $('print-dimensions').textContent = p ? `${p.width_px} × ${p.height_px} px · ${p.dpi} DPI` : 'No matching print template';
 }
 function selectCountry(id) {
-  if (id !== countryInput.value) markDirty();
+  if (id !== countryInput.value) { markDirty(); $('reset-crop')?.click(); }
   selected = countries.get(id); countryInput.value = id;
   try { sessionStorage.setItem('photomatic-country',id); } catch (_) {}
   $('country-label').textContent = selected.name;
   const flag = $('country-flag'); flag.hidden = !selected.flag; if (selected.flag) flag.src = selected.flag;
   $('photo-size').textContent = `${selected.width_mm} × ${selected.height_mm} mm`;
+  updateFormatNote();
   $('photo-stage').style.setProperty('--photo-ratio', `${selected.width_mm}/${selected.height_mm}`);
   const overlay = $('crop-overlay'); overlay.hidden = !selected.overlay || !$('show-overlay').checked;
   if (selected.overlay) overlay.src = selected.overlay;
   printTemplate.value = ''; updatePrints(); updateJobMode(); $('country-dialog').close();
 }
+function updateFormatNote() {
+  const digital = selected.digital_size.every(value => value > 0);
+  $('format-note').textContent = selected.id === 'united-kingdom-online-renewal'
+    ? 'UK online · 5:7 crop · 800 × 1120 pixels'
+    : digital ? `Digital photo · ${selected.digital_size.join(' × ')} pixels`
+    : `Print photo · ${selected.width_mm} × ${selected.height_mm} mm`;
+  document.querySelectorAll('[data-country]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.country === selected.id)));
+}
+document.querySelectorAll('[data-country]').forEach(button => button.addEventListener('click', () => selectCountry(button.dataset.country)));
+updateFormatNote();
 $('choose-country').addEventListener('click', () => { $('country-dialog').showModal(); $('country-search').focus(); });
 $('close-countries').addEventListener('click', () => $('country-dialog').close());
 document.querySelectorAll('.country-choice').forEach(button => button.addEventListener('click', () => selectCountry(button.dataset.country)));
@@ -71,16 +82,21 @@ document.querySelectorAll('.local-slider').forEach(input => input.addEventListen
 }));
 $('reset-local-tools')?.addEventListener('click', () => {
   document.querySelectorAll('#local-tools .local-slider').forEach(input => { input.value=input.name==='enhancer_upscale_strength' ? 70 : 0; input.dispatchEvent(new Event('input',{bubbles:true})); });
-  document.querySelectorAll('#local-tools input[type=checkbox]').forEach(input => { input.checked=false; input.dispatchEvent(new Event('input',{bubbles:true})); });
+  for (const key of ['auto_adjust','fix_shadows']) {
+    const input=$('photo-form').elements.namedItem(key);
+    if (input) { input.checked=false; input.dispatchEvent(new Event('input',{bubbles:true})); }
+  }
   if ($('enhancer-scale')) { $('enhancer-scale').value='1'; $('enhancer-scale').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-engine')) { $('enhancer-engine').value='plksr'; $('enhancer-engine').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-preset')) $('enhancer-preset').value='';
   if ($('blemish-sensitivity')) $('blemish-sensitivity').value='gentle';
   if ($('blemish-size')) $('blemish-size').value='medium';
   if ($('blemish-keep')) $('blemish-keep').value='[]';
+  updateEnhancementChoice();
 });
-$('enhancer-preset')?.addEventListener('change', event => {
-  const preset = JSON.parse($('enhancer-presets').textContent)[event.target.value];
+const enhancementPresets = JSON.parse($('enhancer-presets').textContent);
+function applyEnhancementPreset(key) {
+  const preset = enhancementPresets[key];
   if (!preset) return;
   const form = $('photo-form');
   document.querySelectorAll('#local-tools .local-slider:not(.enhancer-slider)').forEach(input => {
@@ -95,7 +111,30 @@ $('enhancer-preset')?.addEventListener('change', event => {
     const input=form.elements.namedItem(key);
     if (input) { input.checked=preset[key];input.dispatchEvent(new Event('input',{bubbles:true})); }
   }
-});
+  $('enhancer-preset').value=key;
+  updateEnhancementChoice();
+}
+function updateEnhancementChoice() {
+  if (!$('enhancer-preset')) return;
+  const form=$('photo-form');
+  const matches=Object.entries(enhancementPresets).find(([,preset]) => {
+    const values={lighting:0,denoise:0,detail:0,skin:0,blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement};
+    return Object.entries(values).every(([key,value]) => key==='upscale_engine'
+      ? form.elements.namedItem('enhancer_'+key)?.value===value
+      : Number(form.elements.namedItem('enhancer_'+key)?.value)===Number(value))
+      && ['auto_adjust','fix_shadows'].every(key => form.elements.namedItem(key).checked===preset[key])
+      && [...document.querySelectorAll('#local-tools .local-slider:not(.enhancer-slider)')].every(input => Number(input.value)===Number(preset.adjustments[input.name] ?? 0));
+  });
+  const key=matches?.[0] || '';
+  document.querySelectorAll('[data-enhance-preset]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.enhancePreset===key)));
+  const active=[...document.querySelectorAll('#local-tools .local-slider:not([name=enhancer_upscale_strength])')].some(input=>Number(input.value)!==0)
+    || Number($('enhancer-scale').value)>1 || ['auto_adjust','fix_shadows'].some(key=>form.elements.namedItem(key).checked);
+  $('enhancement-choice').textContent = matches ? matches[1].label : active ? 'Custom enhancement' : 'No enhancement selected';
+}
+$('enhancer-preset')?.addEventListener('change', event => applyEnhancementPreset(event.target.value));
+document.querySelectorAll('[data-enhance-preset]').forEach(button => button.addEventListener('click',()=>applyEnhancementPreset(button.dataset.enhancePreset)));
+$('no-enhancement')?.addEventListener('click',()=>$('reset-local-tools').click());
+updateEnhancementChoice();
 function updateJobMode(reset=false) {
   const fullFrame = $('print-only')?.checked ?? Boolean(window.stationFullFrame);
   if ($('crop-controls')) $('crop-controls').hidden = Boolean(fullFrame);
@@ -223,6 +262,9 @@ $('refresh-hotspots')?.addEventListener('click', inspectHotspots);
 $('hotspot-overlay')?.addEventListener('change', () => document.querySelectorAll('.hotspot-regions').forEach(overlay => overlay.toggleAttribute('hidden', !$('hotspot-overlay').checked)));
 function updateAiConsent() { if ($('upload-ai-consent')) $('upload-ai-consent').required = $('use-ai').checked; }
 $('use-ai')?.addEventListener('change', updateAiConsent); updateAiConsent();
+$('open-openai')?.addEventListener('click',()=>{$('ai-panel').open=true;$('openai-dialog').showModal();});
+$('close-openai')?.addEventListener('click',()=>$('openai-dialog').close());
+if ($('openai-dialog') && ['ready','running','error'].includes(window.stationAiStatus)) { $('ai-panel').open=true;$('openai-dialog').showModal(); }
 $('ai-prepare-form')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, button = form.querySelector('button[type=submit]'), progress = $('ai-progress');
@@ -246,6 +288,7 @@ function previewFile(file) {
   if (!file) return;
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(file); $('stage-photo').src = objectUrl; $('stage-photo').hidden = false; $('empty-photo').hidden = true;
+  if ($('upload-filename')) $('upload-filename').textContent=file.name;
 }
 $('file-input')?.addEventListener('change', e => previewFile(e.target.files[0]));
 let stream = null;
@@ -268,7 +311,8 @@ $('capture-photo').addEventListener('click', () => {
   },'image/jpeg',.95);
 });
 $('photo-form').addEventListener('submit', () => {
-  const button = $('process-button'); if (button) {
+  const buttons = [...document.querySelectorAll('#photo-form button[type=submit]')];
+  for (const button of buttons) {
     button.disabled=true;
     const detailBackground = document.querySelector('input[name=replace_bg]')?.checked && $('background-engine')?.value === 'hr';
     const enhancerActive = ['lighting','denoise','blemish'].some(key => Number(document.querySelector(`[name=enhancer_${key}]`)?.value)>0) || Number($('enhancer-scale')?.value)>1;
@@ -279,6 +323,7 @@ $('photo-form').addEventListener('input', event => {
   if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine, #blemish-sensitivity, #blemish-size')) $('enhancer-preset').value='';
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();
   if (['zoom','x','y','rotation','angle','print-only','file-input'].includes(event.target.id) && $('blemish-keep')) $('blemish-keep').value='[]';
+  if (event.target.closest('#local-tools')) updateEnhancementChoice();
 });
 document.querySelectorAll('a[href$="/save.jpg"]').forEach(link => link.addEventListener('click', event => { if (jobDirty) event.preventDefault(); }));
 document.querySelectorAll('.photomatic-handoff').forEach(link=>link.addEventListener('click',event=>{if(jobDirty)event.preventDefault();}));

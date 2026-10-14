@@ -13,8 +13,12 @@ research track, not a requirement for using it.
 
 The prototype imports the supplied reference installation's 208 country/document
 profiles and 169 print layouts. `/admin` opens the studio workspace;
-`/admin/history` shows previous photos. Select a country, open a photo or use a
-browser camera, review the AI crop, then Print, Save or Email. Pending shop photos
+`/admin/history` shows previous photos. The main screen has four steps: Upload,
+Country and crop, Background, and Enhance. Choose Natural, Balanced or Stronger
+enhancement; expand options for manual tools or the separate OpenAI service.
+UK print and UK online code have separate shortcuts. Online Renewal uses a 5:7
+crop and 800 × 1120 digital export. Prepare or Apply updates the crop and checks;
+Print, Save and Email use the current result. Pending shop photos
 can be moved, zoomed, rotated and processed again. These imported layout families
 are reference settings, not connected devices or a calibrated DE100-XD profile.
 Fine rotation and a detailed measurements inspector are now available. Full native
@@ -91,3 +95,8 @@ python3 tests/test_skin.py
 python3 tests/test_blemishes.py
 python3 tests/test_e2e.py
 ```
+
+For studio interaction tests, install the development DOM dependency with
+`npm ci`, render isolated fixtures with `python3 tests/render_station_fixtures.py`,
+then run `npm run test:station`. These tests exercise the real station JavaScript
+in a simulated DOM; they do not replace visual browser verification.

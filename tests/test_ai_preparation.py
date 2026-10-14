@@ -199,6 +199,31 @@ class WorkflowTests(unittest.TestCase):
                 files={'photo': ('camera.jpg', self.source, 'image/jpeg')}, follow_redirects=False)
         self.assertEqual(response.status_code, 400)
 
+    def test_simple_studio_uk_online_uses_its_own_crop_and_export(self):
+        fields = PhotoForm(self.client.get('/admin/new').text).fields
+        profile = main.photomatic.country('united-kingdom-online-renewal')
+        fields.update(country_id=profile['id'],
+                      print_template_id=main.photomatic.default_print(profile)['id'])
+        response = self.client.post('/admin/new', data=fields,
+            files={'photo': ('camera.jpg', self.source, 'image/jpeg')}, follow_redirects=False)
+        self.assertEqual(response.status_code, 303, response.text)
+        path = response.headers['location']
+        row = db.get(path.rsplit('/', 1)[-1])
+        measures = json.loads(row['measurements'])
+        self.assertEqual(measures['output_size'], [1500, 2100])
+        self.assertAlmostEqual(measures['eye_height_percent'], 32, places=3)
+        exported = self.client.get(path + '/save.jpg')
+        self.assertEqual(Image.open(io.BytesIO(exported.content)).size, (800, 1120))
+
+    def test_failed_crop_keeps_camera_original_visible_for_adjustment(self):
+        pid = self.upload(zoom='.5')
+        self.assertFalse(main._photo_path(pid).exists())
+        page = self.client.get(f'/admin/p/{pid}').text
+        self.assertIn(f'src="/admin/p/{pid}/original.jpg"', page)
+        self.assertIn('Camera original · adjust the crop', page)
+        self.assertIn('id="crop-controls" open', page)
+        self.assertEqual(self.client.get(f'/admin/p/{pid}/original.jpg').status_code, 200)
+
     def test_upload_automatically_prepares_when_selected(self):
         with patch.object(config, "OPENAI_API_KEY", "test-secret"), patch.object(ai_prepare, "prepare", return_value=ai_prepare.PreparedImage(self.source, "mock-image-model", "req_test")) as call:
             response = self.client.post("/admin/new", data={"opts": "1", "use_ai": "on"}, files={"photo": ("camera.jpg", self.source)}, follow_redirects=False)

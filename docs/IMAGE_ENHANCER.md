@@ -1,11 +1,27 @@
 # Local image enhancer
 
-The station now has four editable starting points: Natural portrait, Difficult
-lighting, Clean detail, and Small photo / larger print. They set the existing
-colour/exposure controls and the new enhancer controls. They leave background,
+The station exposes three starting points: 1 Natural, 2 Balanced and 3 Stronger.
+They apply real recipes to the existing controls. Nothing is enabled until staff
+select it; previously saved custom settings remain editable.
+
+| Main choice | Noise cleanup | Detail | Skin smoothing | Local colour/exposure | Face shadows | Highlights |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 Natural | 15% | 10% | 20% | On | Off | 0 |
+| 2 Balanced | 25% | 15% | 35% | On | On | 0 |
+| 3 Stronger | 35% | 15% | 45% | On | On | 20 |
+
+Expand Enhancement options for individual strengths, advanced skin cleaning,
+lighting, colour or enlargement. Difficult lighting, Clean detail and Small photo /
+larger print remain available in the advanced preset selector. Background options
+are in their own step. Selecting or resetting enhancement leaves background,
 country, layout, full-frame mode and the optional OpenAI selection unchanged.
+The optional OpenAI form opens from Enhance and has its own request and review.
+No local preset activates OpenAI or submits an API request.
+
 Every operation is reapplied from the saved source, so repeated Apply does not
-accumulate sharpening or exposure changes. Restore original clears the tools.
+accumulate sharpening or exposure changes. Reset clears local enhancement while
+preserving background settings. If automatic framing cannot fit, the camera
+original remains visible while staff adjust the crop.
 
 ## Controls and methods
 

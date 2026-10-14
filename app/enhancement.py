@@ -25,6 +25,10 @@ DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., blemish=0., blemish
 PRESETS = {
     "natural": dict(label="Natural portrait", enhancement=dict(lighting=0,denoise=15,detail=10,skin=20,scale=1),
                     adjustments={}, auto_adjust=True, fix_shadows=False),
+    "balanced": dict(label="Balanced portrait", enhancement=dict(lighting=0,denoise=25,detail=15,skin=35,scale=1),
+                     adjustments={}, auto_adjust=True, fix_shadows=True),
+    "strong": dict(label="Stronger cleanup", enhancement=dict(lighting=0,denoise=35,detail=15,skin=45,scale=1),
+                   adjustments={"highlights":20}, auto_adjust=True, fix_shadows=True),
     "lowlight": dict(label="Difficult lighting", enhancement=dict(lighting=50,denoise=25,detail=5,skin=25,scale=1),
                      adjustments={"highlights":20}, auto_adjust=False, fix_shadows=False),
     "clean": dict(label="Clean detail", enhancement=dict(lighting=0,denoise=35,detail=20,skin=25,scale=1),
