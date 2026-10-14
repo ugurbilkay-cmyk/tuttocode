@@ -19,10 +19,11 @@ GROUPS = [('image_quality','Image quality'),('geometry','Face size and position'
 
 def engine_reference():
     digest = hashlib.sha256()
-    for name in ('processing.py','photomatic.py','enhancement.py','background.py','hotspots.py','local_adjustments.py'):
+    for name in ('processing.py','photomatic.py','enhancement.py','background.py','hotspots.py','local_adjustments.py','ofiq.py','skin_guided.py','portrait_tone.py'):
         digest.update(name.encode())
         digest.update((config.BASE_DIR/'app'/name).read_bytes())
     digest.update((config.BASE_DIR/'app/photomatic_catalog.json').read_bytes())
+    digest.update((config.BASE_DIR/'scripts/ofiq_worker.py').read_bytes())
     return digest.hexdigest()
 
 
@@ -76,6 +77,14 @@ def add(queue_id,row,master,export,source_digest):
         'measurement_stage':'Existing prepared-master checks; the frozen Save JPEG is the external-test input',
         'source':'engine_preparation' if row['external_review']=='{}' else 'preserved_vendor_export',
     }
+    native = snapshot['engine_measurements'].get('ofiq', {})
+    matching = next((s for s in native.get('stages', [])
+                     if s.get('stage') in ('save_jpeg','delivery_jpeg') and s.get('image_sha256') == digest), None)
+    snapshot['final_jpeg_ofiq'] = dict(matching,
+        version=native.get('version'), config_sha256=native.get('config_sha256'),
+        runtime_manifest_sha256=native.get('runtime_manifest_sha256')) if matching else {
+        'status':'not_assessed','image_sha256':digest,
+        'message':'No native OFIQ assessment matches these exact frozen JPEG bytes.'}
     case_id = secrets.token_urlsafe(12)
     folder = config.TEST_QUEUE_DIR/queue_id/case_id
     with db.conn() as c:

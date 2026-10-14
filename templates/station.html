@@ -47,6 +47,7 @@
             <button class="quality-row" type="button" data-measurements {% if not row %}disabled{% endif %}><span>{{ name }}</span><span class="quality-light {{ group.status if group else 'waiting' }}" aria-label="{{ group.status if group else 'Not checked' }}">{{ '✓' if group and group.status == 'pass' else '!' if group else '—' }}</span></button>
           {% endfor %}
         </div>
+        {% if row and editable and has_photo %}<button type="submit" form="ofiq-check-form" {% if not cfg.OFIQ_ENABLED %}disabled{% endif %}>Run OFIQ on this photo · no enhancement</button><p class="subtle">Native quality measurements of retained files. Open a measurement panel for raw and mapped values; no extra OpenAI request.</p>{% endif %}
         <p class="subtle">Local checks support staff review. Full Photomatic score equivalence has not been established.</p>
         {% if row %}<button type="button" data-measurements>Detailed measurements</button><button type="button" id="open-hotspots">Inspect hotspots</button>{% endif %}
         {% if checks %}<details class="check-details"><summary>View all checks</summary>{% include '_checks.html' %}</details>{% endif %}
@@ -114,6 +115,7 @@
             <button type="button" data-enhance-preset="balanced" aria-pressed="false"><strong>2</strong><span>Balanced</span><small>Light and skin</small></button>
             <button type="button" data-enhance-preset="strong" aria-pressed="false"><strong>3</strong><span>Stronger</span><small>More cleanup</small></button>
           </div>
+          <button type="button" data-enhance-preset="studio_match" aria-pressed="false">Studio reference · trial</button>
           <div class="enhance-caption"><span class="subtle" id="enhancement-choice">No enhancement selected</span><button type="button" id="no-enhancement">Reset</button></div>
           <details class="step-options" id="enhancement-options"><summary>Enhancement options</summary>
             <label class="tick"><input type="checkbox" name="auto_adjust" {% if options.auto_adjust %}checked{% endif %}> Fix colour and exposure</label>
@@ -127,6 +129,9 @@
           {% for control in enhancer_controls %}
           <label class="local-control">{{ control.label }} <output>{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0)|float }} {{ control.unit }}</output><input class="local-slider enhancer-slider" type="range" name="enhancer_{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0) }}" data-unit="{{ control.unit }}"></label>
           {% endfor %}
+          <label class="field-label">Skin smoothing method<select name="enhancer_skin_method" id="skin-method">
+            {% for key,label in [('bilateral','Gentle texture smoothing'),('guided','Regional guided finish · forehead and cheeks')] %}<option value="{{ key }}" {% if enh.get('skin_method','bilateral')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select></label>
           <label class="field-label">Skin cleaning sensitivity<select name="enhancer_blemish_sensitivity" id="blemish-sensitivity">
           {% for key,label in [('gentle','Gentle · fewer spot candidates'),('standard','Standard'),('strong','Strong · more spot candidates')] %}<option value="{{ key }}" {% if enh.get('blemish_sensitivity','gentle')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
           </select></label>
@@ -142,7 +147,7 @@
           </select></label>
           <p class="subtle">Lighting: Retinexformer{% if not installed.retinex %} · needs setup{% endif %}. Noise: NAFNet{% if not installed.nafnet %} · needs setup{% endif %}. These tools run locally with no API charge. Strength 0 keeps that correction off; enlargement strength 0 uses standard interpolation.</p>
           <p class="subtle">Use Before / After and Camera original to compare. AI enlargement improves presentation; original pixel and focus evidence remains available. Detailed processing can take several minutes on a CPU.</p>
-          <p class="subtle">Skin smoothing softens fine texture locally, with eyes, lips, facial edges and existing bright hotspots protected. It keeps regional highlight counts and peaks from before smoothing; lighting adjustments and AI enlargement are checked separately.</p>
+          <p class="subtle">Skin smoothing protects eyes, lips, facial edges and bright highlight pixels. Regional guided finish treats the forehead more strongly than the cheeks and retains detected dark marks. Highlight measurements are recalculated on the finished JPEG; gentle smoothing also retains its earlier regional counts and peaks.</p>
           </details>
           <details class="manual-tools"><summary>Fine-tune lighting and colour</summary>
           {% set local = options.get('adjustments',{}) %}
@@ -182,6 +187,7 @@
       </aside>
     </div>
   </form>
+  {% if row and editable and has_photo %}<form id="ofiq-check-form" method="post" action="/admin/p/{{ row.id }}/ofiq"><input type="hidden" name="review_revision" value="{{ row.revision }}"></form>{% endif %}
   {% if has_photo and profile.code_service=='uk' %}
   <dialog id="govuk-dialog"><div class="dialog-heading"><h2>GOV.UK photo test</h2><button type="button" id="close-govuk">Close</button></div>
     <p>Check the exact saved export through GOV.UK's basic photo precheck. Results are separate from our measurements and Photomatic review.</p>
@@ -279,12 +285,13 @@
   <details><summary>How these measurements work</summary><p>Bright candidates: at least 80 L* and 15 L* above the regional median, or a colour channel at 250 or above. Near-clipped values count channels at 250–255 in the decoded 8-bit image. These diagnostic thresholds need calibration against shop photographs; they are not country pass limits or Photomatic scores. Eye regions and lips are excluded. Glasses glare needs a separate check. The preview is reduced for display; counts use native image pixels.</p></details>
 </dialog>
 {% endif %}
-{% if row %}<dialog id="measurements-dialog"><div class="dialog-heading"><h2>{{ measurement_title }}</h2><button type="button" id="close-measurements">Close</button></div><p class="subtle">Eye positions refer to the print master. Source distance refers to the oriented camera / AI image. Values use our measurement methods; they are not Photomatic's proprietary 0–100 scores.</p><p class="measurement-legend">Green: passed · Amber: review · Red: failed · Grey: measured without a calibrated limit, or not tested</p>{% include '_measurements.html' %}</dialog>{% endif %}
+{% if row %}<dialog id="measurements-dialog"><div class="dialog-heading"><h2>{{ measurement_title }}</h2><button type="button" id="close-measurements">Close</button></div><p class="subtle">Eye positions refer to the print master. Source distance refers to the oriented camera / AI image. Values use our measurement methods; they are not Photomatic's proprietary 0–100 scores.</p><p class="measurement-legend">Green: passed · Amber: review · Red: failed · Grey: measured without a calibrated limit, or not tested</p>{% include '_measurements.html' %}{% include '_ofiq.html' %}</dialog>{% endif %}
 {% if ai_status.status == 'ready' %}
 <dialog id="ai-measurements-dialog">
   <div class="dialog-heading"><h2>AI preview measurements</h2><button type="button" id="close-ai-measurements">Close</button></div>
   <p class="subtle">These measurements were rerun on the AI result. They use our local methods; unimplemented proprietary scores remain not tested.</p>
   {% with measurement_sections=ai_measurement_sections %}{% include '_measurements.html' %}{% endwith %}
+  {% with ofiq_report=ai_ofiq_report %}{% include '_ofiq.html' %}{% endwith %}
 </dialog>
 {% endif %}
 <dialog id="country-dialog">

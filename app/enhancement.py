@@ -17,12 +17,21 @@ CONTROLS = [
     dict(key="denoise", label="Noise cleanup", unit="%", minimum=0, maximum=100, step=5),
     dict(key="detail", label="Detail sharpening", unit="%", minimum=0, maximum=100, step=5),
     dict(key="skin", label="Skin smoothing · protect hotspots", unit="%", minimum=0, maximum=100, step=5),
+    dict(key="portrait_tone", label="Skin lighting and contrast", unit="%", minimum=0, maximum=100, step=5),
     dict(key="blemish", label="Advanced skin cleaning", unit="%", minimum=0, maximum=100, step=5),
     dict(key="upscale_strength", label="AI upscale strength", unit="%", minimum=0, maximum=100, step=5),
 ]
-DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., blemish=0., blemish_sensitivity='gentle',
+DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., portrait_tone=0., skin_method='bilateral', blemish=0., blemish_sensitivity='gentle',
                 blemish_size='medium',blemish_keep=[],scale=1,upscale_strength=70.,upscale_engine='plksr')
 PRESETS = {
+    "studio_match": dict(label="Studio reference · trial", enhancement=dict(lighting=55,denoise=70,detail=0,skin=100,skin_method='guided',portrait_tone=100,scale=1),
+                         adjustments=dict(temperature=-4,tint=3,saturation=-3,shadows=10),
+                         auto_adjust=False, fix_shadows=False),
+    # A starting recipe for reference-image comparisons, not an averaged
+    # profile or a promise of generative-image/Photomatic equivalence.
+    "studio_clean": dict(label="Studio clean · trial", enhancement=dict(lighting=55,denoise=35,detail=0,skin=50,scale=1),
+                         adjustments=dict(temperature=-4,tint=3,saturation=-3,shadows=10),
+                         auto_adjust=False, fix_shadows=False),
     "natural": dict(label="Natural portrait", enhancement=dict(lighting=0,denoise=15,detail=10,skin=20,scale=1),
                     adjustments={}, auto_adjust=True, fix_shadows=False),
     "balanced": dict(label="Balanced portrait", enhancement=dict(lighting=0,denoise=25,detail=15,skin=35,scale=1),
@@ -45,6 +54,11 @@ def validate(values=None):
     if set(values)-set(DEFAULTS): raise ValueError("Unknown enhancer setting")
     result = {}
     for key, default in DEFAULTS.items():
+        if key=='skin_method':
+            value=values.get(key,default)
+            if value not in ('bilateral','guided'):raise ValueError('Unknown skin smoothing method')
+            result[key]=value
+            continue
         if key=='blemish_keep':
             value=values.get(key,[])
             if isinstance(value,str):
@@ -83,7 +97,7 @@ def validate(values=None):
 
 def active(values=None):
     v=validate(values)
-    return bool(v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['blemish'] or v['scale']!=1)
+    return bool(v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['portrait_tone'] or v['blemish'] or v['scale']!=1)
 
 
 def choices():

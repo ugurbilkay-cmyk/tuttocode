@@ -1,15 +1,16 @@
 # Passport photo measurement and industrial release requirements
 
-Updated 12 October 2026. Status: engineering specification; OFIQ integration and
-industrial validation remain outstanding.
+Updated 14 October 2026. The official native OFIQ measurement layer is now
+integrated and validated against its fixtures on Mac ARM; see [OFIQ](OFIQ.md).
+Country decision calibration and industrial validation remain outstanding.
 
 Tuttoprint must explain what it measures, why the selected document requires it,
 how reliable the result is, and how staff can resolve a failure. Its approval
 decision must combine measurements, document rules and recorded staff review.
 OpenAI preparation is one processing stage; it cannot certify its own output.
 
-The current application has MediaPipe/OpenCV measurements, review controls and a
-final JPEG gate. Those are a prototype foundation. Passing existing tests does
+The current application has MediaPipe/OpenCV and native OFIQ measurements,
+review controls and a final JPEG assessment. Those are a prototype foundation. Passing existing tests does
 not establish full ICAO coverage or measured accuracy in shop conditions.
 
 ## Proposed measurement stack

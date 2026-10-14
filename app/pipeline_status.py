@@ -42,7 +42,7 @@ def report(options, values, checks, has_photo, ai_state=None):
         if not settings[key]:add(label,'Off','Strength is zero.')
         elif model:add(label,'Applied',f"Local model · {model.get('inference_seconds',0):g} s · SHA {model.get('model_sha256','')[:12]}")
         else:add(label,'Unavailable' if has_photo else 'Skipped',skipped if not has_photo else 'Selected model did not complete; this stage was left unchanged.')
-    for key,label in [('skin','Skin smoothing'),('blemish','Advanced skin cleaning')]:
+    for key,label in [('portrait_tone','Skin lighting and contrast'),('skin','Skin smoothing'),('blemish','Advanced skin cleaning')]:
         stage=next((s for s in stages if s.get('phase')==key or (key=='blemish' and s.get('version','').startswith('skin-cleaner'))),{})
         if key=='blemish':stage=values.get('skin_cleaning',stage)
         if not settings[key]:add(label,'Off','Not selected.')
@@ -63,6 +63,12 @@ def report(options, values, checks, has_photo, ai_state=None):
     add('Colour and lighting','Evaluated' if has_photo and tone_selected else 'Skipped' if tone_selected else 'Off',
         (tone or 'Selected local pixel adjustments were evaluated.') if has_photo and tone_selected else skipped if tone_selected else 'Not selected.')
     highlights=values.get('final_highlights',{})
+    native=values.get('ofiq',{})
+    state=native.get('status','not_recorded')
+    stages=native.get('stages',[])
+    add('OFIQ standardized quality','Measured' if state=='completed' else 'Partial' if state=='partial' else 'Off' if state=='off' else 'Unavailable',
+        f"Official OFIQ {native.get('version','')} · {len(stages)} image stage(s) · raw and mapped quality values; document thresholds are not calibrated."
+        if stages else native.get('message','No native OFIQ assessment was recorded for this revision.'))
     add('Regional hotspots','Measured' if highlights.get('status')=='diagnostic' else 'Not measured',
         f"{len(highlights.get('regions',[]))} facial regions · native JPEG pixels · diagnostic thresholds, not calibrated approval scores."
         if highlights.get('status')=='diagnostic' else 'Use Inspect hotspots to measure facial regions; no hotspot score is invented.')

@@ -65,6 +65,21 @@ class QueueTests(unittest.TestCase):
         self.assertIsNone(db.get(self.pid)['code'])
         self.assertEqual(self.client.get(self.case).status_code,200)
 
+    def test_ofiq_results_join_only_the_exact_frozen_export(self):
+        saved=self.client.get(f'/admin/p/{self.pid}/save.jpg').content
+        digest=hashlib.sha256(saved).hexdigest()
+        row=db.get(self.pid);values=json.loads(row['measurements'])
+        values['ofiq']={'version':'1.2.0','config_sha256':'config','stages':[
+            {'stage':'save_jpeg','status':'completed','image_sha256':digest,'measurements':[]}]}
+        with db.conn() as c:c.execute('UPDATE photos SET measurements=? WHERE id=?',(json.dumps(values),self.pid))
+        self.create();snapshot=json.loads(test_queue.case(self.qid,self.item['id'])['snapshot'])
+        self.assertEqual(snapshot['final_jpeg_ofiq']['image_sha256'],snapshot['sha256'])
+        self.assertEqual(snapshot['final_jpeg_ofiq']['status'],'completed')
+        values['ofiq']['stages'][0]['image_sha256']='different-image'
+        with db.conn() as c:c.execute('UPDATE photos SET measurements=? WHERE id=?',(json.dumps(values),self.pid))
+        self.create();snapshot=json.loads(test_queue.case(self.qid,self.item['id'])['snapshot'])
+        self.assertEqual(snapshot['final_jpeg_ofiq']['status'],'not_assessed')
+
     def test_manual_result_preserves_exact_colours_and_sample_not_counted(self):
         self.create()
         r=self.client.post(self.case,data=self.observation(geometry='light_green'),follow_redirects=False)

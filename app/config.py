@@ -51,6 +51,10 @@ BACKGROUND_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("BACKGROUND_TIMEOUT_
 ENHANCER_MODEL_DIR = Path(os.getenv("ENHANCER_MODEL_DIR", MODEL_DIR / "enhancement"))
 ENHANCER_PYTHON = os.getenv("ENHANCER_PYTHON", BACKGROUND_PYTHON)
 ENHANCER_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("ENHANCER_TIMEOUT_SECONDS", "300"))))
+OFIQ_ENABLED = _bool("OFIQ_ENABLED", False)
+OFIQ_RUNTIME_DIR = Path(os.getenv("OFIQ_RUNTIME_DIR", MODEL_DIR / "ofiq"))
+OFIQ_PYTHON = os.getenv("OFIQ_PYTHON", sys.executable)
+OFIQ_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("OFIQ_TIMEOUT_SECONDS", "120"))))
 
 # Customer self-upload page. Off = shop/staff use only.
 PUBLIC_UPLOADS = _bool("PUBLIC_UPLOADS", False)

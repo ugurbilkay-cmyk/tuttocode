@@ -1,0 +1,18 @@
+{% if ofiq_report %}
+<section class="ofiq-report">
+  <h2>OFIQ standardized facial quality</h2>
+  <p>Official native OFIQ {{ ofiq_report.get('version','') }} · {{ ofiq_report.status }}. Raw values and mapped quality values are separate. Higher mapped quality generally indicates better biometric utility; it is not passport approval or Photomatic's score. Country limits are not calibrated.</p>
+  {% if ofiq_report.message %}<p class="notice">{{ ofiq_report.message }}</p>{% endif %}
+  {% for stage in ofiq_report.get('stages',[]) %}
+  <fieldset>
+    <legend>{{ {'original':'Input before preparation','prepared_master':'Prepared master JPEG','save_jpeg':'Exact Save JPEG','delivery_jpeg':'Exact code delivery JPEG'}.get(stage.stage,stage.stage) }}</legend>
+    {% if stage.stage=='original' %}<p class="subtle">{{ 'Retained camera original' if ofiq_report.source_kind=='retained_camera_original' else 'This is the input to this processing run; it can be an accepted AI source. Use Run OFIQ to compare with the retained camera original.' }} · EXIF orientation baked into lossless PNG for native decoding.</p>{% endif %}
+    <p class="subtle">{{ stage.input_size[0] }} × {{ stage.input_size[1] }} pixels · {{ stage.assessment_seconds }} s · native return {{ stage.return_code }} · {{ stage.status }}<br>Image SHA-256: <code style="overflow-wrap:anywhere">{{ stage.image_sha256 }}</code></p>
+    <table class="measurements"><thead><tr><th>Measure</th><th>Raw value</th><th>Mapped quality 0–100</th><th>Native code</th><th>State</th></tr></thead><tbody>
+      {% for metric in stage.measurements %}<tr><td>{{ metric.name }}{% if metric.name=='HeadSize' %}<small>Eye midpoint to chin / image height; not crown height</small>{% elif metric.name=='InterEyeDistance' %}<small>OFIQ anatomical definition; source image pixels</small>{% elif metric.name.startswith('HeadPose') %}<small>Raw angle in degrees</small>{% endif %}</td><td>{{ '%0.6g'|format(metric.raw) if metric.raw is not none else 'Unavailable' }}</td><td>{{ '%0.6g'|format(metric.quality) if metric.quality is not none else 'Unavailable' }}</td><td>{{ metric.return_code if metric.return_code is not none else 'Missing' }}</td><td>{{ metric.status }}</td></tr>{% endfor %}
+    </tbody></table>
+  </fieldset>
+  {% endfor %}
+  {% if ofiq_report.config_sha256 %}<p class="subtle">Canonical configuration SHA-256: <code style="overflow-wrap:anywhere">{{ ofiq_report.config_sha256 }}</code></p>{% endif %}
+</section>
+{% endif %}

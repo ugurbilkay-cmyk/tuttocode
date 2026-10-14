@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes
+from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes, ofiq
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -503,7 +503,11 @@ def _smooth_skin(rgb, points, values, measurements, checks):
     if not v['skin']: return rgb
     try:
         if points is None: raise ValueError('Face landmarks unavailable')
-        out,evidence = skin.apply(rgb,points,v['skin'],v['blemish_keep'])
+        if v['skin_method']=='guided':
+            from . import skin_guided
+            out,evidence = skin_guided.apply(rgb,points,v['skin'],v['blemish_keep'])
+        else:
+            out,evidence = skin.apply(rgb,points,v['skin'],v['blemish_keep'])
         checks.append(Check('enhancement_skin','Skin smoothing','pass',evidence['message']))
     except (ValueError,cv2.error):
         out = rgb
@@ -511,6 +515,23 @@ def _smooth_skin(rgb, points, values, measurements, checks):
             message='Skin smoothing skipped: facial regions could not be located reliably')
         checks.append(Check('enhancement_skin','Skin smoothing','warn',evidence['message']))
     measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))['stages'].append(evidence)
+    return out
+
+
+def _portrait_tone(rgb,points,mask,values,measurements,checks,background_colour=None):
+    v=enhancement.validate(values)
+    if not v['portrait_tone']:return rgb
+    try:
+        if points is None:raise ValueError('Face landmarks unavailable')
+        from . import portrait_tone
+        out,evidence=portrait_tone.apply(rgb,points,v['portrait_tone'],mask,background_colour)
+    except (ValueError,cv2.error):
+        out=rgb
+        evidence=dict(phase='portrait_tone',models=[],status='unavailable',strength=v['portrait_tone'],
+                      message='Skin lighting skipped: facial regions could not be located reliably')
+    measurements.setdefault('local_enhancement',dict(settings=v,stages=[]))['stages'].append(evidence)
+    checks.append(Check('enhancement_portrait_tone','Skin lighting and contrast',
+                        'warn' if evidence['status']=='unavailable' else 'pass',evidence['message']))
     return out
 
 
@@ -538,7 +559,7 @@ def _encoded_highlight_review(jpeg, values, measurements, analyzer=None, always=
         measurements['regional_bright_patches'] = report['patch_count']
 
 
-def process(data: bytes, age_group: str = "adult", analyzer=None,
+def _process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
             country_id: str | None = None, crop=None, framed=False,
@@ -606,12 +627,17 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
                 rgb = _composite_background(rgb,alpha,profile["background"],background_engine)
         rgb, notes = local_adjustments.apply(rgb, adjustments)
         skin_points = None
-        if enhancement_options['skin'] or enhancement_options['blemish']:
+        if enhancement_options['skin'] or enhancement_options['blemish'] or enhancement_options['portrait_tone']:
             try:
-                faces = (analyzer or get_analyzer()).analyze(original_rgb).faces
+                face_analyzer=analyzer or get_analyzer()
+                analysis=face_analyzer.analyze(original_rgb)
+                measurements['face_analysis']=_analysis_evidence(analysis,face_analyzer)
+                faces=analysis.faces
                 if len(faces)==1: skin_points=faces[0].points
             except Exception:
                 pass
+        rgb = _portrait_tone(rgb,skin_points,alpha if replace_bg else None,enhancement_options,measurements,checks,
+                             profile['background'] if replace_bg and alpha is not None else None)
         rgb = _clean_skin(rgb,skin_points,enhancement_options,measurements,checks,cleaner_assets)
         rgb = _smooth_skin(rgb,skin_points,enhancement_options,measurements,checks)
         im = ImageOps.fit(Image.fromarray(rgb), (out_w, out_h), method=Image.LANCZOS)
@@ -820,6 +846,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out, adjustments)
     notes += manual_notes
+    out = _portrait_tone(out,tp,mask,enhancement_options,measurements,checks,
+                         profile['background'] if replacement_mask is not None else None)
     out = _clean_skin(out,tp,enhancement_options,measurements,checks,cleaner_assets)
     out = _smooth_skin(out,tp,enhancement_options,measurements,checks)
     if auto_adjust or fix_shadows or replace_bg or even_bg or manual_notes:
@@ -977,6 +1005,41 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     return Result(ok, checks, jpeg, _small_jpeg(out), before, measurements,cleaner_assets)
 
 
+def process(data: bytes, age_group: str = "adult", analyzer=None,
+            auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
+            fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
+            country_id: str | None = None, crop=None, framed=False,
+            adjustments=None, print_only=False, background_engine=None, enhancement_options=None) -> Result:
+    """Prepare and separately measure source/master/exact export using native OFIQ."""
+    result = _process(data, age_group, analyzer, auto_adjust, even_bg, fix_shadows,
+                      replace_bg, country_id, crop, framed, adjustments, print_only,
+                      background_engine, enhancement_options)
+    if not config.OFIQ_ENABLED:
+        result.measurements['ofiq'] = dict(engine='OFIQ', status='off', stages=[])
+        return result
+    try:
+        if framed:
+            # Code validation assesses input delivery bytes without a second encode.
+            images = {'delivery_jpeg': data}
+        else:
+            images = {'original': ofiq.source_png(data)}
+            if result.jpeg:
+                images.update(prepared_master=result.jpeg,
+                              save_jpeg=save_photo(result.jpeg, country_id))
+        record = ofiq.assess(images)
+        record['source_file_sha256'] = hashlib.sha256(data).hexdigest()
+        result.measurements['ofiq'] = record
+    except (OSError, ValueError):
+        result.measurements['ofiq'] = dict(engine='OFIQ', status='unavailable', stages=[],
+            message='Native quality assessment unavailable; no OFIQ pass is implied.')
+    if result.measurements['ofiq']['status'] != 'completed':
+        result.checks.append(Check('ofiq_unavailable', 'OFIQ quality measurements', 'warn',
+            'Some native quality measurements are unavailable. See OFIQ details; staff responsibility remains available.'))
+    # OFIQ quality values have no calibrated country decision limits here.
+    # They never manufacture green checks or restrict the existing override.
+    return result
+
+
 def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options):
     """Full-frame editing for staff output, without a passport framing verdict."""
     h, w = rgb.shape[:2]
@@ -1022,6 +1085,8 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         notes.append("background replaced · "+background_models.LABELS[background_engine])
     out, manual_notes = local_adjustments.apply(out,adjustments)
     notes += manual_notes
+    out = _portrait_tone(out,skin_points,mask,enhancement_options,measurements,checks,
+                         profile['background'] if replacement_mask is not None else None)
     out = _clean_skin(out,skin_points,enhancement_options,measurements,checks,cleaner_assets)
     out = _smooth_skin(out,skin_points,enhancement_options,measurements,checks)
     if notes: checks.append(Check("adjust", "Local photo tools", "warn", "; ".join(notes)))

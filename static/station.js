@@ -136,6 +136,7 @@ $('reset-local-tools')?.addEventListener('click', () => {
   }
   if ($('enhancer-scale')) { $('enhancer-scale').value='1'; $('enhancer-scale').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-engine')) { $('enhancer-engine').value='plksr'; $('enhancer-engine').dispatchEvent(new Event('input',{bubbles:true})); }
+  if ($('skin-method')) { $('skin-method').value='bilateral'; $('skin-method').dispatchEvent(new Event('input',{bubbles:true})); }
   if ($('enhancer-preset')) $('enhancer-preset').value='';
   if ($('blemish-sensitivity')) $('blemish-sensitivity').value='gentle';
   if ($('blemish-size')) $('blemish-size').value='medium';
@@ -151,7 +152,7 @@ function applyEnhancementPreset(key) {
     input.value=preset.adjustments[input.name] ?? 0;
     input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
+  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,portrait_tone:0,skin_method:'bilateral',blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
     const input=form.elements.namedItem('enhancer_'+key);
     if (input) { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); }
   }
@@ -166,8 +167,8 @@ function updateEnhancementChoice() {
   if (!$('enhancer-preset')) return;
   const form=$('photo-form');
   const matches=Object.entries(enhancementPresets).find(([,preset]) => {
-    const values={lighting:0,denoise:0,detail:0,skin:0,blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement};
-    return Object.entries(values).every(([key,value]) => key==='upscale_engine'
+    const values={lighting:0,denoise:0,detail:0,skin:0,portrait_tone:0,skin_method:'bilateral',blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement};
+    return Object.entries(values).every(([key,value]) => ['upscale_engine','skin_method'].includes(key)
       ? form.elements.namedItem('enhancer_'+key)?.value===value
       : Number(form.elements.namedItem('enhancer_'+key)?.value)===Number(value))
       && ['auto_adjust','fix_shadows'].every(key => form.elements.namedItem(key).checked===preset[key])
@@ -431,7 +432,7 @@ $('photo-form').addEventListener('submit', () => {
   }
 });
 $('photo-form').addEventListener('input', event => {
-  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine, #blemish-sensitivity, #blemish-size')) $('enhancer-preset').value='';
+  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine, #skin-method, #blemish-sensitivity, #blemish-size')) $('enhancer-preset').value='';
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();
   if (['zoom','x','y','rotation','angle','print-only','file-input'].includes(event.target.id) && $('blemish-keep')) $('blemish-keep').value='[]';
   if (event.target.closest('#local-tools')) updateEnhancementChoice();

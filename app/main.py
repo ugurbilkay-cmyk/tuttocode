@@ -26,7 +26,7 @@ from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measure
 from . import reviewed_import
 from . import govuk_precheck
 from . import test_queue
-from . import pipeline_status
+from . import pipeline_status, ofiq
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -730,6 +730,8 @@ async def admin_photo(request):
         "measurement_sections": measurements.report(final_values or stored_measurements, metric_checks, profile),
         "measurement_title": "Final code JPEG measurements" if final_values else "Photo measurements",
         "ai_measurement_sections": measurements.report(ai_status.get("measurements", {}), ai_status.get("checks", []), profile),
+        "ofiq_report":(final_values or stored_measurements).get('ofiq',{}),
+        "ai_ofiq_report":ai_status.get('measurements',{}).get('ofiq',{}),
         "ai_status": ai_status,
         "pipeline_rows":pipeline_status.report(options,stored_measurements,checks,_photo_path(row['id']).exists(),ai_status),
         "ai_pipeline_rows":pipeline_status.report(ai_status.get('options',{}),ai_status.get('measurements',{}),ai_status.get('checks',[]),ai_status.get('status')=='ready',ai_status),
@@ -798,6 +800,41 @@ async def admin_govuk_start(request):
     _govuk_tasks.add(task)
     task.add_done_callback(_govuk_tasks.discard)
     return Response(json.dumps({'id': run_id, 'status': 'running'}), status_code=202, media_type='application/json')
+
+
+async def admin_ofiq(request):
+    """Reassess retained files, without re-running preparation or changing pixels."""
+    _require_admin(request)
+    if not config.OFIQ_ENABLED: raise HTTPException(503, 'OFIQ needs local runtime setup')
+    form = await request.form()
+    pid = request.path_params['pid']
+    with _edit_job(pid) as token:
+        db.assert_edit(pid, token)
+        row = db.get(pid)
+        try:
+            if int(form.get('review_revision', -1)) != row['revision']: raise ValueError()
+        except (ValueError, TypeError): raise HTTPException(409, 'Photo changed; refresh before checking') from None
+        master_path = _photo_path(pid)
+        if not master_path.is_file(): raise HTTPException(409, 'Prepare a photo before checking its output')
+        master = master_path.read_bytes()
+        export = _preserved_bytes(row) if _external_record(row) else await run_in_threadpool(processing.save_photo, master, row['country_id'])
+        images = {}
+        source = config.PHOTO_DIR / f'{pid}_source'
+        source_bytes = source.read_bytes() if source.exists() else None
+        if source_bytes is not None:
+            images['original'] = await run_in_threadpool(ofiq.source_png, source_bytes)
+        images.update(prepared_master=master, save_jpeg=export)
+        record = await run_in_threadpool(ofiq.assess, images)
+        if source_bytes is not None: record['source_file_sha256'] = hashlib.sha256(source_bytes).hexdigest()
+        record['source_kind'] = 'retained_camera_original' if source_bytes is not None else 'original_unavailable'
+        db.assert_edit(pid, token)
+        if master_path.read_bytes() != master or (source_bytes is not None and source.read_bytes() != source_bytes):
+            raise HTTPException(409, 'Photo bytes changed during assessment; refresh and check again')
+        values = json.loads(row['measurements']); values['ofiq'] = record
+        with db.conn() as connection:
+            connection.execute('UPDATE photos SET measurements=?,revision=revision+1 WHERE id=? AND edit_token=?',
+                               (json.dumps(values), pid, token))
+    return RedirectResponse(f'/admin/p/{pid}', status_code=303)
 
 
 async def admin_govuk_status(request):
@@ -1388,6 +1425,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/external-review", admin_external_review, methods=["POST"]),
     Route("/admin/p/{pid}/issue", admin_issue, methods=["POST"]),
     Route("/admin/p/{pid}/reprocess", admin_reprocess, methods=["POST"]),
+    Route("/admin/p/{pid}/ofiq", admin_ofiq, methods=["POST"]),
     Route("/admin/p/{pid}/govuk", admin_govuk_start, methods=["POST"]),
     Route("/admin/p/{pid}/govuk", admin_govuk_status),
     Route("/admin/p/{pid}/govuk/{run_id}/result.png", admin_govuk_screenshot),

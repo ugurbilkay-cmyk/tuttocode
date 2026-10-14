@@ -2,7 +2,7 @@
 
 Open **More → Test queues** in the studio, or `/admin/tests`. Prepare photos with our own engine first. Select 5, 10, 20 or individual prepared jobs, name the queue and create it. Append subsequent cases to the same queue up to 200. This step makes no OpenAI, GOV.UK or Photomatic requests.
 
-Each case freezes the exact Save JPEG. The private snapshot records its SHA-256, dimensions, source/master hashes, country, age group, preparation options, current engine-code/catalog fingerprint and existing prepared-master measurements. Those measurements are not a fresh assessment of the frozen final JPEG. Editing the studio job cannot change a frozen case; add the revised job as another case.
+Each case freezes the exact Save JPEG. The private snapshot records its SHA-256, dimensions, source/master hashes, country, age group, preparation options, current engine-code/catalog fingerprint and existing prepared-master measurements. Those heuristic measurements are not a fresh assessment of the frozen final JPEG. A separate `final_jpeg_ofiq` record is retained only when the native assessment hash matches the exact frozen export; a mismatch remains Not assessed. Editing the studio job cannot change a frozen case; add the revised job as another case.
 
 ## Work through cases
 
