@@ -197,6 +197,16 @@ def _opts(form=None):
         options["background_engine"] = background_models.validate((form.get("background_engine") if form else None) or config.BACKGROUND_ENGINE)
         options["enhancement_options"] = enhancement.validate({key:form.get('enhancer_'+key,default)
             for key,default in enhancement.DEFAULTS.items()} if form else None)
+        if form and 'adaptive_profile' in form:
+            # The simplified staff form requests an intent, never a model or
+            # fixed stack of strengths. Legacy explicit API settings still work.
+            options['enhancement_options']=enhancement.validate(dict(
+                adaptive_profile=form.get('adaptive_profile'),
+                blemish_keep=form.get('enhancer_blemish_keep',[])))
+            options['adjustments']=local_adjustments.validate()
+            options['auto_adjust']=options['fix_shadows']=options['even_bg']=False
+            installed={c['key']:c['installed'] for c in background.choices()}
+            options['background_engine']=next((k for k in ('hr','portrait','modnet') if installed.get(k)),config.BACKGROUND_ENGINE)
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from None
     return options

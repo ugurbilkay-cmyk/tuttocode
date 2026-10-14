@@ -39,7 +39,7 @@
         </div>
         <div class="photo-caption">{% if row and not has_photo and editable %}Camera original · adjust the crop, then Apply changes{% elif row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}Original preview · crop is applied when you prepare the photo{% endif %}</div>
         <p class="subtle" id="crop-preview-note" hidden>Live crop preview from source pixels · Apply changes renders the selected tools and updates checks.</p>
-        {% if row %}<details class="processing-evidence" {% if not has_photo %}open{% endif %}><summary>What actually ran · this photo</summary><p class="subtle">Execution status is separate from passport quality. Selecting a tool does not prove it ran.</p>{% for stage in pipeline_rows %}<div class="execution-stage"><strong>{{ stage.name }}</strong><span>{{ stage.state }}</span><p class="subtle">{{ stage.detail }}</p></div>{% endfor %}</details>{% endif %}
+
         <details class="check-details results-panel" {% if checks|selectattr('status','equalto','fail')|list %}open{% endif %}><summary>Photo checks{% if row %} · review results{% endif %}</summary>
         <div class="quality-summary">
           {% for name in ['Image quality','Face size and position','Background'] %}
@@ -102,61 +102,24 @@
           <h2><span class="step-number">3</span> Background</h2>
           <label class="tick main-option"><input type="checkbox" id="replace-background" name="replace_bg" {% if options.replace_bg %}checked{% endif %}> Remove and replace background</label>
           <p class="subtle">Use the plain background for the selected document.</p>
-          <details class="step-options"><summary>Background options</summary>
-            <label class="field-label">Removal quality<select name="background_engine" id="background-engine">{% for tool in background_choices() %}<option value="{{ tool.key }}" {% if tool.key == options.get('background_engine',cfg.BACKGROUND_ENGINE) %}selected{% endif %}>{{ tool.label }}{% if not tool.installed %} · needs setup{% endif %}</option>{% endfor %}</select></label>
-            <label class="tick"><input type="checkbox" name="even_bg" {% if options.even_bg %}checked{% endif %}> Even background light</label>
-            <p class="subtle">Background removal runs locally. Maximum detail can take about a minute.</p>
-          </details>
+          <p class="subtle">The engine selects the local removal tool automatically.</p>
         </section>
         <section class="workflow-step" id="local-tools">
           <h2><span class="step-number">4</span> Enhance</h2>
-          <div class="enhance-levels" role="group" aria-label="Enhancement level">
-            <button type="button" data-enhance-preset="natural" aria-pressed="false"><strong>1</strong><span>Natural</span><small>Gentle finish</small></button>
-            <button type="button" data-enhance-preset="balanced" aria-pressed="false"><strong>2</strong><span>Balanced</span><small>Light and skin</small></button>
-            <button type="button" data-enhance-preset="strong" aria-pressed="false"><strong>3</strong><span>Stronger</span><small>More cleanup</small></button>
+          {% set selected_profile = options.get('enhancement_options',{}).get('adaptive_profile','off') if row else 'balanced' %}
+          <input type="hidden" name="adaptive_profile" id="adaptive-profile" value="{{ selected_profile }}">
+          <div class="enhance-levels" role="group" aria-label="Adaptive photo profile">
+            <button type="button" data-enhance-preset="natural" aria-pressed="false"><strong>1</strong><span>Natural</span><small>Gentle correction</small></button>
+            <button type="button" data-enhance-preset="balanced" aria-pressed="false"><strong>2</strong><span>Balanced</span><small>Everyday preparation</small></button>
+            <button type="button" data-enhance-preset="recovery" aria-pressed="false"><strong>3</strong><span>Recovery</span><small>Difficult lighting</small></button>
           </div>
-          <button type="button" data-enhance-preset="studio_match" aria-pressed="false">Studio reference · trial</button>
-          <div class="enhance-caption"><span class="subtle" id="enhancement-choice">No enhancement selected</span><button type="button" id="no-enhancement">Reset</button></div>
-          <details class="step-options" id="enhancement-options"><summary>Enhancement options</summary>
-            <label class="tick"><input type="checkbox" name="auto_adjust" {% if options.auto_adjust %}checked{% endif %}> Fix colour and exposure</label>
-            <label class="tick"><input type="checkbox" name="fix_shadows" {% if options.fix_shadows %}checked{% endif %}> Soften face shadows</label>
-          <details class="manual-tools" id="enhancer-tools"><summary>Image enhancer · local AI and detail</summary>
-          {% set enh = options.get('enhancement_options',{}) %}
-          {% set installed = enhancer_available() %}
-          <label class="field-label">Quick starting point<select id="enhancer-preset"><option value="">Custom settings</option>
-          {% for key,preset in enhancer_presets.items() %}<option value="{{ key }}">{{ preset.label }}</option>{% endfor %}
-          </select></label>
-          {% for control in enhancer_controls %}
-          <label class="local-control">{{ control.label }} <output>{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0)|float }} {{ control.unit }}</output><input class="local-slider enhancer-slider" type="range" name="enhancer_{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ enh.get(control.key,70 if control.key=='upscale_strength' else 0) }}" data-unit="{{ control.unit }}"></label>
-          {% endfor %}
-          <label class="field-label">Skin smoothing method<select name="enhancer_skin_method" id="skin-method">
-            {% for key,label in [('bilateral','Gentle texture smoothing'),('guided','Regional guided finish · forehead and cheeks')] %}<option value="{{ key }}" {% if enh.get('skin_method','bilateral')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select></label>
-          <label class="field-label">Skin cleaning sensitivity<select name="enhancer_blemish_sensitivity" id="blemish-sensitivity">
-          {% for key,label in [('gentle','Gentle · fewer spot candidates'),('standard','Standard'),('strong','Strong · more spot candidates')] %}<option value="{{ key }}" {% if enh.get('blemish_sensitivity','gentle')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select></label>
-          <label class="field-label">Repair spot sizes<select name="enhancer_blemish_size" id="blemish-size">
-          {% for key,label in [('small','Small spots'),('medium','Small and medium spots'),('large','Larger patches'),('all','All detected sizes')] %}<option value="{{ key }}" {% if enh.get('blemish_size','medium')==key %}selected{% endif %}>{{ label }}</option>{% endfor %}
-          </select></label>
-          <p class="subtle">Advanced cleaning repairs detected spots locally{% if not installed.blemish %} · model needs setup{% endif %}. Apply changes, then review the highlighted repairs. Mark freckles, moles or any area you want to keep.</p>
-          <label class="field-label">AI enlargement<select name="enhancer_scale" id="enhancer-scale">
-          {% for factor in [1,2,4] %}<option value="{{ factor }}" {% if enh.get('scale',1)==factor %}selected{% endif %}>{{ 'Off · standard master' if factor==1 else factor|string + '× · enlarged master' }}</option>{% endfor %}
-          </select></label>
-          <label class="field-label">Enlargement tool<select name="enhancer_upscale_engine" id="enhancer-engine">
-          {% for key,label in [('plksr','Natural detail · RealPLKSR'),('realesrgan','Fast smooth detail · Real-ESRGAN'),('lanczos','Standard enlargement · Lanczos')] %}<option value="{{ key }}" {% if enh.get('upscale_engine','plksr')==key %}selected{% endif %}>{{ label }}{% if key!='lanczos' and not installed[key] %} · needs setup{% endif %}</option>{% endfor %}
-          </select></label>
-          <p class="subtle">Lighting: Retinexformer{% if not installed.retinex %} · needs setup{% endif %}. Noise: NAFNet{% if not installed.nafnet %} · needs setup{% endif %}. These tools run locally with no API charge. Strength 0 keeps that correction off; enlargement strength 0 uses standard interpolation.</p>
-          <p class="subtle">Use Before / After and Camera original to compare. AI enlargement improves presentation; original pixel and focus evidence remains available. Detailed processing can take several minutes on a CPU.</p>
-          <p class="subtle">Skin smoothing protects eyes, lips, facial edges and bright highlight pixels. Regional guided finish treats the forehead more strongly than the cheeks and retains detected dark marks. Highlight measurements are recalculated on the finished JPEG; gentle smoothing also retains its earlier regional counts and peaks.</p>
-          </details>
-          <details class="manual-tools"><summary>Fine-tune lighting and colour</summary>
-          {% set local = options.get('adjustments',{}) %}
-          {% for control in adjustment_controls %}
-          <label class="local-control">{{ control.label }} <output>{{ local.get(control.key,0)|float }} {{ control.unit }}</output><input class="local-slider" type="range" name="{{ control.key }}" min="{{ control.minimum }}" max="{{ control.maximum }}" step="{{ control.step }}" value="{{ local.get(control.key,0) }}" data-unit="{{ control.unit }}"></label>
-          {% endfor %}
-          <button type="button" id="reset-local-tools">Reset local adjustments</button>
-          </details>
-          </details>
+          <div class="enhance-caption"><span class="subtle" id="enhancement-choice"></span><button type="button" id="no-enhancement">Original finish</button></div>
+          <p class="subtle">Each profile analyses this photo and chooses its corrections automatically. Compare Before / After. Stronger profiles allow more correction; they do not guarantee a better result.</p>
+          {% if row %}{% set adaptive = (row.measurements|fromjson).get('adaptive_quality',{}) %}{% if adaptive %}
+          <details class="step-options"><summary>Why this correction?</summary><p>{{ adaptive.message }}</p>
+          <p class="subtle">{% if adaptive.status=='partial' %}Some cleanup did not complete. Review the original and result.{% elif adaptive.status=='unavailable' %}Facial editing could not run; the input was retained.{% else %}Lighting and cleanup were chosen from measured pixels. These trial settings still need comparison testing.{% endif %}</p>
+          {% if adaptive.texture_guard is defined %}<p class="subtle">{% if adaptive.texture_guard.status=='unchanged' %}No texture cleanup was needed.{% else %}Cleanup retained {{ (adaptive.texture_guard.blend * 100)|round|int }}% of the proposed edit after the source-detail check.{% endif %}</p>{% endif %}
+          </details>{% endif %}{% endif %}
           {% if not row %}<details class="step-options"><summary>OpenAI · optional extra</summary>
             <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if not cfg.OPENAI_API_KEY %}disabled{% endif %}> Enhance with OpenAI</label>
             <p class="subtle">One setup: exposure, lighting and colour, gentle skin cleanup, reduced harsh shine and natural detail. Facial features and identifying marks are instructed to stay unchanged. Compare the result before accepting.</p>
@@ -178,11 +141,7 @@
         <select id="print-template" name="print_template_id">{% for choice in choices %}<option value="{{ choice.id }}" {% if choice.id == layout.id %}selected{% endif %}>{{ choice.name }} · {{ choice.boxes|length }} photos · {{ choice.printer }}</option>{% endfor %}</select>
         <p class="subtle" id="print-dimensions">{{ layout.width_px }} × {{ layout.height_px }} px · {{ layout.dpi }} DPI</p>
           {% if has_photo and row.status=='pending' %}<details class="step-options"><summary>Photomatic handoff</summary><a class="action-button photomatic-handoff" href="/admin/p/{{ row.id }}/photomatic.jpg">Save for Photomatic</a><a class="action-button photomatic-handoff" href="/admin/import?parent={{ row.id }}">Import reviewed export</a></details>{% endif %}
-        {% if row %}{% set bg_info = (row.measurements|fromjson).get('background_removal',{}) %}{% if bg_info %}<p class="subtle" id="background-result">Background: {{ bg_info.label }} · {{ bg_info.status }}{% if bg_info.cache_hit %} · reused source mask{% elif bg_info.inference_seconds is defined %} · {{ bg_info.inference_seconds }} s inference{% endif %}</p>{% endif %}{% endif %}
-        {% if row %}{% set enh_info = (row.measurements|fromjson).get('local_enhancement',{}) %}{% if enh_info %}<div class="subtle" id="enhancer-result">
-        {% for stage in enh_info.stages %}<p>Enhancer {{ stage.phase }}: {{ stage.status }}{% for model in stage.models %} · {{ model.label }}{% endfor %}{% if stage.inference_seconds is defined %} · {{ stage.inference_seconds }} s inference{% endif %}{% if stage.output_size is defined %} · {{ stage.output_size[0] }} × {{ stage.output_size[1] }} px{% endif %}{% if stage.message is defined %} · {{ stage.message }}{% endif %}</p>{% endfor %}
-        {% set final_hl = (row.measurements|fromjson).get('final_highlights',{}) %}{% if final_hl %}<p id="enhancer-final-highlights">Final JPEG regional highlights: {% if final_hl.status=='diagnostic' %}{{ final_hl.near_clip_all_percent }}% near-clipped in all channels · {{ final_hl.patch_count }} candidate patches{% else %}unavailable · {{ final_hl.message }}{% endif %}. Regional diagnostics; use the hotspot inspector to compare.</p>{% endif %}
-        </div>{% endif %}{% endif %}
+        {% if row %}{% set bg_info = (row.measurements|fromjson).get('background_removal',{}) %}{% if bg_info %}<p class="subtle" id="background-result">Background removal: {{ bg_info.status }}{% if bg_info.cache_hit %} · reused source mask{% endif %}</p>{% endif %}{% endif %}
         </details>
       </aside>
     </div>
@@ -314,7 +273,7 @@
   {% if editable %}<button type="button" id="cleaner-undo">Undo last keep area</button><button type="button" id="cleaner-clear">Clear keep areas</button><button type="button" id="cleaner-use">Use keep areas · then Apply changes</button>{% endif %}
 </dialog>
 {% endif %}
-<script id="enhancer-presets" type="application/json">{{ enhancer_presets|tojson }}</script>
+<script id="enhancer-presets" type="application/json">{"natural":{"label":"Natural"},"balanced":{"label":"Balanced"},"recovery":{"label":"Recovery"}}</script>
 <script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationRevision={{ (row.revision if row else 0)|tojson }};window.stationEditable={{ editable|tojson }};window.stationAiStatus={{ ai_status.get("status","")|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};window.stationCrop={{ crop|tojson }};window.stationCropGeometry={{ crop_preview_geometry|default({})|tojson }};</script>
 <script src="/static/station.js" defer></script>
 </body></html>

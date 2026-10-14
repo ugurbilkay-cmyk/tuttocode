@@ -82,7 +82,7 @@ class WorkflowTests(unittest.TestCase):
             page=self.client.get('/admin').text
             tag=page.split('id="use-ai"',1)[1].split('>',1)[0]
             self.assertNotIn('checked',tag)
-            self.assertIn('Optional OpenAI upgrade',page)
+            self.assertTrue('OpenAI · optional extra' in page)
             pid=self.upload(exposure='.3',highlights='20')
             remote.assert_not_called()
         self.assertEqual(json.loads(db.get(pid)['options'])['adjustments']['exposure'],.3)
@@ -150,7 +150,9 @@ class WorkflowTests(unittest.TestCase):
             response=self.issue(pid,staff_override='on')
         self.assertEqual(response.status_code,303,response.text)
         review=json.loads(db.get(pid)['issue_review'])
-        self.assertIn('quality_unavailable',review['staff_override']['final_failed_checks'])
+        # Missing model is a retained failed face-analysis finding. It is not
+        # an escaped exception with a synthetic "quality_unavailable" key.
+        self.assertIn('face',review['staff_override']['final_failed_checks'])
         self.assertFalse(db.get(pid)['ok'])
 
     def test_print_preview_api_canvas_and_source_failures_are_retained(self):

@@ -187,7 +187,11 @@ class WorkflowTests(unittest.TestCase):
 
     def test_complete_rendered_studio_form_uploads_and_crop_controls_change_photo(self):
         fields = PhotoForm(self.client.get('/admin/new').text).fields
-        self.assertGreater(len(fields), 30, 'Exercise the expanded form that exceeded the old parser limit')
+        self.assertLessEqual(len(fields),30,'Staff profiles replace the expanded technical form')
+        self.assertEqual(fields['adaptive_profile'],'balanced')
+        # Continue exercising the original multipart parser regression even
+        # though the actual staff form is now smaller.
+        fields.update({f'compatibility_field_{i}':'0' for i in range(35)})
         with patch.object(ai_prepare, 'prepare', side_effect=AssertionError('OpenAI was not selected')):
             response = self.client.post('/admin/new', data=fields,
                 files={'photo': ('camera.jpg', self.source, 'image/jpeg')}, follow_redirects=False)

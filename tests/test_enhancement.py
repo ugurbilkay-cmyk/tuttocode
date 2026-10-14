@@ -122,11 +122,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(response.status_code,303,response.text)
         return response.headers['location'].rsplit('/',1)[1]
 
-    def test_ui_has_controls_presets_and_optional_upscale(self):
+    def test_ui_has_adaptive_profiles_without_model_controls(self):
         page=self.client.get('/admin').text
-        self.assertIn('enhancer-presets',page);self.assertIn('Natural portrait',page)
-        self.assertIn('enhancer_upscale_strength',page);self.assertIn('4×',page)
-        self.assertIn('Off · standard master',page)
+        self.assertIn('enhancer-presets',page);self.assertIn('Recovery',page)
+        self.assertIn('adaptive_profile',page);self.assertNotIn('enhancer_upscale_strength',page)
+        self.assertNotIn('NAFNet',page);self.assertNotIn('Retinexformer',page)
         self.assertEqual(self.client.post('/admin/new',data={'opts':'1','enhancer_scale':'3'},files={'photo':('x.jpg',self.source)}).status_code,400)
 
     def test_detail_edits_are_repeatable_from_source_and_restore_clears_them(self):

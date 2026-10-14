@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes, ofiq
+from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes, ofiq, adaptive_quality
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -463,6 +463,7 @@ def _analysis_evidence(analysis, analyzer):
 
 def _local_enhancement(rgb, values, phase, measurements, checks):
     v = enhancement.validate(values)
+    if v['adaptive_profile']!='off':return rgb
     if phase == "restore" and not (v['lighting'] or v['denoise'] or v['detail']): return rgb
     if phase == "upscale" and v['scale'] == 1: return rgb
     out, evidence = enhancement.apply(rgb,v,phase)
@@ -473,6 +474,17 @@ def _local_enhancement(rgb, values, phase, measurements, checks):
     else:
         description = ', '.join(m['label'] for m in evidence['models']) or evidence.get('method','Detail sharpening')
         checks.append(Check('enhancement_'+phase,'Local enhancer','pass',description))
+    return out
+
+
+def _adaptive_edit(rgb, points, mask, values, measurements, checks):
+    profile=enhancement.validate(values)['adaptive_profile']
+    if profile=='off':return rgb
+    out,evidence=adaptive_quality.apply(rgb,points,profile,mask,values.get('blemish_keep'))
+    measurements['adaptive_quality']=evidence
+    measurements.setdefault('local_enhancement',dict(settings=values,stages=[]))['stages'].append(evidence)
+    checks.append(Check('adaptive_edit','Automatic photo preparation',
+        'warn' if evidence['status'] in ('unavailable','partial') else 'pass',evidence['message']))
     return out
 
 
@@ -574,6 +586,13 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements = {"method": "Tuttoprint CV v1", "country_id": profile["id"]}
     adjustments = local_adjustments.validate(adjustments)
     enhancement_options = enhancement.validate(enhancement_options)
+    if enhancement_options['adaptive_profile']!='off':
+        # One controller owns the edit budget. Old fixed sliders/recipes cannot
+        # silently stack on an adaptive profile, including saved legacy jobs.
+        enhancement_options=enhancement.validate(dict(adaptive_profile=enhancement_options['adaptive_profile'],
+            blemish_keep=enhancement_options['blemish_keep']))
+        auto_adjust=fix_shadows=even_bg=False
+        adjustments=local_adjustments.validate()
     background_engine = background_models.validate(background_engine or config.BACKGROUND_ENGINE)
     measurements["local_adjustments"] = {"engine": local_adjustments.VERSION, "values": adjustments}
 
@@ -614,6 +633,16 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
     if not profile["use_head"] and not profile["use_width"]:
         before = _small_jpeg(np.asarray(ImageOps.fit(Image.fromarray(rgb),(out_w,out_h),method=Image.LANCZOS)))
         original_rgb = rgb
+        if enhancement_options['adaptive_profile']!='off':
+            skin_points=None
+            try:
+                face_analyzer=analyzer or get_analyzer()
+                analysis=face_analyzer.analyze(original_rgb)
+                measurements['face_analysis']=_analysis_evidence(analysis,face_analyzer)
+                if len(analysis.faces)==1:skin_points=analysis.faces[0].points
+            except Exception:
+                measurements['face_analysis']={'status':'unavailable'}
+            rgb=_adaptive_edit(rgb,skin_points,None,enhancement_options,measurements,checks)
         rgb = _local_enhancement(rgb,enhancement_options,'restore',measurements,checks)
         if replace_bg:
             baseline = None
@@ -830,6 +859,7 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
             original_gray = cv2.cvtColor(original_face,cv2.COLOR_RGB2GRAY)
             original_gray = cv2.resize(original_gray,(300,max(1,int(300*original_gray.shape[0]/original_gray.shape[1]))))
             measurements['unadjusted_sharpness'] = round(float(cv2.Laplacian(original_gray,cv2.CV_64F).var()),2)
+    out = _adaptive_edit(out,tp,mask,enhancement_options,measurements,checks)
     out = _local_enhancement(out,enhancement_options,'restore',measurements,checks)
     fb = (min(tp[FACE_L][0], tp[FACE_R][0]), tp[FOREHEAD][1],
           max(tp[FACE_L][0], tp[FACE_R][0]), tp[CHIN][1])
@@ -1072,6 +1102,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         replacement_mask = _background_mask(rgb,mask,background_engine,measurements,checks)
         if replacement_mask is not None:
             mask = replacement_mask
+    out = _adaptive_edit(out,skin_points,mask,enhancement_options,measurements,checks)
     out = _local_enhancement(out,enhancement_options,'restore',measurements,checks)
     if fix_shadows and box is not None:
         out, amount = soften_face_shadows(out, box, mask)

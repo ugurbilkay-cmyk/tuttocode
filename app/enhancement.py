@@ -22,7 +22,7 @@ CONTROLS = [
     dict(key="upscale_strength", label="AI upscale strength", unit="%", minimum=0, maximum=100, step=5),
 ]
 DEFAULTS = dict(lighting=0., denoise=0., detail=0., skin=0., portrait_tone=0., skin_method='bilateral', blemish=0., blemish_sensitivity='gentle',
-                blemish_size='medium',blemish_keep=[],scale=1,upscale_strength=70.,upscale_engine='plksr')
+                blemish_size='medium',blemish_keep=[],scale=1,upscale_strength=70.,upscale_engine='plksr',adaptive_profile='off')
 PRESETS = {
     "studio_match": dict(label="Studio reference · trial", enhancement=dict(lighting=55,denoise=70,detail=0,skin=100,skin_method='guided',portrait_tone=100,scale=1),
                          adjustments=dict(temperature=-4,tint=3,saturation=-3,shadows=10),
@@ -54,6 +54,11 @@ def validate(values=None):
     if set(values)-set(DEFAULTS): raise ValueError("Unknown enhancer setting")
     result = {}
     for key, default in DEFAULTS.items():
+        if key=='adaptive_profile':
+            value=values.get(key,default)
+            if value not in ('off','natural','balanced','recovery'):raise ValueError('Unknown adaptive profile')
+            result[key]=value
+            continue
         if key=='skin_method':
             value=values.get(key,default)
             if value not in ('bilateral','guided'):raise ValueError('Unknown skin smoothing method')
@@ -97,7 +102,7 @@ def validate(values=None):
 
 def active(values=None):
     v=validate(values)
-    return bool(v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['portrait_tone'] or v['blemish'] or v['scale']!=1)
+    return bool(v['adaptive_profile']!='off' or v['lighting'] or v['denoise'] or v['detail'] or v['skin'] or v['portrait_tone'] or v['blemish'] or v['scale']!=1)
 
 
 def choices():

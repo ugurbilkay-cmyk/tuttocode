@@ -128,61 +128,24 @@ $('close-ai-measurements')?.addEventListener('click', () => $('ai-measurements-d
 document.querySelectorAll('.local-slider').forEach(input => input.addEventListener('input', () => {
   input.closest('label').querySelector('output').textContent = `${input.value} ${input.dataset.unit}`;
 }));
-$('reset-local-tools')?.addEventListener('click', () => {
-  document.querySelectorAll('#local-tools .local-slider').forEach(input => { input.value=input.name==='enhancer_upscale_strength' ? 70 : 0; input.dispatchEvent(new Event('input',{bubbles:true})); });
-  for (const key of ['auto_adjust','fix_shadows']) {
-    const input=$('photo-form').elements.namedItem(key);
-    if (input) { input.checked=false; input.dispatchEvent(new Event('input',{bubbles:true})); }
-  }
-  if ($('enhancer-scale')) { $('enhancer-scale').value='1'; $('enhancer-scale').dispatchEvent(new Event('input',{bubbles:true})); }
-  if ($('enhancer-engine')) { $('enhancer-engine').value='plksr'; $('enhancer-engine').dispatchEvent(new Event('input',{bubbles:true})); }
-  if ($('skin-method')) { $('skin-method').value='bilateral'; $('skin-method').dispatchEvent(new Event('input',{bubbles:true})); }
-  if ($('enhancer-preset')) $('enhancer-preset').value='';
-  if ($('blemish-sensitivity')) $('blemish-sensitivity').value='gentle';
-  if ($('blemish-size')) $('blemish-size').value='medium';
-  if ($('blemish-keep')) $('blemish-keep').value='[]';
-  updateEnhancementChoice();
-});
 const enhancementPresets = JSON.parse($('enhancer-presets').textContent);
 function applyEnhancementPreset(key) {
-  const preset = enhancementPresets[key];
-  if (!preset) return;
-  const form = $('photo-form');
-  document.querySelectorAll('#local-tools .local-slider:not(.enhancer-slider)').forEach(input => {
-    input.value=preset.adjustments[input.name] ?? 0;
-    input.dispatchEvent(new Event('input',{bubbles:true}));
-  });
-  for (const [key,value] of Object.entries({lighting:0,denoise:0,detail:0,skin:0,portrait_tone:0,skin_method:'bilateral',blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement})) {
-    const input=form.elements.namedItem('enhancer_'+key);
-    if (input) { input.value=value; input.dispatchEvent(new Event('input',{bubbles:true})); }
-  }
-  for (const key of ['auto_adjust','fix_shadows']) {
-    const input=form.elements.namedItem(key);
-    if (input) { input.checked=preset[key];input.dispatchEvent(new Event('input',{bubbles:true})); }
-  }
-  $('enhancer-preset').value=key;
+  if (!enhancementPresets[key] || !$('adaptive-profile')) return;
+  $('adaptive-profile').value=key;
+  $('adaptive-profile').dispatchEvent(new Event('input',{bubbles:true}));
   updateEnhancementChoice();
 }
 function updateEnhancementChoice() {
-  if (!$('enhancer-preset')) return;
-  const form=$('photo-form');
-  const matches=Object.entries(enhancementPresets).find(([,preset]) => {
-    const values={lighting:0,denoise:0,detail:0,skin:0,portrait_tone:0,skin_method:'bilateral',blemish:0,scale:1,upscale_strength:70,upscale_engine:'plksr',...preset.enhancement};
-    return Object.entries(values).every(([key,value]) => ['upscale_engine','skin_method'].includes(key)
-      ? form.elements.namedItem('enhancer_'+key)?.value===value
-      : Number(form.elements.namedItem('enhancer_'+key)?.value)===Number(value))
-      && ['auto_adjust','fix_shadows'].every(key => form.elements.namedItem(key).checked===preset[key])
-      && [...document.querySelectorAll('#local-tools .local-slider:not(.enhancer-slider)')].every(input => Number(input.value)===Number(preset.adjustments[input.name] ?? 0));
-  });
-  const key=matches?.[0] || '';
+  const key=$('adaptive-profile')?.value || 'off';
   document.querySelectorAll('[data-enhance-preset]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.enhancePreset===key)));
-  const active=[...document.querySelectorAll('#local-tools .local-slider:not([name=enhancer_upscale_strength])')].some(input=>Number(input.value)!==0)
-    || Number($('enhancer-scale').value)>1 || ['auto_adjust','fix_shadows'].some(key=>form.elements.namedItem(key).checked);
-  $('enhancement-choice').textContent = matches ? matches[1].label : active ? 'Custom enhancement' : 'No enhancement selected';
+  if ($('enhancement-choice')) $('enhancement-choice').textContent=enhancementPresets[key] ? `${enhancementPresets[key].label} · automatic` : 'Original finish · no enhancement';
 }
-$('enhancer-preset')?.addEventListener('change', event => applyEnhancementPreset(event.target.value));
 document.querySelectorAll('[data-enhance-preset]').forEach(button => button.addEventListener('click',()=>applyEnhancementPreset(button.dataset.enhancePreset)));
-$('no-enhancement')?.addEventListener('click',()=>$('reset-local-tools').click());
+$('no-enhancement')?.addEventListener('click',()=>{
+  $('adaptive-profile').value='off';
+  $('adaptive-profile').dispatchEvent(new Event('input',{bubbles:true}));
+  updateEnhancementChoice();
+});
 updateEnhancementChoice();
 function updateJobMode(reset=false) {
   const fullFrame = $('print-only')?.checked ?? Boolean(window.stationFullFrame);
@@ -426,13 +389,12 @@ $('photo-form').addEventListener('submit', () => {
   const buttons = [...document.querySelectorAll('#photo-form button[type=submit]')];
   for (const button of buttons) {
     button.disabled=true;
-    const detailBackground = document.querySelector('input[name=replace_bg]')?.checked && $('background-engine')?.value === 'hr';
-    const enhancerActive = ['lighting','denoise','blemish'].some(key => Number(document.querySelector(`[name=enhancer_${key}]`)?.value)>0) || Number($('enhancer-scale')?.value)>1;
+    const detailBackground = document.querySelector('input[name=replace_bg]')?.checked;
+    const enhancerActive = ($('adaptive-profile')?.value || 'off') !== 'off';
     button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : enhancerActive ? 'Enhancing locally… This can take several minutes.' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
   }
 });
 $('photo-form').addEventListener('input', event => {
-  if (event.isTrusted && event.target.matches('#local-tools .local-slider, #enhancer-scale, #enhancer-engine, #skin-method, #blemish-sensitivity, #blemish-size')) $('enhancer-preset').value='';
   if (!['printer','print-template','show-overlay'].includes(event.target.id)) markDirty();
   if (['zoom','x','y','rotation','angle','print-only','file-input'].includes(event.target.id) && $('blemish-keep')) $('blemish-keep').value='[]';
   if (event.target.closest('#local-tools')) updateEnhancementChoice();

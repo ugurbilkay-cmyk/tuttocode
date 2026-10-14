@@ -26,30 +26,23 @@ const { window: w, document: d } = studio;
 const form = d.getElementById('photo-form');
 const field = name => form.elements.namedItem(name);
 assert.equal(field('use_ai').checked, false);
-assert.equal(Number(field('enhancer_skin').value), 0);
-assert.equal(d.getElementById('enhancement-options').open, false);
+assert.equal(field('adaptive_profile').value, 'balanced');
+assert.equal(d.querySelector('#enhancer-tools'), null);
+assert.equal(field('background_engine'), null);
 field('replace_bg').checked = true;
-field('even_bg').checked = true;
 field('use_ai').checked = true;
 field('ai_consent').checked = true;
-const beforeBackground = field('background_engine').value;
-for (const [key, skin, denoise] of [['natural', 20, 15], ['balanced', 35, 25], ['strong', 45, 35]]) {
+for (const key of ['natural', 'balanced', 'recovery']) {
   d.querySelector(`[data-enhance-preset="${key}"]`).click();
-  assert.equal(Number(field('enhancer_skin').value), skin);
-  assert.equal(Number(field('enhancer_denoise').value), denoise);
+  assert.equal(field('adaptive_profile').value, key);
   assert.equal(d.querySelector(`[data-enhance-preset="${key}"]`).getAttribute('aria-pressed'), 'true');
   assert.equal(field('replace_bg').checked, true);
-  assert.equal(field('even_bg').checked, true);
-  assert.equal(field('background_engine').value, beforeBackground);
   assert.equal(field('use_ai').checked, true);
   assert.equal(field('ai_consent').checked, true);
 }
 d.getElementById('no-enhancement').click();
-assert.equal(Number(field('enhancer_skin').value), 0);
-assert.equal(Number(field('enhancer_denoise').value), 0);
-assert.equal(field('auto_adjust').checked, false);
+assert.equal(field('adaptive_profile').value, 'off');
 assert.equal(field('replace_bg').checked, true);
-assert.equal(field('even_bg').checked, true);
 assert.equal(field('use_ai').checked, true);
 assert.equal(field('ai_consent').checked, true);
 field('zoom').value = '.84'; field('x').value = '-17'; field('angle').value = '-3';

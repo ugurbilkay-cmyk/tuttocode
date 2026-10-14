@@ -6,7 +6,7 @@ experimental suggestions and unfinished production work.
 
 ## Verified implementation facts
 
-* Retinex gain is currently derived/applied to RGB/255 in gamma-encoded space,
+* The legacy Retinex worker gain is derived/applied to RGB/255 in gamma-encoded space,
   not linear-light exposure. This must be documented and separately corrected;
   simply relabelling the current strength as exposure would be inaccurate.
 * `load_image` applies EXIF orientation and converts to RGB but does not perform
@@ -93,4 +93,24 @@ the reference-tone comparison must not be described as a complete quality win.
 These reviews do not justify adding GFPGAN, CodeFormer or a stronger face prior.
 The next work should improve measurements, colour handling, cached correction
 fields and preservation. Adaptive finishing, ICC conversion, linear-light gain,
-semantic hair/beard masks and production deployment are not yet completed.
+semantic hair/beard masks and production deployment are not yet completed in the legacy stack.
+
+## Subsequent adaptive-profile implementation
+
+The staff now have Natural, Balanced and Recovery intents instead of model
+selectors and fixed stacks. See [the adaptive controller](ADAPTIVE_QUALITY.md).
+This trial controller uses a bounded linear-luminance gain field, asks the
+verified lighting model for a proposal when capture-disparity cues warrant it,
+and retains the original-derived tone image as its cleanup reference. Normalized
+regional high-frequency projection limits cleanup by blending back. It avoids
+the old aggressive denoise/smoothing/tone stack. One in-memory lighting proposal
+is reused across profile strengths for a source; originals and exact exports
+retain independent OFIQ evidence.
+
+These are implemented engineering heuristics, not calibrated quality/identity
+thresholds. Skin/texture masks are still geometric/chroma heuristics, not semantic
+hair/beard segmentation. Capture brightness and skin reflectance remain ambiguous.
+ICC conversion, a validated noise-versus-texture model, original/final landmark
+drift assessment, stage RSS instrumentation and the advisor isolation dataset
+remain unfinished. The two existing camera photographs are smoke comparisons,
+not independent acceptance evidence or a completed 200-photo study.

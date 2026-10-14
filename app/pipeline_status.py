@@ -36,14 +36,21 @@ def report(options, values, checks, has_photo, ai_state=None):
     else:add('Background removal','Unavailable' if has_photo else 'Skipped',bg.get('message',skipped if not has_photo else 'Selected but no successful model output was recorded.'))
     settings=enhancement.validate(options.get('enhancement_options'))
     stages=values.get('local_enhancement',{}).get('stages',[])
+    adaptive=values.get('adaptive_quality',{})
+    if settings['adaptive_profile']!='off':
+        add('Automatic quality profile',adaptive.get('status','Skipped').capitalize(),
+            adaptive.get('message',skipped if not has_photo else 'No completed adaptive preparation was recorded.'))
+        settings=dict(settings,**{k:adaptive.get('decisions',{}).get(name,0) for k,name in
+                                 [('denoise','denoise_percent'),('skin','skin_percent')]})
+        stages=stages+adaptive.get('stages',[])
     models={m['engine']:m for stage in stages for m in stage.get('models',[])}
     for key,engine,label in [('lighting','retinex','Retinexformer lighting'),('denoise','nafnet','NAFNet noise cleanup')]:
         model=models.get(engine)
-        if not settings[key]:add(label,'Off','Strength is zero.')
-        elif model:add(label,'Applied',f"Local model · {model.get('inference_seconds',0):g} s · SHA {model.get('model_sha256','')[:12]}")
+        if model:add(label,'Applied',f"Local model · {model.get('inference_seconds',0):g} s · SHA {model.get('model_sha256','')[:12]}")
+        elif not settings[key] and not (key=='lighting' and adaptive.get('decisions',{}).get('lighting_adviser_requested')):add(label,'Off','No correction selected by the controller.' if adaptive else 'Strength is zero.')
         else:add(label,'Unavailable' if has_photo else 'Skipped',skipped if not has_photo else 'Selected model did not complete; this stage was left unchanged.')
     for key,label in [('portrait_tone','Skin lighting and contrast'),('skin','Skin smoothing'),('blemish','Advanced skin cleaning')]:
-        stage=next((s for s in stages if s.get('phase')==key or (key=='blemish' and s.get('version','').startswith('skin-cleaner'))),{})
+        stage=next((s for s in stages if s.get('phase') in (key,'adaptive_'+key) or (key=='blemish' and s.get('version','').startswith('skin-cleaner'))),{})
         if key=='blemish':stage=values.get('skin_cleaning',stage)
         if not settings[key]:add(label,'Off','Not selected.')
         elif stage:add(label,'Unavailable' if stage.get('status')=='unavailable' else 'Applied' if stage.get('status')=='applied' else 'Completed',stage.get('message','See detailed processing evidence.'))
@@ -62,6 +69,9 @@ def report(options, values, checks, has_photo, ai_state=None):
     tone=next((c.get('detail') for c in checks if c['key']=='adjust'),None)
     add('Colour and lighting','Evaluated' if has_photo and tone_selected else 'Skipped' if tone_selected else 'Off',
         (tone or 'Selected local pixel adjustments were evaluated.') if has_photo and tone_selected else skipped if tone_selected else 'Not selected.')
+    if adaptive:
+        rows[-1]=dict(name='Colour and lighting',state=adaptive.get('status','unavailable').capitalize(),
+                      detail=adaptive.get('message','No completed adaptive lighting stage.'))
     highlights=values.get('final_highlights',{})
     native=values.get('ofiq',{})
     state=native.get('status','not_recorded')
