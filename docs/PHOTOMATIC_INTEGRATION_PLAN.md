@@ -71,6 +71,64 @@ For the DE100-XD, verify physical photo dimensions, copies, spacing, printer sca
 
 ## Independent quality engine calibration
 
+### Agreed 200-photo paired trial
+
+On 14 October 2026 the user specified a minimum of 200 daily-customer photos
+prepared in our independent engine and then assessed in Photomatic. The agreed
+acceptance criterion is **dark green only** in all three vendor summary categories:
+Image Quality, Face Size and Position, and Background. Light green, amber, red,
+grey, missing and untested results do not count as a pass. Record the actual
+displayed colour separately from numerical scores; do not infer it from a
+filename, successful Save or the existence of an export.
+
+Use consecutive, distinct, eligible customer cases and keep every first attempt
+in the denominator. Do not discard difficult results or count repeated copies,
+multiple edits or multiple enhancement levels of the same photo as additional
+customers. Record each retry as another version of its existing case. A successful
+retry does not erase the first failure.
+
+For each case retain an anonymous case reference, camera original, processing
+recipe and engine revision, final delivered JPEG with SHA-256, our measured
+results and the exact JPEG digest those results describe, document profile,
+Photomatic software/quality profile when known, Input Image Size and ID photo
+data dimensions, all three observed colours, detailed failures/cautions and
+staff review evidence. Store approved validation copies in a private evaluation
+archive separate from temporary delivery jobs; normal job expiry is not a
+long-term reference archive. Photos, customer details and private evidence are
+not Git artifacts.
+
+Photomatic must receive the exact JPEG prepared by our engine, under the same
+document profile. A second vendor crop or edit can make the categories green
+without validating our exported framing. Such a result is **not comparable**
+for the full three-category claim until the assessed pixel region is established.
+Record the result honestly and investigate it rather than counting it as an
+exact-file pass. The observed 800 × 1120 input / 780 × 1093 analysis crop is an
+unresolved example of this issue.
+
+Pin the engine revision and recipes for the acceptance run. A change to a model,
+prompt, strength, crop rule or threshold creates a new candidate revision.
+Keep earlier failures, rerun the complete reference set, and also test fresh
+customer cases that were not used to tune the candidate. The minimum milestone
+is 200 distinct comparable cases with all three categories dark green on the
+candidate under evaluation. Report totals for pending, not-comparable and
+non-dark-green cases as well as passes; 200 selected successes are not a 200-case
+perfect run.
+
+Report preparation performance separately from checking accuracy. Vendor-green
+outputs show that the tested preparation worked on those cases. To assess our
+checker, compare its own classifications on the same final JPEG and include
+known-defective test examples alongside the customer trial (blur, clipped
+highlights, uneven lighting, glare, poor detail and incorrect framing). This
+checks whether our engine notices defects as well as preparing attractive
+photos. Unsupported measurements remain Not tested. Track results by document,
+age group, capture conditions and the selected local or OpenAI recipe; do not
+declare an untested recipe validated from another recipe's results.
+
+After the milestone, expand reliance through a monitored staff pilot with
+continued Photomatic spot comparisons and retained failure evidence. This
+criterion governs validation of an engine revision; it does not change the
+existing staff-responsibility code workflow or prove authority acceptance.
+
 Build a paired reference set containing the same camera original, preparation, Photomatic export, vendor results and Tuttoprint measurements. Start with UK paper and online profiles and the shop's common countries. Include different skin tones, ages and capture conditions, especially clipped highlights, uneven illumination, blur, glasses, hair boundaries and poor source resolution.
 
 Compare each measurement separately. MediaPipe geometry, local image statistics and any future OFIQ output have their own definitions and scales. Document the measured region, units, algorithm version, uncertainty and applicable document rule. Calibrate against both controlled defects and staff review; Photomatic is a useful reference, not absolute ground truth.
