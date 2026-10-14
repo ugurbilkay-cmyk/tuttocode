@@ -26,6 +26,11 @@
 #cleaner-dialog{width:min(1200px,96vw);max-width:96vw}
 @media(max-width:650px){.cleaner-grid{grid-template-columns:1fr}}
 .premium-tools>summary{font-size:18px;color:var(--blue);cursor:pointer}
+.processing-evidence{margin:18px 0;padding:14px;border:1px solid var(--edge);border-radius:10px}
+.processing-evidence>summary{cursor:pointer;color:var(--blue)}
+.execution-stage{padding:9px 0;border-bottom:1px solid var(--edge)}
+.execution-stage>span{float:right;color:var(--blue)}
+.execution-stage>p{margin:5px 0}
 
 *{
   box-sizing:border-box

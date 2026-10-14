@@ -37,6 +37,7 @@
           <img class="crop-overlay" id="crop-overlay" {% if profile.overlay %}src="{{ profile.overlay }}"{% else %}hidden{% endif %} alt="{{ profile.name }} crop guide">
         </div>
         <div class="photo-caption">{% if row and not has_photo and editable %}Camera original · adjust the crop, then Apply changes{% elif row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}Original preview · crop is applied when you prepare the photo{% endif %}</div>
+        {% if row %}<details class="processing-evidence" {% if not has_photo %}open{% endif %}><summary>What actually ran · this photo</summary><p class="subtle">Execution status is separate from passport quality. Selecting a tool does not prove it ran.</p>{% for stage in pipeline_rows %}<div class="execution-stage"><strong>{{ stage.name }}</strong><span>{{ stage.state }}</span><p class="subtle">{{ stage.detail }}</p></div>{% endfor %}</details>{% endif %}
         <details class="check-details results-panel" {% if checks|selectattr('status','equalto','fail')|list %}open{% endif %}><summary>Photo checks{% if row %} · review results{% endif %}</summary>
         <div class="quality-summary">
           {% for name in ['Image quality','Face size and position','Background'] %}
@@ -205,11 +206,15 @@
     {% if ai_status.status == 'running' %}<p role="status">Preparing lighting, skin and detail… This may take a few minutes. Refresh to see the result.</p>
     {% elif ai_status.status == 'ready' %}
       <p>Compare the camera original with the prepared crop. Check eyes, skin texture, hair and all distinguishing marks.</p>
-      <div class="ai-comparison"><figure><img src="/admin/p/{{ row.id }}/original.jpg" alt="Camera original"><figcaption>Camera original · full frame</figcaption></figure><figure><img src="/admin/p/{{ row.id }}/ai-preview.jpg" alt="OpenAI preparation preview"><figcaption>AI preparation · proposed crop</figcaption></figure></div>
+      {% if ai_status.print_only and not options.print_only %}<p class="notice">Passport crop failed in this preview. This is a full-frame print layout with borders, not a prepared passport crop.</p>{% endif %}
+      <div class="ai-comparison"><figure><img src="/admin/p/{{ row.id }}/original.jpg" alt="Camera original"><figcaption>Camera original · full frame</figcaption></figure><figure><img src="/admin/p/{{ row.id }}/ai-preview.jpg" alt="OpenAI preparation preview"><figcaption>{{ 'AI image · full-frame print layout, passport crop not assessed' if ai_status.print_only else 'AI image · local document crop and selected tools' }}</figcaption></figure></div>
       <button type="button" id="open-ai-measurements">Detailed AI preview measurements</button>
+      <p class="subtle">OpenAI model: {{ ai_status.model }} · returned image recorded{% if ai_status.local_rechecked_at %} · local tools refreshed without another OpenAI request{% endif %}.</p>
+      <details class="processing-evidence"><summary>What actually ran · AI preview</summary>{% for stage in ai_pipeline_rows %}<div class="execution-stage"><strong>{{ stage.name }}</strong><span>{{ stage.state }}</span><p class="subtle">{{ stage.detail }}</p></div>{% endfor %}</details>
       {% if ai_status.original_checks %}<details><summary>Checks on the camera original</summary>{% set checks = ai_status.original_checks %}{% include '_checks.html' %}</details>{% endif %}
       <details><summary>Checks on the AI preview</summary>{% set checks = ai_status.checks %}{% include '_checks.html' %}</details>
       {% if not ai_status.ok %}<p class="notice">The preview has failed or unapproved checks. Review them before deciding whether to proceed under staff responsibility.</p>{% endif %}
+      <form id="ai-recheck-form" method="post" action="/admin/p/{{ row.id }}/ai/recheck"><input type="hidden" name="candidate_id" value="{{ ai_status.candidate_id }}"><input type="hidden" name="review_revision" value="{{ row.revision }}"><button type="submit">Refresh crop and selected local tools · no OpenAI call</button><p id="ai-recheck-progress" role="status" hidden></p></form>
       <div class="ai-review-actions">
         <form method="post" action="/admin/p/{{ row.id }}/ai/accept"><input type="hidden" name="candidate_id" value="{{ ai_status.candidate_id }}"><label class="tick"><input type="checkbox" name="review_likeness" required> I compared both photos and the person's appearance is preserved</label><button class="primary" type="submit">Accept preparation and recheck</button></form>
         <form method="post" action="/admin/p/{{ row.id }}/ai/discard"><button type="submit">Discard AI preview</button></form>

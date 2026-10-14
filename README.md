@@ -11,6 +11,12 @@ Photomatic export is a separate, optional vendor-review workflow. The immediate
 priority is our working engine; Photomatic analysis/integration is a progressive
 research track, not a requirement for using it.
 
+Each prepared job now shows **What actually ran**, separating completed local
+model inference from skipped/failed/unselected tools. Default landscape crops
+fit the camera pixels while keeping real template failures. Existing OpenAI
+previews can be rebuilt locally without another API request. See
+[pipeline execution evidence](docs/PIPELINE_EXECUTION.md).
+
 For validation studies, **More → Test queues** (`/admin/tests`) freezes selected
 Save JPEGs and lets staff record normal GOV.UK browser feedback and separate
 Photomatic category colours. Batch downloads include exact files and evidence;

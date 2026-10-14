@@ -259,6 +259,40 @@ class WorkflowTests(unittest.TestCase):
         self.assertGreater(measured["sharpness"], 0)
         self.assertNotIn("measurement_confidence", measured)
 
+    def test_local_refresh_preserves_paid_source_and_requires_current_preview(self):
+        pid=self.upload();self.prepare(pid)
+        row=db.get(pid);state=json.loads(row['ai_state'])
+        source_path=config.PHOTO_DIR/f'{pid}_ai_source';source=source_path.read_bytes()
+        form={'candidate_id':state['candidate_id'],'review_revision':str(row['revision'])}
+        with patch.object(ai_prepare,'prepare',side_effect=AssertionError('No paid call')):
+            response=self.client.post(f'/admin/p/{pid}/ai/recheck',data=form)
+        self.assertEqual(response.status_code,200,response.text)
+        refreshed=json.loads(db.get(pid)['ai_state'])
+        self.assertFalse(response.json()['openai_called'])
+        self.assertEqual(source_path.read_bytes(),source)
+        self.assertEqual(refreshed['request_id'],state['request_id'])
+        self.assertNotEqual(refreshed['candidate_id'],state['candidate_id'])
+        self.assertEqual(refreshed['revision'],row['revision']+1)
+        self.assertEqual(self.client.post(f'/admin/p/{pid}/ai/recheck',data=form).status_code,409)
+        self.assertIsNone(db.get(pid)['code'])
+
+    def test_ai_preview_preserves_selected_background_tool(self):
+        pid=self.upload(replace_bg='on',background_engine='mediapipe')
+        self.prepare(pid)
+        state=json.loads(db.get(pid)['ai_state'])
+        self.assertTrue(state['options']['replace_bg'])
+        self.assertEqual(state['measurements']['background_removal']['engine'],'mediapipe')
+
+    def test_local_refresh_rejects_changed_paid_source_and_is_private(self):
+        pid=self.upload();self.prepare(pid)
+        row=db.get(pid);state=json.loads(row['ai_state'])
+        form={'candidate_id':state['candidate_id'],'review_revision':str(row['revision'])}
+        with TestClient(main.app) as public:
+            self.assertEqual(public.post(f'/admin/p/{pid}/ai/recheck',data=form).status_code,401)
+        (config.PHOTO_DIR/f'{pid}_ai_source').write_bytes(b'changed')
+        self.assertEqual(self.client.post(f'/admin/p/{pid}/ai/recheck',data=form).status_code,409)
+        self.assertEqual(json.loads(db.get(pid)['ai_state'])['candidate_id'],state['candidate_id'])
+
     def test_invalid_fine_rotation_rejected(self):
         pid = self.upload()
         for angle in ("nan", "16", "-16", "invalid"):

@@ -86,6 +86,9 @@ loaded.close();
 
 const ready = page('ready');
 assert.ok(ready.opened.includes('openai-dialog'), 'Pending AI preview must remain discoverable after reload');
+assert.ok(ready.document.getElementById('ai-recheck-form'), 'Paid image has a local-only rebuild action');
+ready.document.querySelector('[data-enhance-preset="balanced"]').click();
+assert.equal(ready.document.querySelector('#ai-recheck-form button').disabled, true, 'Unsaved choices must not rebuild an old version');
 ready.close();
 const readonly = page('readonly');
 assert.equal(readonly.document.querySelector('[data-enhance-preset]'), null);

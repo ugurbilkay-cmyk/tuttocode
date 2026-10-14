@@ -7,7 +7,9 @@ source; staff compare the enhanced detail before output.
 from __future__ import annotations
 
 import io
+import hashlib
 import threading
+import time
 from dataclasses import dataclass, field
 
 import cv2
@@ -50,6 +52,7 @@ class FaceData:
 class Analysis:
     faces: list[FaceData]
     person_mask: np.ndarray | None  # float 0..1, same HxW as image
+    evidence: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -97,6 +100,7 @@ class MediaPipeAnalyzer:
         seg_path = model_dir / "selfie_segmenter.tflite"
         if not lm_path.exists():
             raise RuntimeError(f"Missing {lm_path}. Run scripts/download_models.sh")
+        self.model_sha256 = hashlib.sha256(lm_path.read_bytes()).hexdigest()
         self.landmarker = vision.FaceLandmarker.create_from_options(
             vision.FaceLandmarkerOptions(
                 base_options=BaseOptions(model_asset_path=str(lm_path)),
@@ -105,7 +109,9 @@ class MediaPipeAnalyzer:
             )
         )
         self.segmenter = None
+        self.segmentation_sha256 = None
         if seg_path.exists():
+            self.segmentation_sha256 = hashlib.sha256(seg_path.read_bytes()).hexdigest()
             self.segmenter = vision.ImageSegmenter.create_from_options(
                 vision.ImageSegmenterOptions(
                     base_options=BaseOptions(model_asset_path=str(seg_path)),
@@ -119,6 +125,7 @@ class MediaPipeAnalyzer:
             return self._analyze(rgb)
 
     def _analyze(self, rgb: np.ndarray) -> Analysis:
+        started = time.perf_counter()
         h, w = rgb.shape[:2]
         img = self.mp.Image(image_format=self.mp.ImageFormat.SRGB, data=np.ascontiguousarray(rgb))
         res = self.landmarker.detect(img)
@@ -136,7 +143,14 @@ class MediaPipeAnalyzer:
                 mask = np.asarray(seg.confidence_masks[-1].numpy_view(), dtype=np.float32)
                 if mask.ndim == 3:
                     mask = mask[..., 0]
-        return Analysis(faces, mask)
+        return Analysis(faces, mask, {
+            'engine':'mediapipe', 'method':'MediaPipe FaceLandmarker', 'status':'completed',
+            'model_sha256':self.model_sha256, 'face_count':len(faces),
+            'landmark_counts':[len(face.points) for face in faces],
+            'input_size':[w,h], 'inference_seconds':round(time.perf_counter()-started,4),
+            'segmentation':{'status':'completed' if mask is not None else 'unavailable',
+                            'model_sha256':self.segmentation_sha256},
+        })
 
 
 _analyzer = None
@@ -413,6 +427,40 @@ def _crown_y(points, person_mask):
     return float(low + starts[0]) if len(starts) else estimate
 
 
+def _fit_auto_crop(rect, size, points, crown_y, profile):
+    """Fit a default crop to real pixels without clipping the detected head.
+
+    Move the requested crop first; reduce it only if the camera canvas cannot
+    contain its dimensions. Country bounds are not relaxed: downstream checks
+    still assess the actual head and eye proportions of this feasible crop.
+    """
+    left, top, crop_w, crop_h = rect
+    w, h = size
+    ratio = crop_w/crop_h
+    crop_h = min(crop_h, float(h), w/ratio)
+    crop_w = crop_h*ratio
+    eye_mid = (points[L_IRIS]+points[R_IRIS])/2
+    face_left,face_right = float(points[:,0].min()),float(points[:,0].max())
+    chin_y = float(points[CHIN][1])
+    low_x,high_x = max(0.,face_right-crop_w),min(w-crop_w,face_left)
+    low_y,high_y = max(0.,chin_y-crop_h),min(h-crop_h,crown_y)
+    # Honour allowed eye placement if a head-preserving placement exists.
+    eye_low = max(low_y,float(eye_mid[1])-profile['eyes'][2]/100*crop_h)
+    eye_high = min(high_y,float(eye_mid[1])-profile['eyes'][1]/100*crop_h)
+    if eye_low<=eye_high:low_y,high_y=eye_low,eye_high
+    if low_x>high_x or low_y>high_y:return None
+    left = float(np.clip(float(eye_mid[0])-crop_w/2,low_x,high_x))
+    top = float(np.clip(float(eye_mid[1])-profile['eyes'][0]/100*crop_h,low_y,high_y))
+    return left,top,crop_w,crop_h
+
+
+def _analysis_evidence(analysis, analyzer):
+    return getattr(analysis,'evidence',None) or {
+        'engine':type(analyzer).__name__, 'status':'completed',
+        'face_count':len(analysis.faces), 'landmark_counts':[len(f.points) for f in analysis.faces],
+    }
+
+
 def _local_enhancement(rgb, values, phase, measurements, checks):
     v = enhancement.validate(values)
     if phase == "restore" and not (v['lighting'] or v['denoise'] or v['detail']): return rgb
@@ -574,8 +622,14 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         jpeg = _encode_jpeg(out)
         _encoded_highlight_review(jpeg,enhancement_options,measurements,analyzer)
         return Result(True, checks, jpeg, _small_jpeg(out), before, measurements,cleaner_assets)
-    analyzer = analyzer or get_analyzer()
-    an = analyzer.analyze(rgb)
+    try:
+        analyzer = analyzer or get_analyzer()
+        an = analyzer.analyze(rgb)
+        measurements['face_analysis'] = _analysis_evidence(an,analyzer)
+    except Exception:
+        measurements['face_analysis'] = {'status':'unavailable'}
+        add('face','Face analysis','fail','The local face model could not run. Check its installation; selected facial tools have not run.')
+        return Result(False,checks,measurements=measurements)
 
     if len(an.faces) == 0:
         add("face", "Face found", "fail", "No face detected.")
@@ -670,6 +724,21 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     if framed:
         # Validate an already framed deliverable without moving/zooming it again.
         crop_w, crop_h, left, top = float(w), float(h), 0., 0.
+    requested_rect = [float(v) for v in (left,top,crop_w,crop_h)]
+    auto_fit = False
+    neutral_crop = zoom==1 and not any(float(crop.get(key,0)) for key in ('x','y','rotation','angle'))
+    outside = left<0 or top<0 or left+crop_w>w or top+crop_h>h
+    if outside and not framed and neutral_crop and profile.get('auto_crop',False):
+        fitted = _fit_auto_crop(requested_rect,(w,h),p,crown_y,profile)
+        if fitted is not None:
+            left,top,crop_w,crop_h = fitted
+            auto_fit = True
+    measurements['crop_geometry'] = {
+        'method':'existing_frame' if framed else 'automatic_source_fit' if auto_fit else 'landmark_target',
+        'requested_rect':requested_rect, 'source_rect':[float(v) for v in (left,top,crop_w,crop_h)],
+        'automatic_fit':auto_fit, 'crown_y':float(crown_y), 'chin_y':float(chin[1]),
+        'head_target_percent':profile['head'][0], 'head_range_percent':profile['head'][1:],
+    }
     x0, y0, x1, y1 = left, top, left + crop_w, top + crop_h
     measurements["source_crop_size"] = [round(float(crop_w), 2), round(float(crop_h), 2)]
 
@@ -681,7 +750,8 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         add("resolution", "Resolution", "fail",
             f"Face area too small ({int(crop_w)}x{int(crop_h)}px). Move closer or use a better camera.")
         return Result(False, checks, measurements=measurements)
-    add("framing", "Head and shoulders in frame", "pass")
+    add("framing", "Head and shoulders in frame", "pass",
+        'Automatic crop fitted to available camera pixels; head and eye limits are checked below.' if auto_fit else '')
     add("resolution", "Resolution", "pass", f"{int(crop_w)}x{int(crop_h)}px source")
 
     if enhancement.active(enhancement_options):
@@ -861,7 +931,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     # --- head size sanity (after crop) ---------------------------------
     head_frac = (chin[1] - crown_y) / crop_h
     if profile["use_head"] and not (profile["head"][1] / 100 <= head_frac <= profile["head"][2] / 100):
-        add("headsize", "Head size", "fail", f"Head is {head_frac*100:.0f}% of height; template range {profile['head'][1]:g}–{profile['head'][2]:g}%.")
+        add("headsize", "Head size", "fail", f"Estimated head is {head_frac*100:.4f}% of height; template range {profile['head'][1]:g}–{profile['head'][2]:g}%. The measured limit has not been relaxed.")
     eyes_frac = (tp[L_IRIS][1] + tp[R_IRIS][1]) / 2 / out_h * 100
     if not profile["eyes"][1] <= eyes_frac <= profile["eyes"][2]:
         add("eyeposition", "Eye position", "fail", f"Eyes at {eyes_frac:.0f}%; template range {profile['eyes'][1]:g}–{profile['eyes'][2]:g}%.")
@@ -869,7 +939,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         width_frac = np.linalg.norm(tp[FACE_R] - tp[FACE_L]) / out_w * 100
         if not profile["face_width"][1] <= width_frac <= profile["face_width"][2]:
             add("facewidth", "Face width", "fail", f"Face width {width_frac:.0f}%.")
-    measurements.update(head_percent=round(float(head_frac) * 100, 3),
+    measurements.update(head_percent=round(float(head_frac) * 100, 6),
                         eye_height_percent=round(float(eyes_frac), 3),
                         face_width_percent=round(float(np.linalg.norm(tp[FACE_R] - tp[FACE_L]) / out_w * 100), 3))
     if profile["glasses_forbidden"]:
@@ -908,7 +978,9 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
                               "The whole photograph is fitted to the selected format. Passport framing has not been approved.")]
     mask, box, skin_points = None, None, None
     try:
-        analysis = (analyzer or get_analyzer()).analyze(rgb)
+        analyzer = analyzer or get_analyzer()
+        analysis = analyzer.analyze(rgb)
+        measurements['face_analysis'] = _analysis_evidence(analysis,analyzer)
         mask = analysis.person_mask
         if len(analysis.faces) == 1:
             points = analysis.faces[0].points
@@ -919,6 +991,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
         else:
             checks.append(Check("face", "Face found", "fail", "One face is needed for facial preparation; this image can still be printed."))
     except Exception:
+        measurements['face_analysis'] = {'status':'unavailable'}
         notes.append("Facial analysis unavailable; facial tools skipped")
         checks.append(Check("face", "Facial analysis", "fail", "Unavailable; staff review needed"))
     replacement_mask = None

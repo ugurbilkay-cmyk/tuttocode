@@ -39,7 +39,7 @@ def report(values, checks, profile):
         ("Face width", "face_width_percent", profile["face_width"], profile["use_width"], "facewidth"),
     ):
         measured = values.get(key)
-        status = "measured" if not enabled else (
+        status = "measured" if not enabled else by_key.get(check) or (
             "pass" if measured is not None and bounds[1] <= measured <= bounds[2] else "fail")
         geometry.append(row(label, key, "%", check,
                             f"{bounds[1]:g}–{bounds[2]:g}%" if enabled else "Not enforced by this template", status))

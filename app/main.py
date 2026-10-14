@@ -26,6 +26,7 @@ from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measure
 from . import reviewed_import
 from . import govuk_precheck
 from . import test_queue
+from . import pipeline_status
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -727,6 +728,8 @@ async def admin_photo(request):
         "measurement_title": "Final code JPEG measurements" if final_values else "Photo measurements",
         "ai_measurement_sections": measurements.report(ai_status.get("measurements", {}), ai_status.get("checks", []), profile),
         "ai_status": ai_status,
+        "pipeline_rows":pipeline_status.report(options,stored_measurements,checks,_photo_path(row['id']).exists(),ai_status),
+        "ai_pipeline_rows":pipeline_status.report(ai_status.get('options',{}),ai_status.get('measurements',{}),ai_status.get('checks',[]),ai_status.get('status')=='ready',ai_status),
         "exception_categories": EXCEPTION_CATEGORIES,
         "exception_checks": [c for c in checks if c["status"] == "fail" and c["key"] in EXCEPTION_KEYS],
         "nonwaivable_checks": [c for c in checks if c["status"] == "fail" and c["key"] not in EXCEPTION_KEYS],
@@ -856,6 +859,10 @@ async def _prepare_candidate(pid, *, lighting, colour):
                 prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour, print_only=True)
             else:
                 prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour)
+            # Preserve selected crop/background/enhancer choices on the candidate.
+            # The reference measurements above remain unadjusted camera evidence.
+            local_options.update(replace_bg=options.get('replace_bg',False), even_bg=options.get('even_bg',False),
+                                 enhancement_options=options.get('enhancement_options'),adjustments=options.get('adjustments'))
             result = await run_in_threadpool(lambda: processing.process(
                 prepared.image, row["age_group"], country_id=row["country_id"], **local_options))
             if not result.jpeg:
@@ -902,6 +909,49 @@ async def admin_ai_prepare(request):
     state = await _prepare_candidate(request.path_params["pid"], lighting=form.get("lighting") == "on", colour=form.get("colour") == "on")
     return Response(json.dumps({"status": state["status"], "message": state.get("message", "")}),
                     status_code=200 if state["status"] == "ready" else 400, media_type="application/json")
+
+
+async def admin_ai_recheck(request):
+    """Refresh local output and a paid preview without regenerating its AI source."""
+    _require_admin(request)
+    pid=request.path_params['pid'];form=await request.form()
+    with _edit_job(pid) as token:
+        row=db.get(pid);_require_preparation_job(row)
+        state=json.loads(row['ai_state']);options=json.loads(row['options'])
+        if (state.get('status')!='ready' or state.get('revision')!=row['revision'] or
+            form.get('candidate_id')!=state.get('candidate_id') or str(form.get('review_revision'))!=str(row['revision'])):
+            raise HTTPException(409,'Photo or AI preview changed. Refresh before rebuilding local output.')
+        edited=(config.PHOTO_DIR/f'{pid}_ai_source').read_bytes()
+        if hashlib.sha256(edited).hexdigest()!=state.get('edited_source_sha256'):
+            raise HTTPException(409,'The AI source changed. Keep the original and inspect this job.')
+        original=(config.PHOTO_DIR/f'{pid}_source').read_bytes()
+        if hashlib.sha256(original).hexdigest()!=state.get('original_sha256'):
+            raise HTTPException(409,'The camera source changed. Prepare a new job.')
+        base_options={k:v for k,v in options.items() if k!='ai'}
+        working=config.PHOTO_DIR/f'{pid}_working_source'
+        current_source=working.read_bytes() if working.exists() else original
+        current=await run_in_threadpool(lambda:processing.process(current_source,row['age_group'],country_id=row['country_id'],**base_options))
+        reference_options=dict(auto_adjust=False,fix_shadows=False,even_bg=False,replace_bg=False,
+            print_only=base_options.get('print_only',False),crop=base_options.get('crop',_crop_options()))
+        reference=await run_in_threadpool(lambda:processing.process(original,row['age_group'],country_id=row['country_id'],**reference_options))
+        candidate_options=dict(base_options,auto_adjust=False,fix_shadows=False)
+        candidate=await run_in_threadpool(lambda:processing.process(edited,row['age_group'],country_id=row['country_id'],**candidate_options))
+        if not candidate.jpeg:
+            candidate_options['print_only']=True
+            candidate=await run_in_threadpool(lambda:processing.process(edited,row['age_group'],country_id=row['country_id'],**candidate_options))
+        if not candidate.jpeg:raise HTTPException(400,'The existing AI source could not be rebuilt. Its original file is retained.')
+        db.assert_edit(pid,token)
+        _store_result(pid,current)
+        db.update_processing(pid,row['country_id'],row['print_template_id'],options,current,token)
+        (config.PHOTO_DIR/f'{pid}_ai.jpg').write_bytes(candidate.jpeg)
+        (config.PHOTO_DIR/f'{pid}_ai_prev.jpg').write_bytes(candidate.preview_jpeg)
+        state.update(candidate_id=secrets.token_urlsafe(16),revision=row['revision']+1,
+            options=candidate_options,checks=candidate.as_dict()['checks'],ok=candidate.ok,
+            measurements=candidate.measurements,print_only=candidate_options.get('print_only',False),
+            original_checks=reference.as_dict()['checks'],original_measurements=reference.measurements,
+            local_rechecked_at=time.time())
+        db.set_ai_state(pid,token,state)
+    return Response(json.dumps({'status':'ready','openai_called':False}),media_type='application/json')
 
 
 async def admin_ai_accept(request):
@@ -1329,6 +1379,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/govuk/{run_id}/result.png", admin_govuk_screenshot),
     Route("/admin/p/{pid}/govuk/{run_id}/input.jpg", admin_govuk_input),
     Route("/admin/p/{pid}/ai/prepare", admin_ai_prepare, methods=["POST"]),
+    Route("/admin/p/{pid}/ai/recheck", admin_ai_recheck, methods=["POST"]),
     Route("/admin/p/{pid}/ai/accept", admin_ai_accept, methods=["POST"]),
     Route("/admin/p/{pid}/ai/discard", admin_ai_discard, methods=["POST"]),
     Route("/admin/p/{pid}/restore-original", admin_restore_original, methods=["POST"]),
