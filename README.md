@@ -11,6 +11,11 @@ Photomatic export is a separate, optional vendor-review workflow. The immediate
 priority is our working engine; Photomatic analysis/integration is a progressive
 research track, not a requirement for using it.
 
+For validation studies, **More → Test queues** (`/admin/tests`) freezes selected
+Save JPEGs and lets staff record normal GOV.UK browser feedback and separate
+Photomatic category colours. Batch downloads include exact files and evidence;
+the external upload/check steps remain manual. See [the queue workflow](docs/STAFF_TEST_QUEUE.md).
+
 The prototype imports the supplied reference installation's 208 country/document
 profiles and 169 print layouts. `/admin` opens the studio workspace;
 `/admin/history` shows previous photos. The main screen has four steps: Upload,
@@ -103,3 +108,6 @@ For studio interaction tests, install the development DOM dependency with
 `npm ci`, render isolated fixtures with `python3 tests/render_station_fixtures.py`,
 then run `npm run test:station`. These tests exercise the real station JavaScript
 in a simulated DOM; they do not replace visual browser verification.
+
+Queue checks: `python3 tests/test_test_queue.py`, then
+`python3 tests/render_test_queue_fixtures.py` and `npm run test:queue`.

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ queue.title }}{% endblock %}
+{% block home %}/admin/tests{% endblock %}
+{% block nav %}<a href="/admin/new">Studio</a>{% endblock %}
+{% block content %}
+<h1>{{ queue.title }}</h1><p class="muted">{{ stats.total }} cases · {{ stats.pending }} unrecorded · {{ stats.expired }} expired</p>
+<p class="muted">{{ 'Separate study copies retained until ' + (queue.expires|dt) if queue.keep_snapshots else 'Test copies follow source expiry' }}.</p>
+<p class="muted">{{ stats.engine_vendor_disagreements }} cases with Photomatic dark green and local findings · {{ stats.gov_vendor_disagreements }} with GOV.UK flags and Photomatic dark green. Review these differences.</p>
+<div class="card"><div class="row"><div><strong>{{ stats.gov_good }}</strong> GOV.UK Good · staff-observed</div><div><strong>{{ stats.photomatic_dark_green }}</strong> Photomatic all three dark green</div></div><div class="row"><div><strong>{{ stats.comparable_dark_green }}</strong> dark green with framing confirmed</div><div><strong>{{ stats.unique_customer_matches }}</strong> distinct customer cases with vendor screenshot evidence</div></div><p class="muted">These are recorded observations, not automatic official approvals or a declaration that our engine has achieved full parity. Light green and amber do not count as dark green. Duplicate source/customer references count once in the distinct total.</p></div>
+<p><a class="btn" href="/admin/tests?append={{ queue.id }}">Add prepared photos</a> <a class="btn secondary" href="/admin/tests/{{ queue.id }}/bundle.zip">Download JPEG batch</a> <a class="btn secondary" href="/admin/tests/{{ queue.id }}/report.json">Export report</a></p>
+<div class="card" style="overflow:auto"><table><tr><th>Case</th><th>Profile</th><th>GOV.UK</th><th>Photomatic</th><th>Reference</th></tr>{% for item in cases %}<tr><td><a href="/admin/tests/{{ queue.id }}/cases/{{ item.row.id }}">{{ '%03d'|format(item.row.position) }}</a>{% if item.expired %} · expired{% endif %}</td><td>{{ profiles[item.snapshot.country_id].name if item.snapshot.country_id else 'Expired record' }}</td><td>{{ item.observation.get('gov_status','not_checked')|replace('_',' ') }}</td><td>{% for key,label in [('image_quality','Quality'),('geometry','Geometry'),('background','Background')] %}{{ label }}: {{ item.observation.get('photomatic_colours',{}).get(key,'not_tested')|replace('_',' ') }}<br>{% endfor %}</td><td><code>{{ item.snapshot.get('sha256','')[:12] }}</code></td></tr>{% endfor %}</table></div>
+{% endblock %}

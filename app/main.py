@@ -3,9 +3,11 @@ import base64
 import contextlib
 import hashlib
 import json
+import io
 import logging
 import re
 import secrets
+import shutil
 import smtplib
 import time
 from collections import defaultdict, deque
@@ -15,7 +17,7 @@ from urllib.parse import urlparse
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
-from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 from starlette.routing import Host, Mount, Route, Router
 from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
@@ -23,6 +25,7 @@ from starlette.staticfiles import StaticFiles
 from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measurements, hotspots, local_adjustments, background, background_models, enhancement
 from . import reviewed_import
 from . import govuk_precheck
+from . import test_queue
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -372,6 +375,148 @@ async def privacy(request):
 async def admin_home(request):
     _require_admin(request)
     return templates.TemplateResponse(request, "admin_list.html", {"rows": db.recent(200), "ages": AGE_GROUPS})
+
+
+def _test_queue(queue_id):
+    queue = test_queue.get(queue_id) if ID_RE.fullmatch(queue_id) else None
+    if not queue: raise HTTPException(404)
+    return queue
+
+
+def _test_case(queue_id,case_id):
+    _test_queue(queue_id)
+    item = test_queue.case(queue_id,case_id) if ID_RE.fullmatch(case_id) else None
+    if not item: raise HTTPException(404)
+    return item
+
+
+async def admin_test_queues(request):
+    _require_admin(request)
+    if request.method=='POST':
+        form=await request.form(max_fields=250,max_files=0,max_part_size=65536)
+        ids=list(dict.fromkeys(form.getlist('photo_ids')))
+        if not ids or len(ids)>200: raise HTTPException(400,'Select between 1 and 200 prepared photos')
+        queue_id=form.get('queue_id','')
+        new=not queue_id
+        if queue_id:_test_queue(queue_id)
+        else:queue_id=test_queue.create(form.get('title','Photo validation'),form.get('keep_snapshots')=='on')
+        added=[]
+        try:
+            for pid in ids:
+                with _edit_job(pid,pending_only=False):
+                    row=db.get(pid)
+                    master=_photo_path(pid).read_bytes()
+                    export=_preserved_bytes(row) if _external_record(row) else await run_in_threadpool(processing.save_photo,master,row['country_id'])
+                    original=config.PHOTO_DIR/f'{pid}_source'
+                    source_digest=hashlib.sha256(original.read_bytes()).hexdigest() if original.exists() else None
+                    case_id=test_queue.add(queue_id,row,master,export,source_digest)
+                    if case_id:added.append(case_id)
+        except Exception as exc:
+            # Roll back only files/rows created by this request, leaving earlier queue cases intact.
+            with db.conn() as c:
+                for case_id in added:
+                    c.execute('DELETE FROM test_cases WHERE id=?',(case_id,))
+                    shutil.rmtree(config.TEST_QUEUE_DIR/queue_id/case_id,ignore_errors=True)
+                if new:c.execute('DELETE FROM test_queues WHERE id=?',(queue_id,))
+            if new:shutil.rmtree(config.TEST_QUEUE_DIR/queue_id,ignore_errors=True)
+            if isinstance(exc,HTTPException):raise
+            raise HTTPException(400,str(exc)) from None
+        return RedirectResponse(f'/admin/tests/{queue_id}',status_code=303)
+    rows=[r for r in db.recent(200) if r['status']!='rejected' and r['expires']>time.time() and not r['edit_token'] and _photo_path(r['id']).exists()]
+    queue_id=request.query_params.get('append','')
+    queue=_test_queue(queue_id) if queue_id else None
+    return templates.TemplateResponse(request,'test_queues.html',{'rows':rows,'queues':test_queue.recent(),'append_queue':queue})
+
+
+async def admin_test_queue(request):
+    _require_admin(request)
+    queue=_test_queue(request.path_params['queue_id']);rows=test_queue.cases(queue['id'])
+    views=[{'row':r,'snapshot':json.loads(r['snapshot']),'observation':json.loads(r['observation']),'expired':r['expires']<=time.time()} for r in rows]
+    return templates.TemplateResponse(request,'test_queue.html',{'queue':queue,'cases':views,'stats':test_queue.summary(rows)})
+
+
+async def admin_test_case(request):
+    _require_admin(request)
+    queue_id=request.path_params['queue_id'];row=_test_case(queue_id,request.path_params['case_id'])
+    if request.method=='POST':
+        if row['expires']<=time.time():raise HTTPException(410,'This test case expired. Prepare a new case.')
+        form=await request.form(max_files=2,max_fields=30,max_part_size=config.MAX_UPLOAD_MB*1024*1024)
+        try:
+            assets={}
+            for key in ('govuk','photomatic'):
+                upload=form.get(key+'_screenshot')
+                if upload and hasattr(upload,'read') and upload.filename:
+                    data=await upload.read(config.MAX_UPLOAD_MB*1024*1024+1)
+                    if len(data)>config.MAX_UPLOAD_MB*1024*1024:raise HTTPException(400,'Evidence image is too large')
+                    try:
+                        from PIL import Image
+                        with Image.open(io.BytesIO(data)) as image:
+                            if image.format not in ('PNG','JPEG','WEBP') or image.width*image.height>40_000_000:raise ValueError()
+                            image.verify()
+                    except Exception:raise HTTPException(400,'Use a readable PNG, JPEG or WebP screenshot') from None
+                    assets[key]=data
+            try:test_queue.observe(row,form,assets)
+            except (ValueError,OSError) as exc:raise HTTPException(400,str(exc)) from None
+            if form.get('advance')=='yes':
+                rows=test_queue.cases(queue_id)
+                following=next((r for r in rows if r['position']>row['position'] and r['expires']>time.time()),None)
+                target=f'/admin/tests/{queue_id}/cases/{following["id"]}' if following else f'/admin/tests/{queue_id}'
+            else:target=f'/admin/tests/{queue_id}/cases/{row["id"]}'
+            return RedirectResponse(target,status_code=303)
+        finally:
+            await form.close()
+    rows=test_queue.cases(queue_id);snapshot=json.loads(row['snapshot'])
+    source_row=db.get(row['photo_id'])
+    return templates.TemplateResponse(request,'test_case.html',{
+        'queue':_test_queue(queue_id),'row':row,'snapshot':snapshot,'obs':json.loads(row['observation']),
+        'gov_states':test_queue.GOV_STATES,'colours':test_queue.COLOURS,'groups':test_queue.GROUPS,
+        'previous':next((r for r in reversed(rows) if r['position']<row['position']),None),
+        'following':next((r for r in rows if r['position']>row['position']),None),
+        'expired':row['expires']<=time.time(),'total':len(rows),
+        'source_available':bool(source_row and source_row['status']!='rejected' and source_row['expires']>time.time()),
+    })
+
+
+async def admin_test_asset(request):
+    _require_admin(request)
+    row=_test_case(request.path_params['queue_id'],request.path_params['case_id'])
+    asset=request.path_params['asset']
+    try:
+        if asset=='input.jpg':
+            data=test_queue.input_bytes(row);media='image/jpeg'
+        elif asset in ('govuk','photomatic'):
+            if row['expires']<=time.time():raise ValueError('Evidence expired')
+            info=json.loads(row['observation']).get('assets',{}).get(asset)
+            if not info:raise ValueError('No screenshot attached')
+            data=(config.TEST_QUEUE_DIR/row['queue_id']/row['id']/info['file']).read_bytes()
+            if hashlib.sha256(data).hexdigest()!=info['sha256']:raise ValueError('Evidence changed')
+            from PIL import Image
+            with Image.open(io.BytesIO(data)) as image:media=Image.MIME[image.format]
+        else:raise ValueError('Unknown asset')
+    except (ValueError,OSError,KeyError):raise HTTPException(404) from None
+    headers={'Cache-Control':'no-store'}
+    if request.query_params.get('download')=='1':headers['Content-Disposition']=f'attachment; filename="{row["position"]:03d}-{row["id"]}.jpg"'
+    return Response(data,media_type=media,headers=headers)
+
+
+async def admin_test_report(request):
+    _require_admin(request)
+    queue=_test_queue(request.path_params['queue_id']);rows=test_queue.cases(queue['id'])
+    return Response(json.dumps(test_queue.report(queue,rows),indent=2),media_type='application/json',headers={
+        'Cache-Control':'no-store','Content-Disposition':f'attachment; filename="test-queue-{queue["id"]}.json"'})
+
+
+async def admin_test_bundle(request):
+    _require_admin(request)
+    queue=_test_queue(request.path_params['queue_id']);rows=test_queue.cases(queue['id'])
+    try:file=await run_in_threadpool(test_queue.bundle,queue,rows)
+    except (ValueError,OSError):raise HTTPException(409,'One or more test files expired or changed. Download the report and inspect the affected cases.') from None
+    def chunks():
+        try:
+            while data:=file.read(65536):yield data
+        finally:file.close()
+    return StreamingResponse(chunks(),media_type='application/zip',headers={
+        'Cache-Control':'no-store','Content-Disposition':f'attachment; filename="test-queue-{queue["id"]}.zip"'})
 
 
 async def admin_new(request):
@@ -1166,6 +1311,12 @@ main_routes = public_routes + [
     Route("/healthz", healthz),
     Route("/admin", admin_new),
     Route("/admin/history", admin_home),
+    Route("/admin/tests", admin_test_queues, methods=['GET','POST']),
+    Route("/admin/tests/{queue_id}", admin_test_queue),
+    Route("/admin/tests/{queue_id}/report.json", admin_test_report),
+    Route("/admin/tests/{queue_id}/bundle.zip", admin_test_bundle),
+    Route("/admin/tests/{queue_id}/cases/{case_id}", admin_test_case, methods=['GET','POST']),
+    Route("/admin/tests/{queue_id}/cases/{case_id}/{asset}", admin_test_asset),
     Route("/admin/new", admin_new, methods=["GET", "POST"]),
     Route("/admin/import", admin_import, methods=["GET", "POST"]),
     Route("/admin/p/{pid}", admin_photo),

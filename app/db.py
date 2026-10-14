@@ -39,6 +39,22 @@ CREATE TABLE IF NOT EXISTS govuk_checks (
     result TEXT NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_govuk_photo ON govuk_checks(photo_id, created);
+CREATE TABLE IF NOT EXISTS test_queues (
+    id TEXT PRIMARY KEY, title TEXT NOT NULL, created REAL NOT NULL,
+    expires REAL NOT NULL, staff TEXT NOT NULL, keep_snapshots INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS test_cases (
+    id TEXT PRIMARY KEY, queue_id TEXT NOT NULL, position INTEGER NOT NULL,
+    photo_id TEXT NOT NULL, photo_revision INTEGER NOT NULL, created REAL NOT NULL,
+    expires REAL NOT NULL, snapshot TEXT NOT NULL,
+    observation TEXT NOT NULL DEFAULT '{}', observation_revision INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(queue_id, position)
+);
+CREATE TABLE IF NOT EXISTS test_observations (
+    case_id TEXT NOT NULL, revision INTEGER NOT NULL, created REAL NOT NULL,
+    staff TEXT NOT NULL, observation TEXT NOT NULL, PRIMARY KEY(case_id,revision)
+);
+CREATE INDEX IF NOT EXISTS idx_test_cases_queue ON test_cases(queue_id,position);
 """
 
 
@@ -72,6 +88,8 @@ def init():
         }.items():
             if name not in columns:
                 c.execute(f"ALTER TABLE photos ADD COLUMN {name} {definition}")
+        if 'keep_snapshots' not in {r['name'] for r in c.execute('PRAGMA table_info(test_queues)')}:
+            c.execute('ALTER TABLE test_queues ADD COLUMN keep_snapshots INTEGER NOT NULL DEFAULT 0')
 
 
 def new_id():
@@ -216,7 +234,7 @@ def purge_expired():
     """Delete expired rows and their photo files. Returns number removed."""
     now = time.time()
     with conn() as c:
-        rows = c.execute("SELECT id FROM photos WHERE expires<=? OR status='rejected'", (now,)).fetchall()
+        rows = c.execute("SELECT id,status FROM photos WHERE expires<=? OR status='rejected'", (now,)).fetchall()
         for r in rows:
             for suffix in PHOTO_SUFFIXES:
                 (config.PHOTO_DIR / f"{r['id']}{suffix}").unlink(missing_ok=True)
@@ -227,6 +245,8 @@ def purge_expired():
         if rows:
             from . import background
             background.clear_cache()
+        from . import test_queue
+        test_queue.purge(c, now, {r['id'] for r in rows}, {r['id'] for r in rows if r['status']=='rejected'})
         return len(rows)
 
 

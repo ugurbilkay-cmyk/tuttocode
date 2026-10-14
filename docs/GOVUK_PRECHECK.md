@@ -1,5 +1,11 @@
 # GOV.UK browser precheck for development tests
 
+For the current usable local testing routine, use **More → Test queues** and the
+[staff-operated queue](STAFF_TEST_QUEUE.md): frozen inputs, normal manual browser
+uploads, recorded observations, exact vendor colours and downloadable evidence.
+This avoids relying on the blocked standalone runner described below. It does
+not automate the external service or remove its access controls.
+
 This optional test runner uploads a specifically selected final JPEG through
 the normal public passport browser journey. It captures the visible rating and
 feedback and stops at **Photo result**. It does not submit an application or
@@ -46,7 +52,8 @@ test environment or explicitly authorised automated-browser integration. None
 has been confirmed. The user has no existing supplier technical contact or test
 account. A concrete technical enquiry is saved privately at
 `output/govuk-access-diagnostics/hmpo-enquiry-draft.txt`, with no customer photos,
-DOBs, credentials or network addresses. It is not sent. The official general
+DOBs, credentials or network addresses. The user declined sending it; it remains
+unsent. The official general
 enquiry route can be asked to direct it to the photo-supplier/DCS technical team;
 it is not itself a published supplier integration endpoint.
 [HMPO contact options](https://www.gov.uk/passport-advice-line).

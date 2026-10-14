@@ -68,6 +68,7 @@ GOVUK_PRECHECK_ENABLED = _bool("GOVUK_PRECHECK_ENABLED", False)
 GOVUK_NODE = os.getenv("GOVUK_NODE", shutil.which("node") or "node")
 GOVUK_TIMEOUT_SECONDS = min(180, max(30, int(os.getenv("GOVUK_TIMEOUT_SECONDS", "90"))))
 GOVUK_DIR = DATA_DIR / "govuk-prechecks"
+TEST_QUEUE_DIR = DATA_DIR / "test-queues"
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
