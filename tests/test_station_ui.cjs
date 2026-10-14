@@ -65,6 +65,25 @@ assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-rat
 studio.close();
 
 const loaded = page('photo');
+const interactive=page('photo');
+const photoForm=interactive.document.getElementById('photo-form');
+const zoom=photoForm.elements.namedItem('zoom');
+zoom.value='1.1';zoom.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+const sourcePreview=interactive.document.getElementById('crop-preview-photo');
+assert.equal(sourcePreview.hidden,false,'Moving zoom must immediately display source framing');
+assert.match(sourcePreview.getAttribute('src'),/crop-source\.jpg$/);
+const previewWidth=sourcePreview.style.width;
+zoom.value='1.2';zoom.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+assert.notEqual(sourcePreview.style.width,previewWidth,'A second slider input updates visible magnification');
+const horizontal=photoForm.elements.namedItem('x');
+const previewLeft=sourcePreview.style.left;
+horizontal.value='5';horizontal.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+assert.notEqual(sourcePreview.style.left,previewLeft,'Horizontal movement changes the source window');
+assert.equal(interactive.document.getElementById('crop-preview-note').hidden,false);
+interactive.document.getElementById('reset-crop').click();
+assert.equal(sourcePreview.hidden,true,'Reset restores the saved photo when crop settings match');
+assert.equal(interactive.document.getElementById('stage-photo').hidden,false);
+interactive.close();
 loaded.document.getElementById('open-govuk').click();
 assert.ok(loaded.opened.includes('govuk-dialog'));
 loaded.window.testShowGovukRuns([{id:'test-run-reference',status:'unavailable',current:true,photo_sha256:'abc123',synthetic_dob:true,error:'Browser blocked',access_diagnostics:{category:'known_bots_detection',attackId:'20000051'}}]);

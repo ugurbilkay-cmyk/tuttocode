@@ -34,9 +34,11 @@
             <img class="stage-photo" id="stage-photo" alt="Selected photo" hidden>
             <div class="empty-photo" id="empty-photo"><span class="camera-symbol">▣</span><h2>Upload a photo</h2><p>Start with your camera photo.<br>Your result will appear here.</p></div>
           {% endif %}
+          <img class="stage-photo" id="crop-preview-photo" alt="Live crop preview from source" hidden>
           <img class="crop-overlay" id="crop-overlay" {% if profile.overlay %}src="{{ profile.overlay }}"{% else %}hidden{% endif %} alt="{{ profile.name }} crop guide">
         </div>
         <div class="photo-caption">{% if row and not has_photo and editable %}Camera original · adjust the crop, then Apply changes{% elif row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}Original preview · crop is applied when you prepare the photo{% endif %}</div>
+        <p class="subtle" id="crop-preview-note" hidden>Live crop preview from source pixels · Apply changes renders the selected tools and updates checks.</p>
         {% if row %}<details class="processing-evidence" {% if not has_photo %}open{% endif %}><summary>What actually ran · this photo</summary><p class="subtle">Execution status is separate from passport quality. Selecting a tool does not prove it ran.</p>{% for stage in pipeline_rows %}<div class="execution-stage"><strong>{{ stage.name }}</strong><span>{{ stage.state }}</span><p class="subtle">{{ stage.detail }}</p></div>{% endfor %}</details>{% endif %}
         <details class="check-details results-panel" {% if checks|selectattr('status','equalto','fail')|list %}open{% endif %}><summary>Photo checks{% if row %} · review results{% endif %}</summary>
         <div class="quality-summary">
@@ -306,6 +308,6 @@
 </dialog>
 {% endif %}
 <script id="enhancer-presets" type="application/json">{{ enhancer_presets|tojson }}</script>
-<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationRevision={{ (row.revision if row else 0)|tojson }};window.stationEditable={{ editable|tojson }};window.stationAiStatus={{ ai_status.get("status","")|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};</script>
+<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationRevision={{ (row.revision if row else 0)|tojson }};window.stationEditable={{ editable|tojson }};window.stationAiStatus={{ ai_status.get("status","")|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};window.stationCrop={{ crop|tojson }};window.stationCropGeometry={{ crop_preview_geometry|default({})|tojson }};</script>
 <script src="/static/station.js" defer></script>
 </body></html>

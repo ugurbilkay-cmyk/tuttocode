@@ -715,27 +715,37 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
         crop_w = face_w / (profile["face_width"][0] / 100)
         crop_h = crop_w * out_h / out_w
     zoom = float(crop.get("zoom", 1))
-    crop_h, crop_w = crop_h / zoom, crop_w / zoom
     # Country-template Eyes is the eye-line position as % of image height.
     top = eye_mid[1] - profile["eyes"][0] / 100 * crop_h
     left = eye_mid[0] - crop_w / 2
+    target_rect=[float(v) for v in (left,top,crop_w,crop_h)]
+    auto_fit=False
+    outside=left<0 or top<0 or left+crop_w>w or top+crop_h>h
+    if outside and not framed and profile.get('auto_crop',False):
+        fitted=_fit_auto_crop(target_rect,(w,h),p,crown_y,profile)
+        if fitted is not None:
+            left,top,crop_w,crop_h=fitted
+            auto_fit=True
+    # Manual controls are relative to the usable automatic crop displayed in
+    # the studio, rather than jumping back to an impossible nominal rectangle.
+    base_rect=[float(v) for v in (left,top,crop_w,crop_h)]
+    eye_x,eye_y=map(float,eye_mid)
+    anchor_x=(eye_x-float(left))/float(crop_w)
+    anchor_y=(eye_y-float(top))/float(crop_h)
+    if zoom!=1:
+        crop_h,crop_w=crop_h/zoom,crop_w/zoom
+        left=eye_x-anchor_x*crop_w
+        top=eye_y-anchor_y*crop_h
     left += float(crop.get("x", 0)) / 100 * crop_w
     top += float(crop.get("y", 0)) / 100 * crop_h
     if framed:
         # Validate an already framed deliverable without moving/zooming it again.
         crop_w, crop_h, left, top = float(w), float(h), 0., 0.
     requested_rect = [float(v) for v in (left,top,crop_w,crop_h)]
-    auto_fit = False
-    neutral_crop = zoom==1 and not any(float(crop.get(key,0)) for key in ('x','y','rotation','angle'))
-    outside = left<0 or top<0 or left+crop_w>w or top+crop_h>h
-    if outside and not framed and neutral_crop and profile.get('auto_crop',False):
-        fitted = _fit_auto_crop(requested_rect,(w,h),p,crown_y,profile)
-        if fitted is not None:
-            left,top,crop_w,crop_h = fitted
-            auto_fit = True
     measurements['crop_geometry'] = {
         'method':'existing_frame' if framed else 'automatic_source_fit' if auto_fit else 'landmark_target',
         'requested_rect':requested_rect, 'source_rect':[float(v) for v in (left,top,crop_w,crop_h)],
+        'base_rect':base_rect,'target_rect':target_rect,'anchor':[anchor_x,anchor_y],
         'automatic_fit':auto_fit, 'crown_y':float(crown_y), 'chin_y':float(chin[1]),
         'head_target_percent':profile['head'][0], 'head_range_percent':profile['head'][1:],
     }

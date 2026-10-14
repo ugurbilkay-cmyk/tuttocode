@@ -66,8 +66,56 @@ $('country-search').addEventListener('input', e => {
 printer.addEventListener('change', () => { updatePrints();try { sessionStorage.setItem('photomatic-printer',printer.value); } catch (_) {} }); printTemplate.addEventListener('change', updateDimensions);
 $('show-overlay').addEventListener('change', () => updateJobMode());
 let beforeShown = false;
-$('before-toggle')?.addEventListener('click', () => { beforeShown = !beforeShown; $('before-photo').hidden = !beforeShown; $('stage-photo').hidden = beforeShown; });
-for (const id of ['zoom','x','y','angle']) $(id)?.addEventListener('input', e => $(id + '-value').textContent = e.target.value + (id === 'zoom' ? '' : id === 'angle' ? '°' : '%'));
+let cropPreviewActive=false;
+let cropSourceFailed=false;
+const savedCrop={zoom:1,x:0,y:0,rotation:0,angle:0,...window.stationCrop};
+const previewGeometry=window.stationCropGeometry || {};
+function updateCropPreview() {
+  if (!window.stationEditable || !$('zoom')) return;
+  const changed=['zoom','x','y','rotation','angle'].some(key=>Number($(key).value)!==Number(savedCrop[key]));
+  cropPreviewActive=changed && !$('print-only')?.checked;
+  const image=$('stage-photo'), source=$('crop-preview-photo'), note=$('crop-preview-note');
+  $('before-toggle')?.toggleAttribute('disabled',cropPreviewActive);
+  if (!cropPreviewActive) {
+    source.hidden=true;image.style.transform='';
+    image.hidden=beforeShown || !image.getAttribute('src');
+    note.hidden=true;return;
+  }
+  beforeShown=false;if ($('before-photo')) $('before-photo').hidden=true;
+  const ratio=Number($('zoom').value)/Number(savedCrop.zoom);
+  const deltaX=Number($('x').value)-Number(savedCrop.x),deltaY=Number($('y').value)-Number(savedCrop.y);
+  const turn=Number($('rotation').value)-Number(savedCrop.rotation)+Number($('angle').value)-Number(savedCrop.angle);
+  const dimensions=previewGeometry.output_size;
+  const eye=previewGeometry.eye1 && previewGeometry.eye2 && dimensions
+    ? previewGeometry.eye1.map((v,i)=>(v+previewGeometry.eye2[i])/2/dimensions[i]) : [.5,.5];
+  const rect=previewGeometry.source_rect,size=previewGeometry.source_size;
+  const canUseSource=!cropSourceFailed && window.stationPhotoId && rect && size && !Number(savedCrop.rotation) && !Number(savedCrop.angle)
+    && selected.id===previewGeometry.country_id;
+  if (canUseSource) {
+    if (!source.getAttribute('src')) source.src=`/admin/p/${window.stationPhotoId}/crop-source.jpg`;
+    const width=rect[2]/ratio,height=rect[3]/ratio;
+    const left=rect[0]+eye[0]*(rect[2]-width)+deltaX*width/100;
+    const top=rect[1]+eye[1]*(rect[3]-height)+deltaY*height/100;
+    Object.assign(source.style,{width:`${size[0]/width*100}%`,height:`${size[1]/height*100}%`,
+      left:`${-left/width*100}%`,top:`${-top/height*100}%`,right:'auto',bottom:'auto',objectFit:'fill',
+      transformOrigin:`${(rect[0]+eye[0]*rect[2])/size[0]*100}% ${(rect[1]+eye[1]*rect[3])/size[1]*100}%`,transform:`rotate(${turn}deg)`});
+    source.hidden=false;image.hidden=true;
+    const outside=left<0 || top<0 || left+width>size[0] || top+height>size[1];
+    note.textContent=outside ? 'Live crop preview extends outside the camera photo. Adjust the framing; Apply changes checks the available pixels.'
+      : 'Live crop preview from source pixels · Apply changes renders the selected tools and updates checks.';
+    if (turn) note.textContent+=' Rotation is approximate here; Apply changes recalculates landmarks.';
+  } else {
+    source.hidden=true;image.hidden=!image.getAttribute('src');
+    image.style.transformOrigin=`${eye[0]*100}% ${eye[1]*100}%`;
+    image.style.transform=`translate(${(ratio*Number(savedCrop.x)-Number($('x').value))}% , ${(ratio*Number(savedCrop.y)-Number($('y').value))}%) rotate(${turn}deg) scale(${ratio})`;
+    note.textContent='Live framing preview · Apply changes calculates the source crop and updates checks.';
+  }
+  note.hidden=false;
+}
+$('crop-preview-photo')?.addEventListener('error',()=>{cropSourceFailed=true;updateCropPreview();if(cropPreviewActive)$('crop-preview-note').textContent='Source preview unavailable · showing approximate framing on the saved photo. Apply changes recalculates the crop.';});
+$('before-toggle')?.addEventListener('click', () => { if(cropPreviewActive)return;beforeShown = !beforeShown; $('before-photo').hidden = !beforeShown; $('stage-photo').hidden = beforeShown; });
+for (const id of ['zoom','x','y','angle']) $(id)?.addEventListener('input', e => { $(id + '-value').textContent = e.target.value + (id === 'zoom' ? '' : id === 'angle' ? '°' : '%');updateCropPreview(); });
+$('rotation')?.addEventListener('change',updateCropPreview);
 $('reset-crop')?.addEventListener('click', () => { for (const [id, value] of [['zoom',1],['x',0],['y',0],['rotation',0],['angle',0]]) { $(id).value=value; $(id).dispatchEvent(new Event('input',{bubbles:true})); } });
 document.querySelectorAll('[data-rotate]').forEach(button => button.addEventListener('click', () => {
   $('angle').value = Math.max(-15, Math.min(15, Number($('angle').value) + Number(button.dataset.rotate)));
@@ -144,6 +192,7 @@ function updateJobMode(reset=false) {
     }
   }
   $('crop-overlay').hidden = Boolean(fullFrame) || !$('show-overlay').checked || !selected.overlay;
+  updateCropPreview();
 }
 $('print-only')?.addEventListener('change', () => updateJobMode(true)); updateJobMode();
 let hotspotBusy = false;
@@ -350,6 +399,7 @@ function previewFile(file) {
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   objectUrl = URL.createObjectURL(file); $('stage-photo').src = objectUrl; $('stage-photo').hidden = false; $('empty-photo').hidden = true;
   if ($('upload-filename')) $('upload-filename').textContent=file.name;
+  updateCropPreview();
 }
 $('file-input')?.addEventListener('change', e => previewFile(e.target.files[0]));
 let stream = null;

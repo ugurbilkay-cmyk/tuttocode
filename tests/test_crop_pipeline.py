@@ -25,7 +25,7 @@ class CropPipelineTests(unittest.TestCase):
         matte.assert_called_once()
         geometry=result.measurements['crop_geometry'];self.assertTrue(geometry['automatic_fit'])
         x,y,w,h=geometry['source_rect']
-        self.assertGreater(geometry['requested_rect'][3],2000)
+        self.assertGreater(geometry['target_rect'][3],2000)
         self.assertGreaterEqual(x,0);self.assertGreaterEqual(y,0)
         self.assertLessEqual(x+w,3000);self.assertLessEqual(y+h,2000)
         self.assertAlmostEqual(w/h,5/7)
@@ -36,7 +36,7 @@ class CropPipelineTests(unittest.TestCase):
         with patch.object(background,'matte') as matte:
             result=self.process(replace_bg=True,crop={'zoom':.5,'x':0,'y':0})
         self.assertIsNone(result.jpeg);matte.assert_not_called()
-        self.assertFalse(result.measurements['crop_geometry']['automatic_fit'])
+        self.assertGreater(result.measurements['crop_geometry']['source_rect'][3],2000)
         stages=pipeline_status.report({'replace_bg':True},result.measurements,result.as_dict()['checks'],False)
         self.assertEqual(next(s for s in stages if s['name']=='Background removal')['state'],'Skipped')
 
@@ -46,6 +46,25 @@ class CropPipelineTests(unittest.TestCase):
         self.assertIsNotNone(result.jpeg)
         self.assertTrue(any(c.key=='headsize' and c.status=='fail' for c in result.checks))
         self.assertFalse(result.ok)
+
+    def test_manual_zoom_uses_the_displayed_automatic_base(self):
+        initial=self.process();zoomed=self.process(crop={'zoom':1.1,'x':0,'y':0})
+        self.assertIsNotNone(zoomed.jpeg)
+        before=initial.measurements['crop_geometry']['source_rect']
+        after=zoomed.measurements['crop_geometry']['source_rect']
+        self.assertAlmostEqual(after[2],before[2]/1.1)
+        self.assertAlmostEqual(after[3],before[3]/1.1)
+        self.assertAlmostEqual(zoomed.measurements['eye_height_percent'],initial.measurements['eye_height_percent'],places=3)
+
+    def test_manual_movement_matches_source_preview_coordinates(self):
+        initial=self.process();moved=self.process(crop={'zoom':1.1,'x':3,'y':2})
+        self.assertIsNotNone(moved.jpeg)
+        before=initial.measurements['crop_geometry']['source_rect']
+        after=moved.measurements['crop_geometry']['source_rect']
+        anchor=initial.measurements['crop_geometry']['anchor']
+        for axis,offset in ((0,3),(1,2)):
+            expected=before[axis]+anchor[axis]*(before[axis+2]-after[axis+2])+offset/100*after[axis+2]
+            self.assertAlmostEqual(after[axis],expected,places=2)
 
     def test_crop_moves_inside_source_while_retaining_eye_bounds(self):
         points=self.analysis.faces[0].points

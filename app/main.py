@@ -722,6 +722,9 @@ async def admin_photo(request):
         "row": row, "checks": checks, "groups": photomatic.summary(checks), "ages": AGE_GROUPS,
         "profile": profile, "layout": layout, "choices": photomatic.print_choices(profile, layout["printer"]),
         "options": options, "crop": options.get("crop", _crop_options()),
+        "crop_preview_geometry":{'source_rect':stored_measurements.get('crop_geometry',{}).get('source_rect'),
+            'source_size':stored_measurements.get('analysis_size'),'output_size':stored_measurements.get('output_size'),
+            'eye1':stored_measurements.get('eye1'),'eye2':stored_measurements.get('eye2'),'country_id':row['country_id']},
         "has_photo": _photo_path(row["id"]).exists(),
         "editable": row["status"] == "pending" and not row["edit_token"] and (config.PHOTO_DIR / f"{row['id']}_source").exists(),
         "measurement_sections": measurements.report(final_values or stored_measurements, metric_checks, profile),
@@ -1028,6 +1031,17 @@ async def admin_original(request):
         raise HTTPException(404)
     photo = await run_in_threadpool(lambda: processing._small_jpeg(processing.load_image(source.read_bytes()), bounds=(1600, 1600), quality=95))
     return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+async def admin_crop_source(request):
+    """Small source raster for local interactive framing; no analysis/API calls."""
+    _require_admin(request)
+    pid=request.path_params['pid'];row=_available_row(pid);_require_preparation_job(row)
+    source=config.PHOTO_DIR/f'{pid}_working_source'
+    if not source.exists():source=config.PHOTO_DIR/f'{pid}_source'
+    if not source.exists():raise HTTPException(404)
+    photo=await run_in_threadpool(lambda:processing._small_jpeg(processing.load_image(source.read_bytes()),bounds=(1600,1600),quality=95))
+    return Response(photo,media_type='image/jpeg',headers={'Cache-Control':'no-store'})
 
 
 async def admin_hotspots(request):
@@ -1384,6 +1398,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/ai/discard", admin_ai_discard, methods=["POST"]),
     Route("/admin/p/{pid}/restore-original", admin_restore_original, methods=["POST"]),
     Route("/admin/p/{pid}/original.jpg", admin_original),
+    Route("/admin/p/{pid}/crop-source.jpg", admin_crop_source),
     Route("/admin/p/{pid}/hotspots", admin_hotspots),
     Route("/admin/p/{pid}/ai-preview.jpg", admin_ai_preview),
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),

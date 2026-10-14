@@ -44,6 +44,32 @@ Head-size failure text retains decimals so a boundary estimate is not rounded
 into an apparently contradictory integer. Detailed metric colours use recorded
 check status before a rounded-value comparison.
 
+## Live zoom and movement preview
+
+The studio's zoom and movement controls now update the visible framing on input,
+before Apply changes. For prepared, unrotated jobs with recorded geometry, an
+authenticated small raster of the retained working/camera source supplies real
+pixels outside the saved crop. Client-side positioning uses the stored source
+rectangle and eye anchor; repeated slider movements run no model or OpenAI
+request. The preview is explicitly a crop view of source pixels: Apply changes
+renders the selected background/enhancement tools and updates measurements.
+
+Manual zoom/offsets now start from the feasible automatic base rectangle rather
+than reverting to the impossible nominal target. The actual crop and its base,
+anchor and target are recorded. Out-of-source positions still fail on Apply;
+the preview warns rather than inventing missing pixels. Reset restores the
+saved view when values match. Old jobs without geometry, country switches,
+existing rotations and source-load failures use a labelled approximate preview;
+new rotation adjustments are also approximate until local reanalysis on Apply.
+
+The source route is staff-only, chooses an accepted working source when present,
+and performs only image decoding/resizing. Issued delivery bytes are unchanged.
+Eleven crop/status tests, 33 API/workflow tests, 13 catalog tests and DOM checks
+pass. A real 6000×4000 camera source verified that 1.1× zoom reduces both crop
+dimensions by 1.1 while preserving eye placement; the private preview route and
+its access checks passed. No saved customer job was changed and no new paid request
+was made in this verification.
+
 ## OpenAI preview and local rebuild
 
 New OpenAI previews retain the selected local background, enhancer and manual

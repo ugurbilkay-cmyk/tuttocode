@@ -302,9 +302,19 @@ class WorkflowTests(unittest.TestCase):
     def test_ai_controls_and_original_are_staff_only(self):
         pid = self.upload()
         with TestClient(main.app) as public:
-            for path in ("original.jpg", "ai-preview.jpg"):
+            for path in ("original.jpg", "ai-preview.jpg", "crop-source.jpg"):
                 self.assertEqual(public.get(f"/admin/p/{pid}/{path}").status_code, 401)
             self.assertEqual(public.post(f"/admin/p/{pid}/ai/prepare").status_code, 401)
+
+    def test_crop_preview_source_uses_working_image_without_models_or_api(self):
+        pid=self.upload()
+        data=io.BytesIO();Image.new('RGB',(800,1000),'blue').save(data,'PNG')
+        (config.PHOTO_DIR/f'{pid}_working_source').write_bytes(data.getvalue())
+        with patch.object(P,'get_analyzer',side_effect=AssertionError('No analysis needed')),patch.object(ai_prepare,'prepare',side_effect=AssertionError('No API needed')):
+            response=self.client.get(f'/admin/p/{pid}/crop-source.jpg')
+        self.assertEqual(response.status_code,200)
+        image=Image.open(io.BytesIO(response.content));self.assertEqual(image.size,(800,1000))
+        self.assertGreater(image.getpixel((100,100))[2],240)
 
     def test_prepare_review_recheck_issue_and_signed_fetch(self):
         pid = self.upload()
