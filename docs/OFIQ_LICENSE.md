@@ -1,10 +1,10 @@
 # License
 
 This is the source code of OFIQ. OFIQ is a software for assessing
-the quality of facial image properties and potential defects. 
-OFIQ is licensed under the MIT licenses (see text below). 
-It includes dependencies and files that may 
-be licensed otherwise. A documentation on the license situation of 
+the quality of facial image properties and potential defects.
+OFIQ is licensed under the MIT licenses (see text below).
+It includes dependencies and files that may
+be licensed otherwise. A documentation on the license situation of
 dependencies and files can be found in the table below.
 
 ## OFIQ License
@@ -41,7 +41,7 @@ is documented.
 | LICENSE.md                                                                                                       | File containing license information| -   | OFIQ license     |
 | Version.txt                                                                                                      | Contains OFIQ's current version information. | -   | OFIQ license |
 | cmake/                                                                                                           | Folder containing cmake helper scripts | [https://cmake.org/](https://cmake.org/) | OFIQ license |
-| data/ofiq_config.jaxn                                                                                            | OFIQ's configuration file | - | OFIQ license | 
+| data/ofiq_config.jaxn                                                                                            | OFIQ's configuration file | - | OFIQ license |
 | data/models/                                                                                                     | Folder containing a single readme file; to this folder, model files are downloaded from the ISO portal when running one of the building scripts. Note, the readme file is subject to OFIQ's license. The license situation of the model files is documented separately in license files placed in the sub-directories after download. | - | - |
 | data/tests/expected_results/expected_results.csv                                                                 | CSV file with expected native quality scores and quality component values used for running conformance tests.  | - | OFIQ license |
 | data/tests/images/                                                                                               | Folder containing a single readme file; to this folder, conformance test images are downloaded from the ISO portal when running one of the building scripts. Note, the readme file is subject to OFIQ's license. The license situation of the image files is documented separately in a license file downloaded with the images. | - | - |
@@ -60,7 +60,7 @@ is documented.
 | mobile/build_for_android.sh                                                                                      | building script                                                 | -                                                                   | OFIQ license       |
 | mobile/build_for_ios.sh                                                                                          | building script                                                 | -                                                                   | OFIQ license       |
 | mobile/apps/android/OFIQMobile/build.gradle.kts                                                                  | gradle build script          | created by gradle, no binding license                                                                  | OFIQ license       |
-| mobile/apps/android/OFIQMobile/gradle.properties                                                                 | Property file                | created by gradle/Android Studio, no binding license                                                   | OFIQ license       | 
+| mobile/apps/android/OFIQMobile/gradle.properties                                                                 | Property file                | created by gradle/Android Studio, no binding license                                                   | OFIQ license       |
 | mobile/apps/android/OFIQMobile/gradlew                                                                           | gradle script                | contains license text                                                                                  | Apache 2.0 license |
 | mobile/apps/android/OFIQMobile/gradlew.bat                                                                       | gradle script                | contains license text                                                                                  | Apache 2.0 license |
 | mobile/apps/android/OFIQMobile/settings.gradle.kts                                                               | gradle build script          | created by gradle, no binding license                                                                  | OFIQ license       |
@@ -108,9 +108,9 @@ is documented.
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/Info.plist                                                                 | config file                  | generated by XCode, no binding license                                                                 | OFIQ license       |
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/Localizable.xcstrings                                                      | localization file            | generated by OFIQ team                                                                                 | OFIQ license       |
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/OFIQMobileApp.swift                                                        | source file                  | generated by OFIQ team                                                                                 | OFIQ license       |
-| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/Contents.json                                              | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       | 
-| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/AccentColor.colorset/Contents.json                         | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       | 
-| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/AppIcon.appiconset/Contents.json                           | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       | 
+| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/Contents.json                                              | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       |
+| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/AccentColor.colorset/Contents.json                         | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       |
+| mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/AppIcon.appiconset/Contents.json                           | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       |
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/Assets.xcassets/mainColor.colorset/Contents.json                           | asset file                   | generated by XCode, no binding license                                                                 | OFIQ license       |
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/model/MetricType.swift                                                     | source file                  | generated by OFIQ team                                                                                 | OFIQ license       |
 | mobile/apps/iOS/OFIQMobile/OFIQMobile/model/Rotator.swift                                                        | source file                  | generated by OFIQ team                                                                                 | OFIQ license       |
@@ -163,4 +163,3 @@ is documented.
 | mobile/lib-projects/iOS/ofiqlib/ofiqlib.xcodeproj/project.pbxproj                                                | XCode project file           | generated by XCode, no binding license                                                                 | OFIQ license       |
 | mobile/lib-projects/iOS/ofiqlib/ofiqlib.xcodeproj/project.xcworkspace/contents.xcworkspacedata                   | workspace description file   | generated by XCode, no binding license                                                                 | OFIQ license       |
 | mobile/lib-projects/iOS/ofiqlib/ofiqlib.xcworkspace/contents.xcworkspacedata                                     | workspace description file   | generated by XCode, no binding license                                                                 | OFIQ license       |
-
