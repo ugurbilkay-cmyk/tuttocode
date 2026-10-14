@@ -22,6 +22,63 @@ Our own UK code architecture follows the published HTTPS short-URL and signed
 retrieval model. Transport success does not constitute photo approval.
 [HMPO supplier protocol](https://www.passport.service.gov.uk/help/photo-codes).
 
+### GOV.UK automated precheck integration research — 14 October 2026
+
+HMPO documents an automated technical photo check in the online application.
+It displays errors and correction tips, and then asks the customer to review
+the photo. This is a useful additional UK reference result, rather than a
+complete approval certificate. Some checks require later examination.
+[Examiner guidance: digital online check](https://www.gov.uk/government/publications/photographic-standards/photo-standards-accessible#digital-photo-online-check).
+
+No published public supplier photo-validation API or photo-check sandbox was
+found in the official sources searched. That does not prove a partner interface
+does not exist. The published supplier protocol explains secure JPEG retrieval
+by photo code, not a validation request returning quality scores. Confirm an
+appropriate integration/test route with HMPO before relying on bulk production
+automation. No message to HMPO has been sent.
+
+A browser helper could potentially follow the ordinary public journey and
+record the visible precheck result. This journey has not been validated end to
+end. Opening the official Start now link during research redirected the reading
+tool to a JavaScript queue, so plain stateless HTTP access did not reach the
+upload flow. This is not evidence that ordinary browser access is unavailable.
+Do not bypass the queue, use guessed private endpoints, infer an API contract
+from browser traffic or treat an unavailable result as a pass.
+[Application entry point](https://www.gov.uk/apply-renew-passport).
+
+For a controlled proof of concept, select one specifically authorised photo and
+the correct birth information, verify the normal browser flow, upload the exact
+delivered JPEG, capture the result wording and photo reference, and stop after
+the precheck. Do not submit a passport application, accept its final declaration
+or pay an application fee as part of a photo-quality trial. Use the correct age
+context; children have different standards/allowances, so arbitrary birth dates
+can undermine the comparison. The exact age-dependent behaviour of the public
+checker has not been measured in this research.
+[Children's photo exceptions](https://www.gov.uk/government/publications/photographic-standards/photo-standards-accessible#exceptions-to-photo-standards-for-children).
+
+HMPO states that photos, gender and date-of-birth details can be held for up to
+six months, including incomplete/discontinued applications. Treat testing as an
+external data transfer and explain that retention before selecting customer
+photos for it. No customer photo or birth information was transmitted during
+this research.
+[Application privacy policy](https://www.passport.service.gov.uk/help/privacy).
+
+Store a GOV.UK result as a separate evidence source: automated precheck passed,
+flagged (with the actual reasons), unavailable, or not checked. Link it to the
+exact JPEG digest, document/age context, observed framing/crop, operator and
+time. Do not translate it into Photomatic's three dark-green categories or
+claim an official acceptance decision. An API adapter, if documented access is
+established, can subsequently replace the browser/manual collection step.
+
+The current official examiner guidance permits brightness/contrast filters and
+background edits that preserve likeness, but specifically rejects facial
+enhancements such as blemish removal. An online precheck pass cannot establish
+compliance of our skin-cleaning recipe with those rules. The portrait-cleanup-v2
+prompt permits tiny temporary surface-spot cleanup; UK suitability needs to be
+resolved against the facial-editing rule, independently of machine pass counts.
+[Photo editing rules](https://www.gov.uk/government/publications/photographic-standards/photo-standards-accessible#photo-editing),
+[Precheck is not final acceptance](https://www.passport.service.gov.uk/help/terms-and-conditions).
+
 ## Ireland
 
 The paper profile's 35 × 45 mm is within the published size range. Online output
