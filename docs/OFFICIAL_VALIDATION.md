@@ -37,9 +37,10 @@ by photo code, not a validation request returning quality scores. Confirm an
 appropriate integration/test route with HMPO before relying on bulk production
 automation. No message to HMPO has been sent.
 
-A browser helper could potentially follow the ordinary public journey and
-record the visible precheck result. This journey has not been validated end to
-end. Opening the official Start now link during research redirected the reading
+A test browser helper now follows the ordinary public journey and records the
+visible precheck result. The first end-to-end trial and the reusable workflow
+both reached a Good result on 14 October 2026, as documented below. This is not
+a supported public API integration. Opening the official Start now link during research redirected the reading
 tool to a JavaScript queue, so plain stateless HTTP access did not reach the
 upload flow. This is not evidence that ordinary browser access is unavailable.
 Do not bypass the queue, use guessed private endpoints, infer an API contract
@@ -59,8 +60,9 @@ checker has not been measured in this research.
 HMPO states that photos, gender and date-of-birth details can be held for up to
 six months, including incomplete/discontinued applications. Treat testing as an
 external data transfer and explain that retention before selecting customer
-photos for it. No customer photo or birth information was transmitted during
-this research.
+photos for it. Initial source research transmitted no customer photos or birth
+information. The subsequent explicitly authorised browser trials sent the
+installed sample export and a labelled synthetic adult birthday.
 [Application privacy policy](https://www.passport.service.gov.uk/help/privacy).
 
 Store a GOV.UK result as a separate evidence source: automated precheck passed,
@@ -78,6 +80,45 @@ prompt permits tiny temporary surface-spot cleanup; UK suitability needs to be
 resolved against the facial-editing rule, independently of machine pass counts.
 [Photo editing rules](https://www.gov.uk/government/publications/photographic-standards/photo-standards-accessible#photo-editing),
 [Precheck is not final acceptance](https://www.passport.service.gov.uk/help/terms-and-conditions).
+
+#### Live trial and automatic test runner
+
+The explicitly authorised installed sample was prepared by our independent
+offline engine using Balanced enhancement and the UK Online Renewal profile.
+The uploaded JPEG was 800 × 1120 pixels, with SHA-256
+`c4e0e36c6b05aa4f9b84d2c3c8b17fb42da258984d1a90d4bf8f8a2afae7c590`.
+The user requested an invented birthday; the trial used 1 January 1980 and
+records it as synthetic, ineligible for age-correct customer validation counts.
+No customer's real date of birth was inferred. Both runs uploaded the same
+sample, so they represent one unique photo rather than two validation cases.
+
+The ordinary browser reached **Photo result → Good**, with no displayed flags.
+It said that photos with a good rating are most likely to be suitable. The
+reusable workflow completed in **7.12 seconds** through the Codex browser driver.
+No application, declaration, payment or code generation followed. No manual
+GOV.UK crop was applied; the government's internally assessed region was not
+verified and must not be assumed byte-identical to the export.
+
+Our own profile-based head-size check flagged this export at 46.8% versus the
+decoded template's 30–44% range. GOV.UK's Good result does not automatically
+invalidate that measurement or validate its threshold. This is a concrete
+calibration discrepancy to investigate with framing evidence and Photomatic.
+It is not a three-dark-green Photomatic match.
+
+`scripts/govuk_precheck.mjs` supplies the shared browser workflow and a local
+Playwright CLI. It records the exact JPEG hash, birthday context, visible rating
+and feedback, elapsed time, screenshot, journey steps and stop conditions.
+Queues, verification challenges, unexpected pages and timeouts are recorded as
+unavailable, never as a pass. Non-Good photo results are retained as needs-review
+with their actual wording; their score mapping has not yet been live validated.
+It uploads one explicitly selected file per invocation, with no bulk retries,
+and stops at the result page. The CLI browser launcher is separate from the
+Codex driver used in the live trial. See [run instructions](GOVUK_PRECHECK.md).
+
+Private evidence lives under the ignored `output/govuk-precheck-20261014/`
+directory. It is not published in Git or attached to the PR. The standalone
+runner has focused tests for provenance, date validation, stop behaviour,
+failure handling and preserving separate evidence files.
 
 ## Ireland
 
