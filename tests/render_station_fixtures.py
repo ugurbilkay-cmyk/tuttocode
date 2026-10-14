@@ -31,7 +31,22 @@ with patch.object(config, 'OPENAI_API_KEY', 'unit-test-only'):
     path = response.headers['location']
     (folder / 'photo.html').write_text(client.get(path).text)
     pid = path.rsplit('/', 1)[-1]
+    measurements = json.loads(db.get(pid)['measurements'])
+    for status, message in (
+        ('partial', 'Selected lighting could not finish; input pixels retained.'),
+        ('unavailable', 'Facial measurements unavailable; input pixels retained.'),
+        ('unchanged', 'Recovery evaluated · no facial correction selected'),
+    ):
+        evidence = dict(measurements, adaptive_quality={
+            'label': 'Recovery', 'status': status, 'message': message,
+            'source_rgb_sha256': 'same-input', 'output_rgb_sha256': 'same-input',
+            'texture_guard': {'status': 'unchanged'},
+        })
+        with db.conn() as conn:
+            conn.execute('UPDATE photos SET measurements=? WHERE id=?', (json.dumps(evidence), pid))
+        (folder / f'adaptive-{status}.html').write_text(client.get(path).text)
     with db.conn() as conn:
+        conn.execute('UPDATE photos SET measurements=? WHERE id=?', (json.dumps(measurements), pid))
         conn.execute('UPDATE photos SET ai_state=? WHERE id=?', (json.dumps({
             'status': 'ready', 'candidate_id': 'synthetic-preview', 'checks': [],
             'measurements': {}, 'original_checks': [], 'ok': False}), pid))

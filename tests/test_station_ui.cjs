@@ -57,6 +57,24 @@ assert.match(d.getElementById('format-note').textContent, /35 × 45 mm/);
 assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-ratio'), '35/45');
 studio.close();
 
+for (const [status, expected, message] of [
+  ['partial', /some preparation did not complete/, /Selected lighting could not finish; input pixels retained/],
+  ['unavailable', /quality editing unavailable/, /Facial measurements unavailable; input pixels retained/],
+  ['unchanged', /no facial edits selected/, /Recovery evaluated · no facial correction selected/],
+]) {
+  const outcomePage = page(`adaptive-${status}`);
+  const outcome = outcomePage.document.getElementById('adaptive-outcome').textContent;
+  assert.match(outcome, expected, `${status} must retain its preparation outcome even with identical input/output hashes`);
+  assert.match(outcome, message, 'The saved explanation must be visible without opening details');
+  if (status !== 'unchanged') {
+    assert.doesNotMatch(outcome, /no facial edits selected/);
+    const explanation = outcomePage.document.querySelector('#adaptive-outcome + details').textContent;
+    assert.doesNotMatch(explanation, /This profile made no facial pixel changes/);
+    assert.doesNotMatch(explanation, /No texture cleanup was needed/);
+  }
+  outcomePage.close();
+}
+
 const loaded = page('photo');
 loaded.document.getElementById('before-toggle').click();
 assert.equal(loaded.document.getElementById('before-photo').hidden,false);

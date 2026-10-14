@@ -25,8 +25,11 @@ the external upload/check steps remain manual. See [the queue workflow](docs/STA
 The prototype imports the supplied reference installation's 208 country/document
 profiles and 169 print layouts. `/admin` opens the studio workspace;
 `/admin/history` shows previous photos. The main screen has four steps: Upload,
-Country and crop, Background, and Enhance. Choose Natural, Balanced or Stronger
-enhancement; expand options for manual tools or the separate OpenAI service.
+Country and crop, Background, and Enhance. Choose Natural, Balanced or Recovery
+enhancement; the engine analyses the source, selects bounded lighting and shine
+correction, polishes skin independently from noise and checks local spots while
+guarding source feature detail. The
+separate OpenAI service remains optional. See [adaptive profiles](docs/ADAPTIVE_QUALITY.md).
 UK print and UK online code have separate shortcuts. Online Renewal uses a 5:7
 crop and 800 × 1120 digital export. Prepare or Apply updates the crop and checks;
 Print, Save and Email use the current result. Pending shop photos

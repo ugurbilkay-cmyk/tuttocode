@@ -19,7 +19,7 @@ def png(image):
     stream=io.BytesIO();Image.fromarray(image).save(stream,'PNG');return stream.getvalue()
 
 
-def apply(rgb,points,values):
+def apply(rgb,points,values,protected_mask=None):
     v=enhancement.validate(values)
     record=dict(phase='blemish',status='unchanged',models=[],version=VERSION,settings=v)
     if not v['blemish']:return rgb,record,{}
@@ -33,6 +33,20 @@ def apply(rgb,points,values):
     except (ValueError,cv2.error):
         record.update(status='unavailable',message='Advanced skin cleaning skipped: facial regions could not be located reliably')
         return rgb,record,{}
+    source_protected=np.zeros(rgb.shape[:2],bool)
+    if protected_mask is not None:
+        try:
+            supplied=np.asarray(protected_mask)
+            if (supplied.shape!=rgb.shape[:2] or not np.isfinite(supplied).all() or
+                not np.isin(supplied,[0,1]).all()):raise ValueError('Invalid source protection mask')
+            source_protected=supplied.astype(bool)
+        except (ValueError,TypeError):
+            record.update(status='unavailable',message='Advanced skin cleaning skipped: protected source regions are invalid')
+            return rgb,record,{}
+        allowed=allowed.copy();allowed[source_protected]=0
+        protected=protected|source_protected
+    record.update(source_protected_pixels=int(source_protected.sum()),
+                  source_protected_mask_sha256=hashlib.sha256(source_protected.tobytes()).hexdigest())
     h,w=rgb.shape[:2]
     from . import hotspots
     outline=np.asarray(points)[hotspots.FACE_OVAL]
@@ -72,9 +86,10 @@ def apply(rgb,points,values):
     actual_mask=np.rint(np.where(changed,mask,0)*255).astype(np.uint8)
     model=dict(engine='blemish',label=spec['label'],licence=spec['licence'],repository=spec['repository'],
                model_sha256=evidence['model_sha256'],code_revision=evidence['code_revision'])
-    record.update(status='applied',models=[model],inference_seconds=evidence['inference_seconds'],
+    record.update(status='applied' if changed.any() else 'unchanged',models=[model],inference_seconds=evidence['inference_seconds'],
         source_size=[w,h],output_size=[w,h],candidate_spots=evidence['candidate_spots'],
         edited_pixels=int(changed.sum()),kept_areas=len(v['blemish_keep']),reverted_regions=reverted,
+        source_protected_exact=bool(np.array_equal(out[source_protected],rgb[source_protected])),
         before_hotspots=skin._diagnostic(before),after_hotspots=skin._diagnostic(after),
         preserved_hotspot_pixels=bool(np.array_equal(out[before['_candidate_mask']],rgb[before['_candidate_mask']])),
         source_rgb_sha256=source_hash,output_rgb_sha256=hashlib.sha256(out.tobytes()).hexdigest(),

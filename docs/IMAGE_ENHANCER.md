@@ -1,18 +1,12 @@
 # Local image enhancer
 
-The station exposes three starting points: 1 Natural, 2 Balanced and 3 Stronger.
-They apply real recipes to the existing controls. Nothing is enabled until staff
-select it; previously saved custom settings remain editable.
+The station exposes three adaptive profiles: **Natural**, **Balanced** and
+**Recovery**. New jobs default to Balanced. The engine selects corrections from
+the photo; the staff form no longer exposes model selectors or the legacy fixed
+slider recipes. See [adaptive profiles and current validation](ADAPTIVE_QUALITY.md).
 
-| Main choice | Noise cleanup | Detail | Skin smoothing | Local colour/exposure | Face shadows | Highlights |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 Natural | 15% | 10% | 20% | On | Off | 0 |
-| 2 Balanced | 25% | 15% | 35% | On | On | 0 |
-| 3 Stronger | 35% | 15% | 45% | On | On | 20 |
-
-Expand Enhancement options for individual strengths, advanced skin cleaning,
-lighting, colour or enlargement. Difficult lighting, Clean detail and Small photo /
-larger print remain available in the advanced preset selector. Background options
+The controls/methods below describe the underlying developer tools and legacy
+settings. They do not silently stack with adaptive profiles. Background options
 are in their own step. Selecting or resetting enhancement leaves background,
 country, layout, full-frame mode and the optional OpenAI selection unchanged.
 The optional OpenAI form opens from Enhance and has its own request and review.

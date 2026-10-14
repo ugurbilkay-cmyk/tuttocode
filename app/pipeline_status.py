@@ -2,6 +2,16 @@
 from . import background_models, enhancement
 
 
+def _stage_state(stage):
+    status=stage.get('status')
+    if status in ('unavailable','failed','partial'):return status.capitalize()
+    if status=='unchanged':return 'Unchanged'
+    if status=='applied':
+        changed=stage.get('edited_pixels',stage.get('changed_pixels'))
+        return 'Unchanged' if changed==0 else 'Applied'
+    return 'Completed'
+
+
 def report(options, values, checks, has_photo, ai_state=None):
     rows=[]
     def add(name,state,detail):rows.append(dict(name=name,state=state,detail=detail))
@@ -38,23 +48,38 @@ def report(options, values, checks, has_photo, ai_state=None):
     stages=values.get('local_enhancement',{}).get('stages',[])
     adaptive=values.get('adaptive_quality',{})
     if settings['adaptive_profile']!='off':
-        add('Automatic quality profile',adaptive.get('status','Skipped').capitalize(),
+        add('Automatic quality profile',_stage_state(adaptive) if adaptive else 'Skipped',
             adaptive.get('message',skipped if not has_photo else 'No completed adaptive preparation was recorded.'))
         settings=dict(settings,**{k:adaptive.get('decisions',{}).get(name,0) for k,name in
-                                 [('denoise','denoise_percent'),('skin','skin_percent')]})
+                                 [('denoise','denoise_percent'),('skin','skin_percent'),('blemish','skin_cleaning_percent')]})
         stages=stages+adaptive.get('stages',[])
-    models={m['engine']:m for stage in stages for m in stage.get('models',[])}
+    diagnosis=adaptive.get('source_diagnosis')
+    if diagnosis:
+        add('Source photo diagnosis','Completed' if diagnosis.get('status')=='measured' else _stage_state(diagnosis),
+            'Source pixels assessed for relative facial highlights, clipping and skin texture before editing. '+diagnosis.get('limitation',''))
+    models={m['engine']:(m,stage) for stage in stages for m in stage.get('models',[])}
     for key,engine,label in [('lighting','retinex','Retinexformer lighting'),('denoise','nafnet','NAFNet noise cleanup')]:
-        model=models.get(engine)
-        if model:add(label,'Applied',f"Local model · {model.get('inference_seconds',0):g} s · SHA {model.get('model_sha256','')[:12]}")
+        model,stage=models.get(engine,(None,{}))
+        if model:add(label,_stage_state(stage),f"Local model · {model.get('inference_seconds',0):g} s · SHA {model.get('model_sha256','')[:12]}")
         elif not settings[key] and not (key=='lighting' and adaptive.get('decisions',{}).get('lighting_adviser_requested')):add(label,'Off','No correction selected by the controller.' if adaptive else 'Strength is zero.')
         else:add(label,'Unavailable' if has_photo else 'Skipped',skipped if not has_photo else 'Selected model did not complete; this stage was left unchanged.')
+    relative_highlights=next((s for s in stages if s.get('phase')=='adaptive_highlights'),None)
+    if relative_highlights is not None:
+        add('Relative facial highlights',_stage_state(relative_highlights),
+            relative_highlights.get('message','See recorded source-derived highlight correction evidence.'))
     for key,label in [('portrait_tone','Skin lighting and contrast'),('skin','Skin smoothing'),('blemish','Advanced skin cleaning')]:
-        stage=next((s for s in stages if s.get('phase') in (key,'adaptive_'+key) or (key=='blemish' and s.get('version','').startswith('skin-cleaner'))),{})
+        phases=(key,'adaptive_'+key)+(('adaptive_skin_cleaning',) if key=='blemish' else ())
+        stage=next((s for s in stages if s.get('phase') in phases or (key=='blemish' and s.get('version','').startswith('skin-cleaner'))),{})
         if key=='blemish':stage=values.get('skin_cleaning',stage)
         if not settings[key]:add(label,'Off','Not selected.')
-        elif stage:add(label,'Unavailable' if stage.get('status')=='unavailable' else 'Applied' if stage.get('status')=='applied' else 'Completed',stage.get('message','See detailed processing evidence.'))
+        elif stage:add(label,_stage_state(stage),stage.get('message','See detailed processing evidence.'))
         else:add(label,'Unavailable' if has_photo else 'Skipped',skipped if not has_photo else 'No completed local stage was recorded.')
+    feature_guard=adaptive.get('feature_detail_guard')
+    if feature_guard:
+        detail=('Cleanup left the tonal feature reference unchanged.' if feature_guard.get('status')=='unchanged' else
+                'Eyes, brows, nose/lip edges and source marks checked against the tonal source reference.' if feature_guard.get('status')=='measured' else
+                'Feature-detail assessment was uncertain; cleanup was reduced to the source reference.')
+        add('Feature detail check',_stage_state(feature_guard),detail)
     upscale=next((s for s in stages if s.get('phase')=='upscale'),{})
     if settings['scale']==1:add('Enlargement','Off','Standard master size; AI upscaling not selected.')
     elif upscale.get('status')=='applied':
@@ -70,7 +95,7 @@ def report(options, values, checks, has_photo, ai_state=None):
     add('Colour and lighting','Evaluated' if has_photo and tone_selected else 'Skipped' if tone_selected else 'Off',
         (tone or 'Selected local pixel adjustments were evaluated.') if has_photo and tone_selected else skipped if tone_selected else 'Not selected.')
     if adaptive:
-        rows[-1]=dict(name='Colour and lighting',state=adaptive.get('status','unavailable').capitalize(),
+        rows[-1]=dict(name='Colour and lighting',state=_stage_state(adaptive),
                       detail=adaptive.get('message','No completed adaptive lighting stage.'))
     highlights=values.get('final_highlights',{})
     native=values.get('ofiq',{})

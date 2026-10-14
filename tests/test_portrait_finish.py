@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 
 from test_hotspots import fixture
-from app import enhancement, hotspots, portrait_tone, processing, skin, skin_guided
+from app import enhancement, hotspots, portrait_tone, processing, skin, skin_guided, portrait_finish
 
 
 class PortraitFinishTests(unittest.TestCase):
@@ -112,6 +112,88 @@ class PortraitFinishTests(unittest.TestCase):
             enhancement_options={'portrait_tone':100})
         self.assertEqual(result.measurements['face_analysis']['face_count'],1)
         self.assertEqual(result.measurements['local_enhancement']['stages'][0]['status'],'applied')
+
+
+class RelativeHighlightTests(unittest.TestCase):
+    def shine_fixture(self, colour=(165, 130, 110)):
+        rgb, points = fixture(colour)
+        y, x = np.indices(rgb.shape[:2])
+        patch = np.exp(-((x-160)**2+(y-88)**2)/(2*10**2))
+        linear = portrait_finish._linear(rgb)
+        # An unclipped, moderately bright and less chromatic local reflection.
+        linear += patch[..., None]*.16
+        rgb = np.rint(np.clip(np.where(linear <= .0031308, linear*12.92, 1.055*linear**(1/2.4)-.055), 0, 1)*255).astype(np.uint8)
+        return rgb, points
+
+    def test_uniform_dark_mid_and_light_faces_are_exact_no_ops(self):
+        for colour in ((65, 45, 35), (165, 130, 110), (230, 210, 190)):
+            rgb, points = fixture(colour)
+            analysis = portrait_finish.analyse(rgb, points)
+            out, stage = portrait_finish.apply_highlights(rgb, analysis, {'max_highlight_ev': .3})
+            np.testing.assert_array_equal(out, rgb)
+            self.assertEqual(analysis['report']['relative_highlight_pixels'], 0)
+            self.assertEqual(stage['status'], 'unchanged')
+            self.assertEqual(analysis['report']['texture_need'], 0)
+
+    def test_moderate_relative_shine_is_reduced_without_source_or_geometry_mutation(self):
+        for colour in ((65, 45, 35), (165, 130, 110), (230, 210, 190)):
+            rgb, points = self.shine_fixture(colour); original = rgb.copy(); geometry = points.copy()
+            analysis = portrait_finish.analyse(rgb, points)
+            out, stage = portrait_finish.apply_highlights(rgb, analysis, {'max_highlight_ev': .2})
+            self.assertGreater(analysis['report']['relative_highlight_pixels'], 0)
+            self.assertLess(out[88, 160].mean(), rgb[88, 160].mean())
+            self.assertEqual(stage['status'], 'applied')
+            self.assertLessEqual(stage['maximum_highlight_ev'], .2)
+            np.testing.assert_array_equal(rgb, original);np.testing.assert_array_equal(points, geometry)
+            oval = hotspots._polygon_mask(rgb.shape[:2], points[hotspots.FACE_OVAL])
+            np.testing.assert_array_equal(out[~oval], rgb[~oval])
+            json.dumps(analysis['report']);json.dumps(stage)
+
+    def test_clipped_channels_stay_exact_and_are_not_reported_recovered(self):
+        rgb, points = self.shine_fixture();rgb[85:90, 154:159] = (255, 170, 120)
+        analysis = portrait_finish.analyse(rgb, points)
+        out, stage = portrait_finish.apply_highlights(rgb, analysis, .3)
+        np.testing.assert_array_equal(out[85:90, 154:159], rgb[85:90, 154:159])
+        self.assertEqual(stage['saturated_channel_pixels_remaining'], 25)
+        self.assertTrue(stage['current_near_clip_pixels_retained_exact'])
+        self.assertEqual(analysis['report']['saturated_source_channel_pixels'], 25)
+
+    def test_same_scalar_gain_retains_fine_detail_and_channel_ratios(self):
+        rgb, points = self.shine_fixture()
+        y, x = np.indices(rgb.shape[:2]);grain = ((x+y)%2*2-1)*2
+        rgb = np.clip(rgb.astype(int)+grain[..., None], 0, 249).astype(np.uint8)
+        analysis = portrait_finish.analyse(rgb, points)
+        out, _ = portrait_finish.apply_highlights(rgb, analysis, .2)
+        gain = portrait_finish.highlight_gain(analysis, rgb.shape[:2], .2)
+        expected = portrait_finish._linear(rgb)*gain[..., None]
+        # The only discrepancy is the final 8-bit quantization, including pores.
+        self.assertLess(float(np.max(np.abs(portrait_finish._linear(out)-expected))), .006)
+        log_source = np.log2(np.maximum(portrait_finish._linear(rgb).mean(axis=2), 1e-5))
+        log_out = np.log2(np.maximum(portrait_finish._linear(out).mean(axis=2), 1e-5))
+        high = lambda a:a-cv2.GaussianBlur(a, (0, 0), 1.2)
+        region = np.s_[76:100, 148:172]
+        projection = np.mean(high(log_source)[region]*high(log_out)[region])/np.mean(high(log_source)[region]**2)
+        self.assertGreater(projection, .94)
+
+    def test_source_marks_and_features_are_separate_from_tonal_support(self):
+        rgb, points = self.shine_fixture();rgb[83:87, 133:137] = (45, 28, 20)
+        analysis = portrait_finish.analyse(rgb, points, keep=[[.57, .30, .03]])
+        self.assertTrue(analysis['_mark_mask'][84, 134])
+        self.assertTrue(analysis['_feature_mask'][130, 125])
+        self.assertEqual(analysis['_cleanup_alpha'][84, 134], 0)
+        self.assertEqual(analysis['_cleanup_alpha'][130, 125], 0)
+        self.assertGreater(analysis['_face_alpha'][130, 125], 0)
+        self.assertEqual(analysis['_cleanup_alpha'][96, 182], 0)
+
+    def test_analysis_field_can_be_reused_at_a_larger_native_grid(self):
+        rgb, points = self.shine_fixture();analysis = portrait_finish.analyse(rgb, points)
+        larger = cv2.resize(rgb, (640, 640), interpolation=cv2.INTER_NEAREST)
+        out, stage = portrait_finish.apply_highlights(larger, analysis, .2)
+        self.assertEqual(out.shape, larger.shape)
+        self.assertEqual(stage['source_size'], [640, 640])
+        self.assertGreater(stage['edited_pixels'], 0)
+        for invalid in (-1, float('nan'), 2):
+            with self.assertRaises(ValueError):portrait_finish.highlight_gain(analysis, rgb.shape[:2], invalid)
 
 
 if __name__ == '__main__':unittest.main()

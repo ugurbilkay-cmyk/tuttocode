@@ -63,10 +63,36 @@ class RepairTests(unittest.TestCase):
         with patch.object(B.subprocess,'run',side_effect=self.reply):
             out,record,assets=B.apply(self.rgb,self.points,{'blemish':100,'blemish_keep':[[107/320,187/320,.05]]})
         np.testing.assert_array_equal(out,self.rgb);self.assertEqual(record['edited_pixels'],0)
+        self.assertEqual(record['status'],'unchanged')
+        self.assertEqual(record['models'][0]['engine'],'blemish')
         self.assertEqual(record['kept_areas'],1)
         smoothed,_=skin.apply(out,self.points,100,[[107/320,187/320,.05]])
         protected=np.zeros(self.rgb.shape[:2],np.uint8);cv2.circle(protected,(107,187),16,1,-1)
         np.testing.assert_array_equal(smoothed[protected.astype(bool)],self.rgb[protected.astype(bool)])
+
+    def test_source_protection_excludes_identifying_marks_before_worker_and_preserves_exact_pixels(self):
+        protected=np.zeros(self.rgb.shape[:2],bool);protected[183:192,103:107]=True
+        def reply(args,**kwargs):
+            allowed=np.load(args[args.index('--allowed')+1],allow_pickle=False)
+            self.assertFalse(allowed[protected].any())
+            return self.reply(args,**kwargs)
+        with patch.object(B.subprocess,'run',side_effect=reply):
+            out,record,assets=B.apply(self.rgb,self.points,{'blemish':100},protected_mask=protected)
+        np.testing.assert_array_equal(out[protected],self.rgb[protected])
+        self.assertGreater(record['edited_pixels'],0)
+        self.assertEqual(record['source_protected_pixels'],int(protected.sum()))
+        self.assertTrue(record['source_protected_exact'])
+        self.assertEqual(record['source_protected_mask_sha256'],hashlib.sha256(protected.tobytes()).hexdigest())
+        actual_mask=np.array(Image.open(io.BytesIO(assets['mask'])))
+        self.assertFalse(actual_mask[protected].any())
+
+    def test_invalid_source_protection_cannot_launch_a_repair(self):
+        for protected in (np.zeros((2,2),bool),np.full(self.rgb.shape[:2],np.nan),
+                          np.full(self.rgb.shape[:2],2),np.full(self.rgb.shape[:2],'invalid')):
+            with patch.object(B.subprocess,'run') as worker:
+                out,record,assets=B.apply(self.rgb,self.points,{'blemish':50},protected_mask=protected)
+            worker.assert_not_called();np.testing.assert_array_equal(out,self.rgb)
+            self.assertEqual(record['status'],'unavailable');self.assertFalse(assets)
 
     def test_invalid_keep_regions_and_options_are_rejected(self):
         for values in ({'blemish':101},{'blemish_sensitivity':'auto'},{'blemish_size':'unknown'},
