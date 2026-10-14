@@ -129,6 +129,35 @@ continued Photomatic spot comparisons and retained failure evidence. This
 criterion governs validation of an engine revision; it does not change the
 existing staff-responsibility code workflow or prove authority acceptance.
 
+### Target for retiring Photomatic
+
+The user proposed 1,000 successful paired matches as the target for fully
+retiring the vendor dependency. Treat this as a decision milestone, rather than
+proof based on sample count alone. Keep the same dark-green-only criterion for
+accepted final photos in all three categories, exact delivered-file provenance,
+distinct cases, recorded failures and reproducible engine/recipe versions.
+
+The retirement evidence must also show that our checker detects defective
+examples and does not give a green result to a vendor-failed defect without
+investigation. Track missed defects and false alarms separately from the number
+of accepted preparations. Keep tuning cases separate from held-out cases and
+fresh shop cases. Compare equivalent assessed image regions; vendor recropping
+must not silently repair our geometry for the comparison.
+
+Scope the decision to the document profiles and processing recipes actually
+validated. One thousand UK-online/local-tool matches do not establish the
+accuracy of untested country profiles or the optional OpenAI setup. OpenAI
+prompt/model changes and local-engine changes need their own regression and
+fresh-case evidence. Unsupported metrics remain visibly untested until their
+implementations are evaluated.
+
+Before removing Photomatic from daily operation, independently verify the
+remaining functions we use it for: document crop/export rules, physical
+DE100-XD output, own UK code retrieval, repeatability and recovery after failures.
+Retain the evidence and a practical rollback option through the transition.
+The progression is 200 paired cases for the initial pilot, continued validation
+towards 1,000, then a scoped retirement decision based on the complete results.
+
 Build a paired reference set containing the same camera original, preparation, Photomatic export, vendor results and Tuttoprint measurements. Start with UK paper and online profiles and the shop's common countries. Include different skin tones, ages and capture conditions, especially clipped highlights, uneven illumination, blur, glasses, hair boundaries and poor source resolution.
 
 Compare each measurement separately. MediaPipe geometry, local image statistics and any future OFIQ output have their own definitions and scales. Document the measured region, units, algorithm version, uncertainty and applicable document rule. Calibrate against both controlled defects and staff review; Photomatic is a useful reference, not absolute ground truth.
