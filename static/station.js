@@ -153,7 +153,7 @@ function applyEnhancementPreset(key) {
 function updateEnhancementChoice() {
   const key=$('adaptive-profile')?.value || 'off';
   document.querySelectorAll('[data-enhance-preset]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.enhancePreset===key)));
-  if ($('enhancement-choice')) $('enhancement-choice').textContent=enhancementPresets[key] ? `${enhancementPresets[key].label} · automatic` : 'Original finish · no enhancement';
+  if ($('enhancement-choice')) $('enhancement-choice').textContent=enhancementPresets[key] ? enhancementPresets[key].label : 'Original lighting · no lighting correction';
 }
 document.querySelectorAll('[data-enhance-preset]').forEach(button => button.addEventListener('click',()=>applyEnhancementPreset(button.dataset.enhancePreset)));
 $('no-enhancement')?.addEventListener('click',()=>{
@@ -406,7 +406,7 @@ $('photo-form').addEventListener('submit', () => {
     button.disabled=true;
     const detailBackground = document.querySelector('input[name=replace_bg]')?.checked;
     const enhancerActive = ($('adaptive-profile')?.value || 'off') !== 'off';
-    button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : enhancerActive ? 'Enhancing locally… This can take several minutes.' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
+    button.textContent=$('use-ai')?.checked ? 'Preparing with OpenAI…' : enhancerActive ? 'Adjusting lighting… This can take several minutes.' : detailBackground ? 'Removing background… This can take a minute.' : 'Processing…';
   }
 });
 $('photo-form').addEventListener('input', event => {

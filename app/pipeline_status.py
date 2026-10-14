@@ -47,8 +47,13 @@ def report(options, values, checks, has_photo, ai_state=None):
     settings=enhancement.validate(options.get('enhancement_options'))
     stages=values.get('local_enhancement',{}).get('stages',[])
     adaptive=values.get('adaptive_quality',{})
+    lighting_only=adaptive.get('mode')=='lighting_only'
+    if lighting_only:
+        # Match the processing path: an active lighting option supersedes
+        # legacy cleanup, tone, detail and enlargement strengths.
+        settings=enhancement.validate(dict(adaptive_profile=settings['adaptive_profile']))
     if settings['adaptive_profile']!='off':
-        add('Automatic quality profile',_stage_state(adaptive) if adaptive else 'Skipped',
+        add('Lighting option' if lighting_only else 'Automatic quality profile',_stage_state(adaptive) if adaptive else 'Skipped',
             adaptive.get('message',skipped if not has_photo else 'No completed adaptive preparation was recorded.'))
         settings=dict(settings,**{k:adaptive.get('decisions',{}).get(name,0) for k,name in
                                  [('denoise','denoise_percent'),('skin','skin_percent'),('blemish','skin_cleaning_percent')]})
@@ -56,7 +61,8 @@ def report(options, values, checks, has_photo, ai_state=None):
     diagnosis=adaptive.get('source_diagnosis')
     if diagnosis:
         add('Source photo diagnosis','Completed' if diagnosis.get('status')=='measured' else _stage_state(diagnosis),
-            'Source pixels assessed for relative facial highlights, clipping and skin texture before editing. '+diagnosis.get('limitation',''))
+            ('Source pixels assessed for scene exposure and uneven facial lighting. ' if lighting_only else
+             'Source pixels assessed for relative facial highlights, clipping and skin texture before editing. ')+diagnosis.get('limitation',''))
     models={m['engine']:(m,stage) for stage in stages for m in stage.get('models',[])}
     for key,engine,label in [('lighting','retinex','Retinexformer lighting'),('denoise','nafnet','NAFNet noise cleanup')]:
         model,stage=models.get(engine,(None,{}))

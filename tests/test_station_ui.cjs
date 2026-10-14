@@ -27,6 +27,8 @@ const form = d.getElementById('photo-form');
 const field = name => form.elements.namedItem(name);
 assert.equal(field('use_ai').checked, false);
 assert.equal(field('adaptive_profile').value, 'balanced');
+assert.match(d.getElementById('enhancement-choice').textContent, /Balanced lighting · \+0\.50 EV/);
+assert.match(d.getElementById('lighting-scope').textContent, /Lighting only: skin polishing, shine reduction and spot cleaning stay off/);
 assert.equal(d.querySelector('#enhancer-tools'), null);
 assert.equal(field('background_engine'), null);
 field('replace_bg').checked = true;
@@ -39,9 +41,12 @@ for (const key of ['natural', 'balanced', 'recovery']) {
   assert.equal(field('replace_bg').checked, true);
   assert.equal(field('use_ai').checked, true);
   assert.equal(field('ai_consent').checked, true);
+  const exposure = {natural:'0.25',balanced:'0.50',recovery:'0.75'}[key];
+  assert.ok(d.getElementById('enhancement-choice').textContent.includes(`+${exposure} EV`));
 }
 d.getElementById('no-enhancement').click();
 assert.equal(field('adaptive_profile').value, 'off');
+assert.match(d.getElementById('enhancement-choice').textContent, /Original lighting · no lighting correction/);
 assert.equal(field('replace_bg').checked, true);
 assert.equal(field('use_ai').checked, true);
 assert.equal(field('ai_consent').checked, true);
@@ -74,6 +79,13 @@ for (const [status, expected, message] of [
   }
   outcomePage.close();
 }
+
+const lightingOnly = page('lighting-only');
+assert.match(lightingOnly.document.getElementById('adaptive-outcome').textContent, /lighting correction applied/);
+const lightingExplanation = lightingOnly.document.querySelector('#adaptive-outcome + details').textContent;
+assert.match(lightingExplanation, /No skin polishing, shine reduction or spot cleaning was selected/);
+assert.doesNotMatch(lightingExplanation, /Lighting and cleanup were chosen/);
+lightingOnly.close();
 
 const loaded = page('photo');
 loaded.document.getElementById('before-toggle').click();

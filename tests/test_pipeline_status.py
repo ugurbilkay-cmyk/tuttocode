@@ -79,5 +79,32 @@ class PipelineStatusTests(unittest.TestCase):
                 models=[dict(engine='nafnet',model_sha256='test-model')])]}},[],True)
         self.assertEqual(next(r for r in rows if r['name']=='NAFNet noise cleanup')['state'],'Unchanged')
 
+    def test_lighting_only_evidence_reports_lighting_without_retouched_skin(self):
+        rows=self.adaptive_rows([
+            dict(phase='adaptive_lighting',status='applied',changed_pixels=200,
+                 models=[dict(engine='retinex',model_sha256='test-model')]),
+        ],dict(exposure_ev=.5,lighting_adviser_requested=True,
+               denoise_percent=0,skin_percent=0,skin_cleaning_percent=0),
+          mode='lighting_only',message='Balanced lighting · +0.50 EV scene exposure',
+          source_diagnosis=dict(status='measured'))
+        self.assertEqual(rows['Lighting option']['state'],'Applied')
+        self.assertIn('+0.50 EV',rows['Lighting option']['detail'])
+        self.assertNotIn('Automatic quality profile',rows)
+        self.assertEqual(rows['Retinexformer lighting']['state'],'Applied')
+        for name in ('NAFNet noise cleanup','Skin smoothing','Advanced skin cleaning','Background removal'):
+            self.assertEqual(rows[name]['state'],'Off',name)
+        self.assertNotIn('Relative facial highlights',rows)
+        self.assertIn('scene exposure',rows['Source photo diagnosis']['detail'])
+        self.assertNotIn('skin texture',rows['Source photo diagnosis']['detail'])
+
+    def test_lighting_only_does_not_report_ignored_legacy_controls_as_selected(self):
+        rows=pipeline_status.report({'enhancement_options':dict(adaptive_profile='balanced',
+                lighting=100,denoise=50,skin=50,blemish=50,portrait_tone=50,detail=50,scale=2)},
+            {'adaptive_quality':dict(mode='lighting_only',status='applied',decisions={})},[],True)
+        by_name={row['name']:row for row in rows}
+        for name in ('Retinexformer lighting','NAFNet noise cleanup','Skin smoothing',
+                     'Advanced skin cleaning','Skin lighting and contrast','Detail sharpening','Enlargement'):
+            self.assertEqual(by_name[name]['state'],'Off',name)
+
 
 if __name__=='__main__':unittest.main()

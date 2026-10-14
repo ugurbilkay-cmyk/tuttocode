@@ -45,6 +45,16 @@ with patch.object(config, 'OPENAI_API_KEY', 'unit-test-only'):
         with db.conn() as conn:
             conn.execute('UPDATE photos SET measurements=? WHERE id=?', (json.dumps(evidence), pid))
         (folder / f'adaptive-{status}.html').write_text(client.get(path).text)
+    evidence = dict(measurements, adaptive_quality={
+        'mode': 'lighting_only', 'label': 'Balanced lighting', 'status': 'applied',
+        'message': 'Scene exposure +0.50 EV; uneven lighting balanced.',
+        'source_rgb_sha256': 'source', 'output_rgb_sha256': 'lit-output',
+        'decisions': {'exposure_ev': .5, 'denoise_percent': 0, 'skin_percent': 0,
+                      'skin_cleaning_percent': 0},
+    })
+    with db.conn() as conn:
+        conn.execute('UPDATE photos SET measurements=? WHERE id=?', (json.dumps(evidence), pid))
+    (folder / 'lighting-only.html').write_text(client.get(path).text)
     with db.conn() as conn:
         conn.execute('UPDATE photos SET measurements=? WHERE id=?', (json.dumps(measurements), pid))
         conn.execute('UPDATE photos SET ai_state=? WHERE id=?', (json.dumps({

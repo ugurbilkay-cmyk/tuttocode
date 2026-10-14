@@ -95,9 +95,9 @@ The next work should improve measurements, colour handling, cached correction
 fields and preservation. Adaptive finishing, ICC conversion, linear-light gain,
 semantic hair/beard masks and production deployment are not yet completed in the legacy stack.
 
-## Subsequent adaptive-profile implementation
+## Historical v2 adaptive-profile implementation
 
-The staff now have Natural, Balanced and Recovery intents instead of model
+The v2 staff form introduced Natural, Balanced and Recovery intents instead of model
 selectors and fixed stacks. See [the adaptive controller](ADAPTIVE_QUALITY.md).
 This trial controller uses a bounded linear-luminance gain field, asks the
 verified lighting model for a proposal when capture-disparity cues warrant it,
@@ -114,3 +114,21 @@ ICC conversion, a validated noise-versus-texture model, original/final landmark
 drift assessment, stage RSS instrumentation and the advisor isolation dataset
 remain unfinished. The two existing camera photographs are smoke comparisons,
 not independent acceptance evidence or a completed 200-photo study.
+
+## Current v3 lighting-only options
+
+The three keys now select whole-photo exposure at +0.25, +0.50 and +0.75 EV,
+with Balanced (+0.50 EV) as the new-job default. All use the same restrained
+local illumination field after removing the model's common median brightness
+proposal. Polishing, shine reduction, denoising and spot cleaning stay off.
+Original lighting remains available; saved v2 bytes and evidence are preserved
+until explicitly reprocessed. See [lighting options](ADAPTIVE_QUALITY.md).
+
+A private 38-capture study found the v2 model correction saturated its Balanced
+cap on every capture while global exposure stayed zero. The v3 implementation
+matches all 114 reviewed scene-bracket outputs pixel for pixel, including exact
+encoded JPEGs, using verified real source predictions. Fresh end-to-end runs
+and synthetic routing tests are separate from that cached-field replay. The
+cohort uses one studio setup and is not held-out exposure or skin-colour
+calibration. Native quality scores remain mixed; no universal automatic
+exposure selection or biometric improvement is claimed.

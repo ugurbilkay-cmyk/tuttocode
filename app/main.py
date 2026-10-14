@@ -198,8 +198,8 @@ def _opts(form=None):
         options["enhancement_options"] = enhancement.validate({key:form.get('enhancer_'+key,default)
             for key,default in enhancement.DEFAULTS.items()} if form else None)
         if form and 'adaptive_profile' in form:
-            # The simplified staff form requests an intent, never a model or
-            # fixed stack of strengths. Legacy explicit API settings still work.
+            # The simplified staff form selects a lighting level. Legacy
+            # restoration sliders cannot silently stack with that choice.
             options['enhancement_options']=enhancement.validate(dict(
                 adaptive_profile=form.get('adaptive_profile'),
                 blemish_keep=form.get('enhancer_blemish_keep',[])))
