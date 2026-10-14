@@ -60,6 +60,14 @@ proof of Photomatic equivalence. Cropping and code rules have not been retuned.
    Missing models produce partial/unavailable evidence rather than invented success.
    Existing staff responsibility overrides remain available.
 
+An evaluated profile that changes zero pixels now reports `unchanged`, with the
+pixel count/change recorded and a prominent staff message. Before/After is matched
+to the actual crop and output grid, rather than comparing a small thumbnail with
+a full-size After. See [comparison integrity](IMAGE_COMPARISON.md). An additional
+real-photo Recovery audit selected no corrections and produced an identical
+matched-grid JPEG; this exposes a selection-rule limitation, not an enhancement
+success or evidence that the capture is ideal.
+
 ## Trial correction budgets
 
 | Profile | Global exposure cap | Relative shadow cap | Learned face-lighting cap | Noise cleanup cap | Skin finish cap | Source-detail projection floor |

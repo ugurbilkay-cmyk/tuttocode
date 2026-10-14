@@ -66,6 +66,7 @@ $('country-search').addEventListener('input', e => {
 printer.addEventListener('change', () => { updatePrints();try { sessionStorage.setItem('photomatic-printer',printer.value); } catch (_) {} }); printTemplate.addEventListener('change', updateDimensions);
 $('show-overlay').addEventListener('change', () => updateJobMode());
 let beforeShown = false;
+let comparisonFailed=false;
 let cropPreviewActive=false;
 let cropSourceFailed=false;
 const savedCrop={zoom:1,x:0,y:0,rotation:0,angle:0,...window.stationCrop};
@@ -75,13 +76,14 @@ function updateCropPreview() {
   const changed=['zoom','x','y','rotation','angle'].some(key=>Number($(key).value)!==Number(savedCrop[key]));
   cropPreviewActive=changed && !$('print-only')?.checked;
   const image=$('stage-photo'), source=$('crop-preview-photo'), note=$('crop-preview-note');
-  $('before-toggle')?.toggleAttribute('disabled',cropPreviewActive);
+  $('before-toggle')?.toggleAttribute('disabled',cropPreviewActive || comparisonFailed);
   if (!cropPreviewActive) {
     source.hidden=true;image.style.transform='';
     image.hidden=beforeShown || !image.getAttribute('src');
     note.hidden=true;return;
   }
   beforeShown=false;if ($('before-photo')) $('before-photo').hidden=true;
+  updateComparisonState();
   const ratio=Number($('zoom').value)/Number(savedCrop.zoom);
   const deltaX=Number($('x').value)-Number(savedCrop.x),deltaY=Number($('y').value)-Number(savedCrop.y);
   const turn=Number($('rotation').value)-Number(savedCrop.rotation)+Number($('angle').value)-Number(savedCrop.angle);
@@ -113,7 +115,20 @@ function updateCropPreview() {
   note.hidden=false;
 }
 $('crop-preview-photo')?.addEventListener('error',()=>{cropSourceFailed=true;updateCropPreview();if(cropPreviewActive)$('crop-preview-note').textContent='Source preview unavailable · showing approximate framing on the saved photo. Apply changes recalculates the crop.';});
-$('before-toggle')?.addEventListener('click', () => { if(cropPreviewActive)return;beforeShown = !beforeShown; $('before-photo').hidden = !beforeShown; $('stage-photo').hidden = beforeShown; });
+function updateComparisonState() {
+  if ($('before-toggle')) {
+    $('before-toggle').textContent=beforeShown?'Show after':'Show before';
+    $('before-toggle').setAttribute('aria-pressed',String(beforeShown));
+  }
+  if ($('comparison-state')) $('comparison-state').textContent=beforeShown?'Before · unedited input, matched crop and pixel grid':'After · saved prepared photo';
+}
+$('before-toggle')?.addEventListener('click', () => { if(cropPreviewActive)return;beforeShown = !beforeShown; $('before-photo').hidden = !beforeShown; $('stage-photo').hidden = beforeShown;updateComparisonState(); });
+$('before-photo')?.addEventListener('error',()=>{
+  comparisonFailed=true;
+  beforeShown=false;$('before-photo').hidden=true;$('stage-photo').hidden=false;
+  $('before-toggle').disabled=true;updateComparisonState();
+  if ($('comparison-state')) $('comparison-state').textContent='Matched Before comparison unavailable · refresh or prepare again. No thumbnail substitute is displayed.';
+});
 for (const id of ['zoom','x','y','angle']) $(id)?.addEventListener('input', e => { $(id + '-value').textContent = e.target.value + (id === 'zoom' ? '' : id === 'angle' ? '°' : '%');updateCropPreview(); });
 $('rotation')?.addEventListener('change',updateCropPreview);
 $('reset-crop')?.addEventListener('click', () => { for (const [id, value] of [['zoom',1],['x',0],['y',0],['rotation',0],['angle',0]]) { $(id).value=value; $(id).dispatchEvent(new Event('input',{bubbles:true})); } });

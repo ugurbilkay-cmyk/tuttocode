@@ -19,7 +19,7 @@ GROUPS = [('image_quality','Image quality'),('geometry','Face size and position'
 
 def engine_reference():
     digest = hashlib.sha256()
-    for name in ('processing.py','photomatic.py','enhancement.py','background.py','hotspots.py','local_adjustments.py','ofiq.py','skin_guided.py','portrait_tone.py','adaptive_quality.py'):
+    for name in ('processing.py','photomatic.py','enhancement.py','background.py','hotspots.py','local_adjustments.py','ofiq.py','skin_guided.py','portrait_tone.py','adaptive_quality.py','comparison.py'):
         digest.update(name.encode())
         digest.update((config.BASE_DIR/'app'/name).read_bytes())
     digest.update((config.BASE_DIR/'app/photomatic_catalog.json').read_bytes())

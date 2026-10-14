@@ -312,11 +312,13 @@ def apply(rgb,points,profile,person_mask=None,keep=None):
         _,guard=texture_guard(r,c,valid,budget['texture_floor'])
         blend=guard['blend'] if guard['status']!='unchanged' else 1.
         out=np.rint(reference.astype(np.float32)*(1-blend)+candidate.astype(np.float32)*blend).astype(np.uint8)
-        evidence.update(status='partial' if noise is None or any(s.get('status')=='unavailable' for s in stages) else 'applied',
+        changed_pixels=int(np.any(out!=rgb,axis=2).sum())
+        evidence.update(status='partial' if noise is None or any(s.get('status')=='unavailable' for s in stages) else 'applied' if changed_pixels else 'unchanged',
+            changed_pixels=changed_pixels,mean_absolute_rgb_change=round(float(np.mean(np.abs(out.astype(np.float32)-rgb))),5),
             stages=stages,texture_guard=guard,
             before_hotspots=skin._diagnostic(report),
             after_hotspots=skin._diagnostic(hotspots.measure(cv2.resize(out,size,interpolation=cv2.INTER_AREA),sp)),
-            message=f"{budget['label']} · exposure {exposure:.2f} EV · face lighting ≤{learned_max+shadow:.2f} EV · noise {denoise:g}% · skin {smoothing:g}%",
+            message=f"{budget['label']} evaluated · no facial correction selected" if not changed_pixels else f"{budget['label']} · exposure {exposure:.2f} EV · face lighting ≤{learned_max+shadow:.2f} EV · noise {denoise:g}% · skin {smoothing:g}%",
             output_rgb_sha256=_digest(out),output_size=[out.shape[1],out.shape[0]],
             seconds=round(time.monotonic()-started,3))
         return out,evidence

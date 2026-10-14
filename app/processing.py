@@ -631,7 +631,7 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["analysis_size"] = [w, h]
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
-        before = _small_jpeg(np.asarray(ImageOps.fit(Image.fromarray(rgb),(out_w,out_h),method=Image.LANCZOS)))
+        before = None  # Source comparison rendered at the final grid by process().
         original_rgb = rgb
         if enhancement_options['adaptive_profile']!='off':
             skin_points=None
@@ -851,7 +851,7 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
                         output_eye_distance=round(float(np.linalg.norm(tp[R_IRIS] - tp[L_IRIS])), 2))
 
     raw = out.copy()  # unadjusted crop, used for glare detection
-    before = _small_jpeg(out)
+    before = None
     if enhancement.active(enhancement_options):
         original_face = raw[max(int(tp[FOREHEAD][1]),0):int(tp[CHIN][1]),
                             max(int(min(tp[FACE_L][0],tp[FACE_R][0])),0):int(max(tp[FACE_L][0],tp[FACE_R][0]))]
@@ -1044,6 +1044,19 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
     result = _process(data, age_group, analyzer, auto_adjust, even_bg, fix_shadows,
                       replace_bg, country_id, crop, framed, adjustments, print_only,
                       background_engine, enhancement_options)
+    if result.jpeg:
+        from . import comparison
+        try:
+            size=comparison.size(result.jpeg)
+            result.before_jpeg=comparison.render(data,result.measurements,{'crop':crop or {}},size,country_id)
+            result.measurements['comparison']=dict(version=comparison.VERSION,status='matched',size=list(size),
+                reference='Processing input before local edits, resampled onto the same crop and output grid',
+                source_file_sha256=hashlib.sha256(data).hexdigest(),
+                before_sha256=hashlib.sha256(result.before_jpeg).hexdigest(),after_sha256=hashlib.sha256(result.jpeg).hexdigest())
+        except (ValueError,OSError,cv2.error):
+            result.before_jpeg=None
+            result.measurements['comparison']=dict(version=comparison.VERSION,status='unavailable',
+                message='Source comparison could not be rendered; no thumbnail substitute is shown.')
     if not config.OFIQ_ENABLED:
         result.measurements['ofiq'] = dict(engine='OFIQ', status='off', stages=[])
         return result
@@ -1073,7 +1086,7 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
 def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options):
     """Full-frame editing for staff output, without a passport framing verdict."""
     h, w = rgb.shape[:2]
-    before = _small_jpeg(rgb)
+    before = None
     out = rgb.copy()
     measurements = {}
     cleaner_assets = {}
@@ -1140,6 +1153,7 @@ def _print_only_result(rgb, profile, analyzer, adjustments, auto_adjust, fix_sha
                     "input_size":[w,h], "output_size":[out_w,out_h],
                     "local_adjustments":{"engine":local_adjustments.VERSION,"values":adjustments},
                     "print_only":True, "passport_assessment":"not_assessed"})
+    measurements['comparison_padding_colour']=list(border_colour)
     if w < MIN_SRC_W or h < MIN_SRC_H:
         checks.append(Check("resolution", "Original source resolution", "fail",
                             f"{w} × {h} px; enlarging for print does not add real source detail"))

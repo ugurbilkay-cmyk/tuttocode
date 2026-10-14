@@ -26,7 +26,7 @@ from . import config, db, hmpo_auth, processing, photomatic, ai_prepare, measure
 from . import reviewed_import
 from . import govuk_precheck
 from . import test_queue
-from . import pipeline_status, ofiq
+from . import pipeline_status, ofiq, comparison
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -1259,23 +1259,76 @@ async def admin_reject(request):
 
 async def admin_full(request):
     _require_admin(request)
+    row=_available_row(request.path_params['pid'])
+    if request.query_params.get('revision') not in (None,str(row['revision'])):
+        raise HTTPException(409,'Photo changed; refresh the comparison')
     path = _photo_path(request.path_params["pid"])
     if not path.exists():
         raise HTTPException(404)
-    row = db.get(request.path_params['pid'])
     photo = await run_in_threadpool(_preserved_bytes, row) if row and _external_record(row) else path.read_bytes()
+    current=db.get(row['id'])
+    if not current or current['revision']!=row['revision'] or current['edit_token']:
+        raise HTTPException(409,'Photo changed; refresh the comparison')
     return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 async def admin_before(request):
     _require_admin(request)
     pid = request.path_params["pid"]
-    if not ID_RE.match(pid):
+    if not ID_RE.fullmatch(pid):
         raise HTTPException(404)
+    row=_available_row(pid)
+    if request.query_params.get('revision') not in (None,str(row['revision'])):
+        raise HTTPException(409,'Comparison changed; refresh the photo')
+    values=json.loads(row['measurements']);options=json.loads(row['options'])
+    record=values.get('comparison',{})
     path = config.PHOTO_DIR / f"{pid}_before.jpg"
-    if not path.exists():
-        raise HTTPException(404)
-    return Response(path.read_bytes(), media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+    master=_photo_path(pid)
+    if not master.exists() or _external_record(row):raise HTTPException(404)
+    try:after=master.read_bytes();size=comparison.size(after)
+    except (OSError,ValueError):raise HTTPException(409,'Prepared photo is unreadable; prepare again') from None
+    if record.get('status')=='matched' and record.get('version')==comparison.VERSION:
+        if not path.exists():raise HTTPException(409,'Comparison file is missing; refresh or prepare again')
+        photo=path.read_bytes()
+        if (record.get('after_sha256')!=hashlib.sha256(after).hexdigest() or
+            record.get('before_sha256')!=hashlib.sha256(photo).hexdigest() or comparison.size(photo)!=size):
+            raise HTTPException(409,'Comparison files changed; prepare again')
+        reference='working_source' if options.get('ai') else 'camera_source'
+    else:
+        # Older jobs retained only a 350x450 preview. Reconstruct from source
+        # and recorded geometry, without running models or changing saved jobs.
+        source=config.PHOTO_DIR/f'{pid}_working_source'
+        if source.exists():reference='working_source'
+        else:source=config.PHOTO_DIR/f'{pid}_source';reference='camera_source'
+        if not source.exists():raise HTTPException(409,'Full-resolution comparison source is unavailable')
+        data=source.read_bytes()
+        expected=values.get('ofiq',{}).get('source_file_sha256')
+        if expected and hashlib.sha256(data).hexdigest()!=expected:
+            raise HTTPException(409,'Comparison source changed; prepare again')
+        try:
+            photo=await run_in_threadpool(comparison.render,data,values,options,size,row['country_id'])
+        except (ValueError,OSError):raise HTTPException(409,'Matched source comparison is unavailable') from None
+    # A concurrent edit must not put this source beside another revision.
+    current=db.get(pid)
+    if not current or current['revision']!=row['revision'] or current['edit_token']:
+        raise HTTPException(409,'Photo changed while rendering; refresh')
+    return Response(photo,media_type='image/jpeg',headers={'Cache-Control':'no-store',
+        'X-Comparison-Reference':reference,'X-Comparison-Grid':f'{size[0]}x{size[1]}'})
+
+
+async def admin_camera_file(request):
+    """Return retained, byte-exact camera upload, rather than a preview."""
+    _require_admin(request)
+    pid=request.path_params['pid'];_available_row(pid)
+    source=config.PHOTO_DIR/f'{pid}_source'
+    if not source.is_file():raise HTTPException(404)
+    data=source.read_bytes()
+    try:
+        with processing.Image.open(io.BytesIO(data)) as im:fmt=(im.format or '').lower()
+    except OSError:fmt='bin'
+    suffix={'jpeg':'jpg','png':'png','heif':'heic'}.get(fmt,fmt if fmt.isalnum() else 'bin')
+    return Response(data,media_type='application/octet-stream',headers={'Cache-Control':'no-store',
+        'Content-Disposition':f'attachment; filename="camera-original-{pid}.{suffix}"'})
 
 
 async def admin_cleaner_asset(request):
@@ -1452,6 +1505,7 @@ main_routes = public_routes + [
     Route("/admin/p/{pid}/reject", admin_reject, methods=["POST"]),
     Route("/admin/p/{pid}/full.jpg", admin_full),
     Route("/admin/p/{pid}/before.jpg", admin_before),
+    Route("/admin/p/{pid}/camera-original", admin_camera_file),
     Route("/admin/p/{pid}/cleaner/{name}.png", admin_cleaner_asset),
     Route("/admin/p/{pid}/sheet.jpg", admin_sheet),
     Route("/admin/p/{pid}/save.jpg", admin_save),

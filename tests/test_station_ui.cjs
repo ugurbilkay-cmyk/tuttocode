@@ -58,6 +58,15 @@ assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-rat
 studio.close();
 
 const loaded = page('photo');
+loaded.document.getElementById('before-toggle').click();
+assert.equal(loaded.document.getElementById('before-photo').hidden,false);
+assert.equal(loaded.document.getElementById('before-toggle').textContent,'Show after');
+assert.match(loaded.document.getElementById('comparison-state').textContent,/matched crop and pixel grid/);
+loaded.document.getElementById('before-photo').dispatchEvent(new loaded.window.Event('error'));
+assert.equal(loaded.document.getElementById('before-photo').hidden,true);
+assert.equal(loaded.document.getElementById('stage-photo').hidden,false);
+assert.equal(loaded.document.getElementById('before-toggle').disabled,true);
+assert.match(loaded.document.getElementById('comparison-state').textContent,/unavailable/);
 const interactive=page('photo');
 const photoForm=interactive.document.getElementById('photo-form');
 const zoom=photoForm.elements.namedItem('zoom');

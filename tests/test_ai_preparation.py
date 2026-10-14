@@ -234,7 +234,7 @@ class WorkflowTests(unittest.TestCase):
         pid = self.upload(zoom='.5')
         self.assertFalse(main._photo_path(pid).exists())
         page = self.client.get(f'/admin/p/{pid}').text
-        self.assertIn(f'src="/admin/p/{pid}/original.jpg"', page)
+        self.assertIn(f'src="/admin/p/{pid}/original.jpg?revision=', page)
         self.assertIn('Camera original · adjust the crop', page)
         self.assertIn('id="crop-controls" open', page)
         self.assertEqual(self.client.get(f'/admin/p/{pid}/original.jpg').status_code, 200)
