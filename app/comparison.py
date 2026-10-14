@@ -20,7 +20,18 @@ def render(source,measurements,options,size,country_id):
     size=tuple(map(int,size))
     if len(size)!=2 or min(size)<1 or size[0]*size[1]>40_000_000:
         raise ValueError('Comparison output size is invalid')
-    rgb=P.load_image(source)
+    raw_settings=measurements.get('raw_development',{}).get('settings',options.get('raw_settings'))
+    try:
+        rgb,linear_master,raw_report=P.load_source(source,raw_settings)
+    except P.raw_development.Unavailable as exc:
+        raise ValueError(str(exc)) from None
+    if raw_report:
+        expected_raw=measurements.get('raw_development',{})
+        # Saved RAW comparisons must use the same development revision. A new
+        # decoder requires explicit reprocessing, never a silently changed before.
+        for key in ('version','rawpy','libraw','settings','source_sha256'):
+            if key in expected_raw and raw_report.get(key)!=expected_raw[key]:
+                raise ValueError('RAW comparison development changed; reprocess the source')
     profile=photomatic.country(country_id)
     if measurements.get('print_only'):
         colour=tuple(measurements.get('comparison_padding_colour',profile['background']))
@@ -28,7 +39,9 @@ def render(source,measurements,options,size,country_id):
             method=Image.Resampling.LANCZOS,color=colour)))
     crop=options.get('crop',{})
     rotation=int(crop.get('rotation',0))%360
-    if rotation:rgb=np.ascontiguousarray(np.rot90(rgb,-(rotation//90)))
+    if rotation:
+        rgb=np.ascontiguousarray(np.rot90(rgb,-(rotation//90)))
+        if linear_master is not None:linear_master=np.ascontiguousarray(np.rot90(linear_master,-(rotation//90)))
     angle=float(crop.get('angle',0))
     if angle:
         h,w=rgb.shape[:2]
@@ -37,6 +50,9 @@ def render(source,measurements,options,size,country_id):
         nh=int(np.ceil(h*abs(matrix[0,0])+w*abs(matrix[0,1])))
         matrix[:,2]+=[(nw-w)/2,(nh-h)/2]
         rgb=cv2.warpAffine(rgb,matrix,(nw,nh),borderValue=(0,0,0))
+        if linear_master is not None:
+            linear_master=cv2.warpAffine(linear_master,matrix,(nw,nh),borderValue=(0,0,0))
+            rgb=P.raw_development.render(linear_master,raw_report['settings']['tone'])
     expected=measurements.get('analysis_size')
     if expected and list(expected)!=[rgb.shape[1],rgb.shape[0]]:
         raise ValueError('Comparison source dimensions changed')
@@ -54,6 +70,9 @@ def render(source,measurements,options,size,country_id):
         matrix=np.array([[working[0]/w,0,-x*working[0]/w],
                          [0,working[1]/h,-y*working[1]/h]],np.float32)
         out=cv2.warpAffine(rgb,matrix,working,flags=cv2.INTER_AREA,borderMode=cv2.BORDER_REPLICATE)
+        if linear_master is not None:
+            master=cv2.warpAffine(linear_master,matrix,working,flags=cv2.INTER_AREA,borderMode=cv2.BORDER_REPLICATE)
+            out=P.raw_development.render(master,raw_report['settings']['tone'])
     if working!=size:out=cv2.resize(out,size,interpolation=cv2.INTER_LANCZOS4)
     return P._encode_jpeg(out)
 

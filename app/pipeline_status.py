@@ -15,6 +15,15 @@ def _stage_state(stage):
 def report(options, values, checks, has_photo, ai_state=None):
     rows=[]
     def add(name,state,detail):rows.append(dict(name=name,state=state,detail=detail))
+    raw=values.get('raw_development',{})
+    if raw:
+        settings=raw.get('settings',{})
+        add('RAW development','Completed',
+            f"CR2 sensor data · {settings.get('wb','camera')} white balance · base exposure {settings.get('exposure_ev',0):+.2f} EV. "
+            + raw.get('precision_boundary','Float32 development; display preview is sRGB8.'))
+    elif options.get('raw_settings'):
+        detail=next((c.get('detail') for c in checks if c.get('key')=='file'),'RAW development did not complete.')
+        add('RAW development','Unavailable',detail)
     face=values.get('face_analysis',{})
     if face.get('status')=='completed':
         counts=face.get('landmark_counts',[])

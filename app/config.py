@@ -55,11 +55,16 @@ OFIQ_ENABLED = _bool("OFIQ_ENABLED", False)
 OFIQ_RUNTIME_DIR = Path(os.getenv("OFIQ_RUNTIME_DIR", MODEL_DIR / "ofiq"))
 OFIQ_PYTHON = os.getenv("OFIQ_PYTHON", sys.executable)
 OFIQ_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("OFIQ_TIMEOUT_SECONDS", "120"))))
+RAW_PYTHON = os.getenv("RAW_PYTHON", sys.executable)
+RAW_TIMEOUT_SECONDS = min(600, max(30, int(os.getenv("RAW_TIMEOUT_SECONDS", "120"))))
 
 # Customer self-upload page. Off = shop/staff use only.
 PUBLIC_UPLOADS = _bool("PUBLIC_UPLOADS", False)
 
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "20"))
+# Genuine CR2 uploads have a separate, bounded limit. Ordinary image uploads
+# retain their existing limit; a filename alone never selects the RAW limit.
+MAX_RAW_UPLOAD_MB = min(96, max(1, int(os.getenv("MAX_RAW_UPLOAD_MB", "64"))))
 
 # Server only. Never put this key in templates, JavaScript or job records.
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

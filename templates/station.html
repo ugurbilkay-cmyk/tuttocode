@@ -38,7 +38,7 @@
           <img class="crop-overlay" id="crop-overlay" {% if profile.overlay %}src="{{ profile.overlay }}"{% else %}hidden{% endif %} alt="{{ profile.name }} crop guide">
         </div>
         <div class="photo-caption">{% if row and not has_photo and editable %}Camera original · adjust the crop, then Apply changes{% elif row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}Original preview · crop is applied when you prepare the photo{% endif %}</div>
-        {% if has_photo %}<p class="subtle" id="comparison-state">After · saved prepared photo</p><p class="subtle">Before uses the unedited {{ 'accepted OpenAI input' if options.ai else 'camera input' }} at the same crop and pixel dimensions as After. <a href="/admin/p/{{ row.id }}/camera-original">Download untouched camera file</a></p>{% endif %}
+        {% if has_photo %}<p class="subtle" id="comparison-state">After · saved prepared photo</p><p class="subtle">Before uses the {{ 'unedited accepted OpenAI input' if options.ai else 'selected RAW development' if options.get('raw_settings') else 'unedited camera input' }} at the same crop and pixel dimensions as After. <a href="/admin/p/{{ row.id }}/camera-original">Download untouched camera file</a></p>{% endif %}
         <p class="subtle" id="crop-preview-note" hidden>Live crop preview from source pixels · Apply changes renders the selected tools and updates checks.</p>
 
         <details class="check-details results-panel" {% if checks|selectattr('status','equalto','fail')|list %}open{% endif %}><summary>Photo checks{% if row %} · review results{% endif %}</summary>
@@ -59,8 +59,8 @@
         <section class="workflow-step" id="upload-step">
           <h2><span class="step-number">1</span> Upload</h2>
           {% if not row %}
-          <input type="file" name="photo" id="file-input" accept="image/*" required class="file-input">
-          <label for="file-input" class="action-button primary">Upload photo</label><p class="subtle" id="upload-filename">Choose a photo from your camera or computer.</p>
+          <input type="file" name="photo" id="file-input" accept="image/*,.cr2" required class="file-input">
+          <label for="file-input" class="action-button primary">Upload photo</label><p class="subtle" id="upload-filename">Choose a JPEG, PNG or Canon CR2 photo from your camera or computer.</p>
           <details class="step-options"><summary>Camera and customer details</summary>
             <button type="button" id="camera-button">Use camera</button>
             <label class="field-label">Age<select name="age_group">{% for k,v in ages.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
@@ -107,6 +107,17 @@
         </section>
         <section class="workflow-step" id="local-tools">
           <h2><span class="step-number">4</span> Lighting</h2>
+          {% set raw = options.get('raw_settings',{}) %}
+          {% if not row or raw %}
+          <details class="step-options" id="raw-controls" {% if not raw %}hidden{% endif %}>
+            <summary>RAW development</summary>
+            <p class="subtle">Choose the RAW base before applying a lighting option. The original sensor file is retained.</p>
+            <label class="field-label">White balance<select name="raw_wb" id="raw-wb" {% if not raw %}disabled{% endif %}><option value="camera" {% if raw.get('wb','camera')=='camera' %}selected{% endif %}>As shot</option><option value="auto" {% if raw.get('wb')=='auto' %}selected{% endif %}>Auto</option></select></label>
+            <label class="field-label">Base exposure · EV<input type="number" name="raw_exposure_ev" id="raw-exposure" min="-2" max="3" step="0.05" value="{{ raw.get('exposure_ev',0) }}" {% if not raw %}disabled{% endif %}></label>
+            <label class="field-label">Highlights<select name="raw_tone" id="raw-tone" {% if not raw %}disabled{% endif %}><option value="neutral" {% if raw.get('tone','neutral')=='neutral' %}selected{% endif %}>Standard</option><option value="photographic" {% if raw.get('tone')=='photographic' %}selected{% endif %}>Gentle highlight roll-off</option></select></label>
+            <p class="subtle" id="raw-lighting-scope">Natural, Balanced and Recovery add +0.25, +0.50 and +0.75 EV to this base. Bright highlights may limit the increase. Apply changes to review the result.</p>
+          </details>
+          {% endif %}
           {% set selected_profile = options.get('enhancement_options',{}).get('adaptive_profile','off') if row else 'balanced' %}
           <input type="hidden" name="adaptive_profile" id="adaptive-profile" value="{{ selected_profile }}">
           <div class="enhance-levels" role="group" aria-label="Lighting strength">

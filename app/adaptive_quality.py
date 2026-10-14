@@ -199,7 +199,7 @@ def texture_guard(reference,candidate,mask,floor):
                     limitation='Residuals include noise; this is not identity, focus or pore certification')
 
 
-def apply(rgb,points,profile,person_mask=None,keep=None):
+def apply(rgb,points,profile,person_mask=None,keep=None,*,linear_master=None,raw_tone='neutral'):
     """Apply the chosen scene exposure plus a common source-relative local field.
 
     A missing local analysis never cancels the explicit scene-exposure choice.
@@ -305,10 +305,28 @@ def apply(rgb,points,profile,person_mask=None,keep=None):
     except (ValueError,cv2.error,TypeError):
         incomplete='Local facial-lighting analysis unavailable'
     full_gain=np.exp2(exposure+local_full).astype(np.float32)
-    out=_tone(rgb,full_gain)
+    if linear_master is None:
+        out=_tone(rgb,full_gain)
+        maximum=_linear(rgb).max(axis=2)
+    else:
+        # Models advise using the declared display preview. Their smooth scalar
+        # field acts on the actual float master, before its first quantization
+        # on this crop grid. Never reconstruct RAW from the model preview.
+        from . import raw_development
+        master=np.asarray(linear_master)
+        if (master.dtype!=np.float32 or master.shape!=rgb.shape
+                or not np.isfinite(master).all() or np.any(master<0)):
+            raise ValueError('RAW lighting requires a matching float32 linear master')
+        maximum=master.max(axis=2)
+        gain=np.minimum(full_gain,np.maximum(1.,.945/np.maximum(maximum,1e-6)))
+        gain[rgb.max(axis=2)>=250]=1.
+        out=raw_development.render(master*gain[...,None],raw_tone)
+        evidence['raw_lighting']=dict(master_dtype='float32',tone=raw_tone,
+            source_linear_sha256=_digest(master),
+            method='Common-channel linear field before display tone and sRGB8 encoding',
+            boundary='Optional subsequent local tools use sRGB8')
     changed=int(np.any(out!=rgb,axis=2).sum())
     clipped=rgb.max(axis=2)>=250
-    maximum=_linear(rgb).max(axis=2)
     limited=np.minimum(full_gain,np.maximum(1.,.945/np.maximum(maximum,1e-6)))
     limited[clipped]=1.
     actual=np.log2(limited)

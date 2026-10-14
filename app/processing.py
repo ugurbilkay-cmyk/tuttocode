@@ -10,13 +10,15 @@ import io
 import hashlib
 import threading
 import time
+import tempfile
+from pathlib import Path
 from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes, ofiq, adaptive_quality
+from . import config, photomatic, local_adjustments, background, background_models, enhancement, skin, hotspots, blemishes, ofiq, adaptive_quality, raw_development
 
 try:  # iPhone HEIC uploads
     import pillow_heif
@@ -163,10 +165,36 @@ def get_analyzer():
     return _analyzer
 
 
-def load_image(data: bytes) -> np.ndarray:
+def load_source(data: bytes, raw_settings=None):
+    """Return model RGB, optional float RAW master, and development provenance.
+
+    CR2 must be intercepted before Pillow, which can otherwise silently expose
+    only the camera's embedded JPEG. Ordinary image decoding stays unchanged.
+    """
+    if raw_development.is_raw_container(data[:16]):
+        if not raw_development.is_raw_signature(data[:16]):
+            raise raw_development.InvalidRaw('Unsupported Canon RAW version. Use a supported CR2, JPEG or PNG.')
+        if len(data) > getattr(config, 'MAX_RAW_UPLOAD_MB', 64) * 1024 * 1024:
+            raise raw_development.InvalidRaw('RAW image exceeds the upload limit')
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix='raw-source-', dir=config.DATA_DIR) as folder:
+            source = Path(folder) / 'source.cr2'
+            source.write_bytes(data)
+            developed = raw_development.decode(source, raw_settings)
+        return developed.preview, developed.linear, developed.report
     im = Image.open(io.BytesIO(data))
+    if im.format == 'TIFF':
+        # Pillow can expose a TIFF-based camera RAW's thumbnail as if it were
+        # an ordinary image. Until TIFF/other RAW families have a verified
+        # source path, require a supported CR2 or an explicitly rendered image.
+        im.close()
+        raise raw_development.InvalidRaw('TIFF and other camera RAW formats are not supported yet. Use CR2, JPEG or PNG.')
     im = ImageOps.exif_transpose(im).convert("RGB")
-    return np.asarray(im)
+    return np.asarray(im), None, None
+
+
+def load_image(data: bytes, raw_settings=None) -> np.ndarray:
+    return load_source(data, raw_settings)[0]
 
 
 def _encode_jpeg(rgb: np.ndarray, min_kb=60, max_kb=9500) -> bytes:
@@ -477,10 +505,14 @@ def _local_enhancement(rgb, values, phase, measurements, checks):
     return out
 
 
-def _adaptive_edit(rgb, points, mask, values, measurements, checks):
+def _adaptive_edit(rgb, points, mask, values, measurements, checks, linear_master=None, raw_tone='neutral'):
     profile=enhancement.validate(values)['adaptive_profile']
     if profile=='off':return rgb
-    out,evidence=adaptive_quality.apply(rgb,points,profile,mask,values.get('blemish_keep'))
+    if linear_master is None:
+        out,evidence=adaptive_quality.apply(rgb,points,profile,mask,values.get('blemish_keep'))
+    else:
+        out,evidence=adaptive_quality.apply(rgb,points,profile,mask,values.get('blemish_keep'),
+            linear_master=linear_master, raw_tone=raw_tone)
     measurements['adaptive_quality']=evidence
     measurements.setdefault('local_enhancement',dict(settings=values,stages=[]))['stages'].append(evidence)
     checks.append(Check('adaptive_edit','Automatic photo preparation',
@@ -575,7 +607,7 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
             country_id: str | None = None, crop=None, framed=False,
-            adjustments=None, print_only=False, background_engine=None, enhancement_options=None) -> Result:
+            adjustments=None, print_only=False, background_engine=None, enhancement_options=None, raw_settings=None) -> Result:
     """age_group: adult | child (1-5) | baby (under 1)."""
     profile = photomatic.country(country_id)
     out_w, out_h = photomatic.output_size(profile)
@@ -600,19 +632,34 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
         checks.append(Check(key, label, status, detail))
 
     try:
-        rgb = load_image(data)
-    except Exception:
-        add("file", "Image file", "fail", "Not a readable image. Use JPEG or PNG.")
+        rgb, linear_master, raw_report = load_source(data, raw_settings)
+    except (raw_development.Unavailable, raw_development.InvalidRaw) as exc:
+        add('file', 'RAW development', 'fail', str(exc))
         return Result(False, checks, measurements=measurements)
+    except Exception:
+        add("file", "Image file", "fail", "Not a readable image. Use JPEG, PNG or a supported CR2.")
+        return Result(False, checks, measurements=measurements)
+
+    raw_tone = raw_report['settings']['tone'] if raw_report else 'neutral'
+    if raw_report:
+        measurements['raw_development'] = raw_report
+        measurements['source'] = {'format':'CR2', 'sensor_decoded':True}
+        raw_report['precision_boundary'] = 'Float32 source through crop and lighting; sRGB8 before optional local tools and JPEG delivery'
 
     h, w = rgb.shape[:2]
     measurements["input_size"] = [w, h]
     if print_only:
-        return _print_only_result(rgb, profile, analyzer, adjustments,
+        result = _print_only_result(rgb, profile, analyzer, adjustments,
                                   auto_adjust, fix_shadows, even_bg, replace_bg, background_engine, enhancement_options)
+        if raw_report:
+            raw_report['precision_boundary'] = 'Float32 RAW development; native sRGB8 before full-frame editing and print fitting'
+            result.measurements.update(raw_development=raw_report, source=measurements['source'])
+        return result
     rotation = int(crop.get("rotation", 0)) % 360
     if rotation:
         rgb = np.ascontiguousarray(np.rot90(rgb, -(rotation // 90)))
+        if linear_master is not None:
+            linear_master = np.ascontiguousarray(np.rot90(linear_master, -(rotation // 90)))
         h, w = rgb.shape[:2]
     angle = float(crop.get("angle", 0))
     if angle:
@@ -624,6 +671,9 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
         nh = int(np.ceil(h * abs(matrix[0, 0]) + w * abs(matrix[0, 1])))
         matrix[:, 2] += [(nw - w) / 2, (nh - h) / 2]
         rgb = cv2.warpAffine(rgb, matrix, (nw, nh), borderValue=(0, 0, 0))
+        if linear_master is not None:
+            linear_master = cv2.warpAffine(linear_master, matrix, (nw, nh), borderValue=(0, 0, 0))
+            rgb = raw_development.render(linear_master, raw_tone)
         valid_pixels = cv2.warpAffine(original_bounds, matrix, (nw, nh), flags=cv2.INTER_NEAREST)
         h, w = rgb.shape[:2]
     else:
@@ -631,6 +681,8 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
     measurements["analysis_size"] = [w, h]
     # Freestyle templates deliberately do not impose biometric framing.
     if not profile["use_head"] and not profile["use_width"]:
+        if raw_report:
+            raw_report['precision_boundary'] = 'Float32 RAW development and rotation; native sRGB8 before free-style editing and fitting'
         before = None  # Source comparison rendered at the final grid by process().
         original_rgb = rgb
         if enhancement_options['adaptive_profile']!='off':
@@ -826,8 +878,25 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
         out_w,out_h = max(1,round(out_w*working_scale)),max(1,round(out_h*working_scale))
     M = np.array([[out_w / crop_w, 0, -x0 * out_w / crop_w],
                   [0, out_h / crop_h, -y0 * out_h / crop_h]], dtype=np.float32)
+    if linear_master is not None:
+        # NumPy landmark scalars can keep arithmetic at float32. Reconstruct
+        # from the recorded Python-float rectangle so saved comparisons replay
+        # the identical matrix even at native 24 MP coordinates.
+        cx,cy,cw,ch=measurements['crop_geometry']['source_rect']
+        M=np.array([[out_w/cw,0,-cx*out_w/cw],
+                    [0,out_h/ch,-cy*out_h/ch]],np.float32)
     out = cv2.warpAffine(rgb, M, (out_w, out_h), flags=cv2.INTER_AREA,
                          borderMode=cv2.BORDER_REPLICATE)
+    working_linear = None
+    if linear_master is not None:
+        working_linear = cv2.warpAffine(linear_master, M, (out_w, out_h), flags=cv2.INTER_AREA,
+                                       borderMode=cv2.BORDER_REPLICATE)
+        out = raw_development.render(working_linear, raw_tone)
+        raw_report['working_size'] = [out_w, out_h]
+        raw_report['working_linear_sha256'] = hashlib.sha256(working_linear.tobytes()).hexdigest()
+        # Later local models use the crop. Do not keep another request's full
+        # float frame alive after the decoder's single-frame cache is evicted.
+        linear_master = None
     if valid_pixels is not None:
         coverage = cv2.warpAffine(valid_pixels, M, (out_w, out_h), flags=cv2.INTER_NEAREST)
         if not coverage.all():
@@ -859,7 +928,7 @@ def _process(data: bytes, age_group: str = "adult", analyzer=None,
             original_gray = cv2.cvtColor(original_face,cv2.COLOR_RGB2GRAY)
             original_gray = cv2.resize(original_gray,(300,max(1,int(300*original_gray.shape[0]/original_gray.shape[1]))))
             measurements['unadjusted_sharpness'] = round(float(cv2.Laplacian(original_gray,cv2.CV_64F).var()),2)
-    out = _adaptive_edit(out,tp,mask,enhancement_options,measurements,checks)
+    out = _adaptive_edit(out,tp,mask,enhancement_options,measurements,checks,working_linear,raw_tone)
     out = _local_enhancement(out,enhancement_options,'restore',measurements,checks)
     fb = (min(tp[FACE_L][0], tp[FACE_R][0]), tp[FOREHEAD][1],
           max(tp[FACE_L][0], tp[FACE_R][0]), tp[CHIN][1])
@@ -1039,11 +1108,11 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
             auto_adjust: bool = config.AUTO_ADJUST, even_bg: bool = config.EVEN_BG,
             fix_shadows: bool = config.FIX_SHADOWS, replace_bg: bool = config.BG_REPLACE,
             country_id: str | None = None, crop=None, framed=False,
-            adjustments=None, print_only=False, background_engine=None, enhancement_options=None) -> Result:
+            adjustments=None, print_only=False, background_engine=None, enhancement_options=None, raw_settings=None) -> Result:
     """Prepare and separately measure source/master/exact export using native OFIQ."""
     result = _process(data, age_group, analyzer, auto_adjust, even_bg, fix_shadows,
                       replace_bg, country_id, crop, framed, adjustments, print_only,
-                      background_engine, enhancement_options)
+                      background_engine, enhancement_options, raw_settings)
     if result.jpeg:
         from . import comparison
         try:
@@ -1053,26 +1122,34 @@ def process(data: bytes, age_group: str = "adult", analyzer=None,
                 reference='Processing input before local edits, resampled onto the same crop and output grid',
                 source_file_sha256=hashlib.sha256(data).hexdigest(),
                 before_sha256=hashlib.sha256(result.before_jpeg).hexdigest(),after_sha256=hashlib.sha256(result.jpeg).hexdigest())
-        except (ValueError,OSError,cv2.error):
+        except (ValueError,OSError,cv2.error,raw_development.Unavailable):
             result.before_jpeg=None
             result.measurements['comparison']=dict(version=comparison.VERSION,status='unavailable',
                 message='Source comparison could not be rendered; no thumbnail substitute is shown.')
     if not config.OFIQ_ENABLED:
         result.measurements['ofiq'] = dict(engine='OFIQ', status='off', stages=[])
         return result
+    if any(c.key=='file' and c.status=='fail' for c in result.checks):
+        result.measurements['ofiq']=dict(engine='OFIQ',status='unavailable',stages=[],
+            message='Source decoding failed; no quality pass is inferred.')
+        return result
     try:
-        if framed:
+        if framed and not raw_development.is_raw_signature(data[:16]):
             # Code validation assesses input delivery bytes without a second encode.
             images = {'delivery_jpeg': data}
         else:
-            images = {'original': ofiq.source_png(data)}
+            report=result.measurements.get('raw_development',{})
+            images = {'original': ofiq.source_png(data, raw_settings=report.get('settings'),expected_development=report)}
             if result.jpeg:
                 images.update(prepared_master=result.jpeg,
                               save_jpeg=save_photo(result.jpeg, country_id))
         record = ofiq.assess(images)
         record['source_file_sha256'] = hashlib.sha256(data).hexdigest()
+        if result.measurements.get('raw_development'):
+            report=result.measurements['raw_development']
+            record['source_development']={key:report[key] for key in ('version','rawpy','libraw','settings')}
         result.measurements['ofiq'] = record
-    except (OSError, ValueError):
+    except (OSError, ValueError, raw_development.Unavailable):
         result.measurements['ofiq'] = dict(engine='OFIQ', status='unavailable', stages=[],
             message='Native quality assessment unavailable; no OFIQ pass is implied.')
     if result.measurements['ofiq']['status'] != 'completed':

@@ -11,6 +11,7 @@ import shutil
 import smtplib
 import time
 from collections import defaultdict, deque
+from dataclasses import asdict
 from email.message import EmailMessage
 from urllib.parse import urlparse
 
@@ -27,6 +28,7 @@ from . import reviewed_import
 from . import govuk_precheck
 from . import test_queue
 from . import pipeline_status, ofiq, comparison
+from . import raw_development
 
 log = logging.getLogger("tuttoid")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -167,7 +169,10 @@ async def _read_upload(request):
     up = form.get("photo")
     if up is None or not hasattr(up, "read"):
         raise HTTPException(400, "No photo uploaded")
-    limit = config.MAX_UPLOAD_MB * 1024 * 1024
+    header = await up.read(16)
+    await up.seek(0)
+    is_raw = raw_development.is_raw_signature(header)
+    limit = (config.MAX_RAW_UPLOAD_MB if is_raw else config.MAX_UPLOAD_MB) * 1024 * 1024
     if up.size is not None and up.size > limit:
         await form.close()
         raise HTTPException(413, "Photo exceeds upload limit")
@@ -179,6 +184,57 @@ async def _read_upload(request):
         raise HTTPException(400, "Empty file")
     age = form.get("age_group", "adult")
     return form, data, age if age in AGE_GROUPS else "adult"
+
+
+def _raw_options(data, options):
+    """Bind declared development settings to verified sensor data only."""
+    options = dict(options)
+    if raw_development.is_raw_signature(data):
+        try:
+            options['raw_settings'] = asdict(raw_development.RawSettings(**options.get('raw_settings', {})))
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(400, str(exc)) from None
+    else:
+        options.pop('raw_settings', None)
+    return options
+
+
+def _camera_raw_settings(options, values=None):
+    """Keep retained-camera previews tied to the settings used for that job."""
+    return (options.get('raw_settings') or options.get('ai', {}).get('original_raw_settings') or
+            _camera_raw_report(options, values).get('settings'))
+
+
+def _camera_raw_report(options, values=None):
+    return ((values or {}).get('raw_development') or
+            options.get('ai', {}).get('original_measurements', {}).get('raw_development', {}))
+
+
+def _retained_raw_source(pid):
+    path = config.PHOTO_DIR / f'{pid}_source'
+    try:
+        with path.open('rb') as source:
+            return raw_development.is_raw_container(source.read(16))
+    except OSError:
+        return False
+
+
+def _source_preview(data, settings=None):
+    try:
+        return processing.load_image(data, raw_settings=settings)
+    except raw_development.Unavailable as exc:
+        raise HTTPException(409, str(exc)) from None
+    except raw_development.InvalidRaw as exc:
+        raise HTTPException(400, str(exc)) from None
+
+
+def _camera_png(data, settings=None):
+    """Use the declared RAW development at interfaces requiring a display image."""
+    if not raw_development.is_raw_signature(data):
+        return data
+    buffer = io.BytesIO()
+    processing.Image.fromarray(_source_preview(data, settings)).save(buffer, 'PNG')
+    return buffer.getvalue()
 
 
 def _opts(form=None):
@@ -209,6 +265,13 @@ def _opts(form=None):
             options['background_engine']=next((k for k in ('hr','portrait','modnet') if installed.get(k)),config.BACKGROUND_ENGINE)
     except ValueError as exc:
         raise HTTPException(400,str(exc)) from None
+    if form and any(key in form for key in ('raw_wb', 'raw_exposure_ev', 'raw_tone')):
+        try:
+            options['raw_settings'] = asdict(raw_development.RawSettings(
+                wb=form.get('raw_wb', 'camera'), exposure_ev=form.get('raw_exposure_ev', 0),
+                tone=form.get('raw_tone', 'neutral')))
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(400, str(exc)) from None
     return options
 
 
@@ -243,13 +306,13 @@ def _crop_options(form=None):
 async def _process_and_store(data, age, source, opts=None, profile=None, layout=None, **contact):
     profile = profile or photomatic.country()
     layout = layout or photomatic.default_print(profile)
-    options = dict(opts or _opts())
+    options = _raw_options(data, opts or _opts())
     options.setdefault("crop", _crop_options())
     result = await run_in_threadpool(lambda: processing.process(data, age, country_id=profile["id"], **options))
     pid = db.new_id()
     _store_result(pid,result)
     # A pending shop photo can be recropped; the source is removed on issue/expiry.
-    if source == "shop":
+    if source == "shop" or raw_development.is_raw_signature(data):
         (config.PHOTO_DIR / f"{pid}_source").write_bytes(data)
     db.create(pid, source, age, result, country_id=profile["id"], print_template_id=layout["id"], options=options, **contact)
     return pid, result
@@ -762,6 +825,8 @@ async def admin_reprocess(request):
         row = db.get(pid)
         _require_preparation_job(row)
         previous = json.loads(row['options'])
+        if 'raw_settings' not in options and previous.get('raw_settings'):
+            options['raw_settings'] = previous['raw_settings']
         if (options['enhancement_options']['blemish_keep'] and
             str(form.get('cleaner_revision',row['revision']))!=str(row['revision'])):
             raise HTTPException(409,'Photo changed; refresh before using saved keep areas')
@@ -773,7 +838,9 @@ async def admin_reprocess(request):
             source = config.PHOTO_DIR / f"{pid}_source"
         if not source.exists():
             raise HTTPException(409, "Upload a new photo to change this crop")
-        result = await run_in_threadpool(lambda: processing.process(source.read_bytes(), row["age_group"], country_id=profile["id"], **options))
+        source_data = source.read_bytes()
+        options = _raw_options(source_data, options)
+        result = await run_in_threadpool(lambda: processing.process(source_data, row["age_group"], country_id=profile["id"], **options))
         db.assert_edit(pid, token)
         if previous.get("ai"):
             options["ai"] = previous["ai"]
@@ -832,10 +899,24 @@ async def admin_ofiq(request):
         source = config.PHOTO_DIR / f'{pid}_source'
         source_bytes = source.read_bytes() if source.exists() else None
         if source_bytes is not None:
-            images['original'] = await run_in_threadpool(ofiq.source_png, source_bytes)
+            saved_options, saved_values = json.loads(row['options']), json.loads(row['measurements'])
+            settings = _camera_raw_settings(saved_options, saved_values)
+            raw_report = _camera_raw_report(saved_options, saved_values)
+            if raw_development.is_raw_container(source_bytes) and not raw_report:
+                raise HTTPException(409, 'Prepare the RAW source again before quality assessment; its previous development was not recorded.')
+            try:
+                images['original'] = await run_in_threadpool(ofiq.source_png, source_bytes,
+                    raw_settings=settings, expected_development=raw_report or None)
+            except (OSError, ValueError, raw_development.Unavailable):
+                raise HTTPException(409, 'The retained source could not be read for OFIQ. Check the image decoder and prepare again.') from None
         images.update(prepared_master=master, save_jpeg=export)
         record = await run_in_threadpool(ofiq.assess, images)
-        if source_bytes is not None: record['source_file_sha256'] = hashlib.sha256(source_bytes).hexdigest()
+        if source_bytes is not None:
+            record['source_file_sha256'] = hashlib.sha256(source_bytes).hexdigest()
+            if raw_development.is_raw_signature(source_bytes):
+                record['source_development'] = {key: raw_report[key] for key in ('version', 'rawpy', 'libraw', 'settings') if key in raw_report}
+                record['source_development'].update(version=raw_report.get('version', raw_development.VERSION),
+                                                    settings=settings or asdict(raw_development.RawSettings()))
         record['source_kind'] = 'retained_camera_original' if source_bytes is not None else 'original_unavailable'
         db.assert_edit(pid, token)
         if master_path.read_bytes() != master or (source_bytes is not None and source.read_bytes() != source_bytes):
@@ -899,20 +980,24 @@ async def _prepare_candidate(pid, *, lighting, colour):
                                  background_engine=options.get("background_engine",config.BACKGROUND_ENGINE),
                                  print_only=options.get("print_only",False),
                                  crop=options.get("crop", _crop_options()))
+            original_raw_settings = _camera_raw_settings(options, json.loads(row['measurements']))
+            local_options = _raw_options(original, dict(local_options, raw_settings=original_raw_settings or {}))
             original_result = await run_in_threadpool(lambda: processing.process(
                 original, row["age_group"], country_id=row["country_id"], **local_options))
             if any(c.status == "fail" and c.key == "file" for c in original_result.checks):
                 raise ai_prepare.PreparationError("Upload a readable image before OpenAI preparation")
             full_frame = options.get("print_only",False) or not original_result.jpeg
+            display_original = await run_in_threadpool(_camera_png, original, original_raw_settings)
             if full_frame:
                 local_options["print_only"] = True
-                prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour, print_only=True)
+                prepared = await run_in_threadpool(ai_prepare.prepare, display_original, lighting=lighting, colour=colour, print_only=True)
             else:
-                prepared = await run_in_threadpool(ai_prepare.prepare, original, lighting=lighting, colour=colour)
+                prepared = await run_in_threadpool(ai_prepare.prepare, display_original, lighting=lighting, colour=colour)
             # Preserve selected crop/background/enhancer choices on the candidate.
             # The reference measurements above remain unadjusted camera evidence.
             local_options.update(replace_bg=options.get('replace_bg',False), even_bg=options.get('even_bg',False),
                                  enhancement_options=options.get('enhancement_options'),adjustments=options.get('adjustments'))
+            local_options = _raw_options(prepared.image, local_options)
             result = await run_in_threadpool(lambda: processing.process(
                 prepared.image, row["age_group"], country_id=row["country_id"], **local_options))
             if not result.jpeg:
@@ -933,6 +1018,7 @@ async def _prepare_candidate(pid, *, lighting, colour):
                 "lighting": lighting, "colour": colour, "print_only": local_options.get("print_only",False), "permission_recorded": time.time(),
                 "original_checks": original_result.as_dict()["checks"], "original_measurements": original_result.measurements,
                 "original_sha256": hashlib.sha256(original).hexdigest(),
+                "original_raw_settings": original_raw_settings,
                 "edited_source_sha256": hashlib.sha256(prepared.image).hexdigest(),
             }
             db.set_ai_state(pid, token, state)
@@ -983,8 +1069,10 @@ async def admin_ai_recheck(request):
         current=await run_in_threadpool(lambda:processing.process(current_source,row['age_group'],country_id=row['country_id'],**base_options))
         reference_options=dict(auto_adjust=False,fix_shadows=False,even_bg=False,replace_bg=False,
             print_only=base_options.get('print_only',False),crop=base_options.get('crop',_crop_options()))
+        reference_options = _raw_options(original, dict(reference_options,
+            raw_settings=_camera_raw_settings(options, json.loads(row['measurements'])) or {}))
         reference=await run_in_threadpool(lambda:processing.process(original,row['age_group'],country_id=row['country_id'],**reference_options))
-        candidate_options=dict(base_options,auto_adjust=False,fix_shadows=False)
+        candidate_options=_raw_options(edited, dict(base_options,auto_adjust=False,fix_shadows=False))
         candidate=await run_in_threadpool(lambda:processing.process(edited,row['age_group'],country_id=row['country_id'],**candidate_options))
         if not candidate.jpeg:
             candidate_options['print_only']=True
@@ -1028,6 +1116,8 @@ async def admin_ai_accept(request):
         options["ai"] = {k: state[k] for k in (
             "model", "request_id", "prompt_version", "lighting", "colour", "permission_recorded",
             "original_sha256", "edited_source_sha256")}
+        if state.get('original_raw_settings'):
+            options['ai']['original_raw_settings'] = state['original_raw_settings']
         options["ai"]["print_only"] = state.get("print_only",False)
         options["ai"]["original_checks"] = state.get("original_checks",[])
         options["ai"]["original_measurements"] = state.get("original_measurements",{})
@@ -1058,6 +1148,8 @@ async def admin_restore_original(request):
                        print_only=json.loads(row["options"]).get("print_only",False),
                        crop=json.loads(row["options"]).get("crop", _crop_options()))
         data = (config.PHOTO_DIR / f"{pid}_source").read_bytes()
+        options = _raw_options(data, dict(options, raw_settings=_camera_raw_settings(
+            json.loads(row['options']), json.loads(row['measurements'])) or {}))
         result = await run_in_threadpool(lambda: processing.process(data, row["age_group"], country_id=row["country_id"], **options))
         db.assert_edit(pid, token)
         _store_result(pid, result)
@@ -1072,11 +1164,12 @@ async def admin_original(request):
     pid = request.path_params["pid"]
     if not ID_RE.fullmatch(pid):
         raise HTTPException(404)
-    _available_row(pid)
+    row = _available_row(pid)
     source = config.PHOTO_DIR / f"{pid}_source"
     if not source.exists():
         raise HTTPException(404)
-    photo = await run_in_threadpool(lambda: processing._small_jpeg(processing.load_image(source.read_bytes()), bounds=(1600, 1600), quality=95))
+    settings = _camera_raw_settings(json.loads(row['options']), json.loads(row['measurements']))
+    photo = await run_in_threadpool(lambda: processing._small_jpeg(_source_preview(source.read_bytes(), settings), bounds=(1600, 1600), quality=95))
     return Response(photo, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
@@ -1087,7 +1180,8 @@ async def admin_crop_source(request):
     source=config.PHOTO_DIR/f'{pid}_working_source'
     if not source.exists():source=config.PHOTO_DIR/f'{pid}_source'
     if not source.exists():raise HTTPException(404)
-    photo=await run_in_threadpool(lambda:processing._small_jpeg(processing.load_image(source.read_bytes()),bounds=(1600,1600),quality=95))
+    settings = _camera_raw_settings(json.loads(row['options']), json.loads(row['measurements']))
+    photo=await run_in_threadpool(lambda:processing._small_jpeg(_source_preview(source.read_bytes(), settings),bounds=(1600,1600),quality=95))
     return Response(photo,media_type='image/jpeg',headers={'Cache-Control':'no-store'})
 
 
@@ -1121,6 +1215,9 @@ async def admin_hotspots(request):
         raise HTTPException(404, "No photograph is available for inspection")
     reports = []
     for label, data in snapshots:
+        if raw_development.is_raw_signature(data):
+            settings = _camera_raw_settings(json.loads(row['options']), json.loads(row['measurements']))
+            data = await run_in_threadpool(_camera_png, data, settings)
         report = await run_in_threadpool(hotspots.inspect_photo, data)
         reports.append(dict(report, label=label))
     current = db.get(pid)
@@ -1241,7 +1338,8 @@ async def admin_issue(request):
                       decision="staff_override" if staff_override else "approved_with_exception" if exception else "approved_with_age_allowance" if age_allowances else "checks_passed_and_reviewed")
         code = db.issue(pid, review, token)
         # Retain enhancement originals as review evidence until normal expiry.
-        if not options.get("ai") and not staff_override and not enhancement.active(options.get('enhancement_options')):
+        if (not _retained_raw_source(pid) and not options.get("ai") and not staff_override and
+                not enhancement.active(options.get('enhancement_options'))):
             (config.PHOTO_DIR / f"{pid}_source").unlink(missing_ok=True)
         (config.PHOTO_DIR / f"{pid}_working_source").unlink(missing_ok=True)
         _clear_candidate(pid)
@@ -1254,6 +1352,7 @@ async def admin_reject(request):
     with _edit_job(request.path_params["pid"], pending_only=False):
         db.reject(request.path_params["pid"])
     db.purge_expired()
+    raw_development.clear_cache()
     return RedirectResponse("/admin", status_code=303)
 
 
@@ -1323,10 +1422,13 @@ async def admin_camera_file(request):
     source=config.PHOTO_DIR/f'{pid}_source'
     if not source.is_file():raise HTTPException(404)
     data=source.read_bytes()
-    try:
-        with processing.Image.open(io.BytesIO(data)) as im:fmt=(im.format or '').lower()
-    except OSError:fmt='bin'
-    suffix={'jpeg':'jpg','png':'png','heif':'heic'}.get(fmt,fmt if fmt.isalnum() else 'bin')
+    if raw_development.is_raw_container(data):
+        suffix = 'cr2'
+    else:
+        try:
+            with processing.Image.open(io.BytesIO(data)) as im:fmt=(im.format or '').lower()
+        except OSError:fmt='bin'
+        suffix={'jpeg':'jpg','png':'png','heif':'heic'}.get(fmt,fmt if fmt.isalnum() else 'bin')
     return Response(data,media_type='application/octet-stream',headers={'Cache-Control':'no-store',
         'Content-Disposition':f'attachment; filename="camera-original-{pid}.{suffix}"'})
 
@@ -1435,6 +1537,7 @@ async def _purge_loop():
         try:
             n = await run_in_threadpool(db.purge_expired)
             if n:
+                raw_development.clear_cache()
                 log.info("Purged %d expired photos", n)
         except Exception as e:
             log.error("Purge failed: %s", e)
@@ -1452,6 +1555,7 @@ async def lifespan(app):
     task = asyncio.create_task(_purge_loop())
     yield
     task.cancel()
+    raw_development.clear_cache()
     for running in list(_govuk_tasks):
         running.cancel()
     if _govuk_tasks:

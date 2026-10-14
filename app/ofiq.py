@@ -125,9 +125,23 @@ def assess(images):
                     message='OFIQ could not assess this photo. Check runtime assets and the native worker; no quality pass is inferred.')
 
 
-def source_png(data):
+def source_png(data, raw_settings=None, expected_development=None):
     """Bake EXIF orientation for native BGR decoding; preserve the original hash separately."""
+    from . import raw_development
+    if raw_development.is_raw_container(data[:16]):
+        from . import processing
+        try:
+            rgb,_,report=processing.load_source(data,raw_settings=raw_settings)
+        except raw_development.Unavailable as exc:
+            raise ValueError(str(exc)) from None
+        for key in ('version','rawpy','libraw','settings','source_sha256'):
+            if key in (expected_development or {}) and report.get(key)!=expected_development[key]:
+                raise ValueError('RAW development changed; prepare again before quality assessment')
+        if min(rgb.shape[:2])<32 or max(rgb.shape[:2])>32767:raise ValueError('Unsafe OFIQ source dimensions')
+        out=io.BytesIO();Image.fromarray(rgb).save(out,format='PNG')
+        return out.getvalue()
     with Image.open(io.BytesIO(data)) as im:
+        if im.format=='TIFF':raise ValueError('TIFF/other RAW sources require supported CR2, JPEG or PNG')
         if min(im.size) < 32 or max(im.size) > 32767: raise ValueError('Unsafe OFIQ source dimensions')
         im = ImageOps.exif_transpose(im).convert('RGB')
         out = io.BytesIO(); im.save(out, format='PNG')

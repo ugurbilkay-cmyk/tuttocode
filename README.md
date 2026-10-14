@@ -68,6 +68,10 @@ the optional worker runtime, model installation and measured limitations.
 The [local image enhancer](docs/IMAGE_ENHANCER.md) adds editable portrait presets,
 Retinexformer lighting, NAFNet noise cleanup, detail sharpening and optional
 RealPLKSR or Real-ESRGAN 2×/4× enlargement. All are off until selected; OpenAI remains optional.
+The [local RAW source path](docs/RAW_DEVELOPMENT.md) accepts Canon CR2 sensor
+files with separate white balance, base exposure and highlight controls. Install
+`requirements-raw.txt` in `RAW_PYTHON` to enable it. RAW base colour is an explicit
+LibRaw development, not a match for Adobe Color; JPEG processing is unchanged.
 
 Read the [workflow specification and gap audit](docs/SYSTEM_SPEC.md) before treating
 this prototype as a replacement for the current shop software. See also

@@ -373,11 +373,30 @@ $('print-button')?.addEventListener('click', () => {
   window.open(`/admin/p/${window.stationPhotoId}/sheet.jpg?${query}`, '_blank', 'noopener');
 });
 let objectUrl = null;
-function previewFile(file) {
+let fileSelection = 0;
+async function previewFile(file) {
   if (!file) return;
+  const selection = ++fileSelection;
   if (objectUrl) URL.revokeObjectURL(objectUrl);
-  objectUrl = URL.createObjectURL(file); $('stage-photo').src = objectUrl; $('stage-photo').hidden = false; $('empty-photo').hidden = true;
+  objectUrl = null;
+  const header = new Uint8Array(await file.slice(0,16).arrayBuffer());
+  if (selection !== fileSelection) return;
+  const isRaw = header.length >= 16 && ((header[0]===73 && header[1]===73 && header[2]===42 && header[3]===0) ||
+    (header[0]===77 && header[1]===77 && header[2]===0 && header[3]===42)) &&
+    header[8]===67 && header[9]===82 && header[10]===2 && header[11]===0;
+  const rawControls=$('raw-controls');
+  if (rawControls) {
+    rawControls.hidden=!isRaw;
+    for (const control of rawControls.querySelectorAll('input,select')) control.disabled=!isRaw;
+  }
   if ($('upload-filename')) $('upload-filename').textContent=file.name;
+  if (isRaw) {
+    $('stage-photo').hidden=true; $('empty-photo').hidden=false;
+    $('empty-photo').querySelector('h2').textContent='RAW file ready';
+    $('empty-photo').querySelector('p').textContent='Prepare the photo to develop the sensor image and review its lighting.';
+    return;
+  }
+  objectUrl = URL.createObjectURL(file); $('stage-photo').src = objectUrl; $('stage-photo').hidden = false; $('empty-photo').hidden = true;
   updateCropPreview();
 }
 $('file-input')?.addEventListener('change', e => previewFile(e.target.files[0]));
