@@ -1,0 +1,14 @@
+{
+  "version": "1.2.0",
+  "platform": "macOS ARM64",
+  "upstream_checks": 787,
+  "adapter_fixtures": 28,
+  "adapter_mapped_components": 784,
+  "mapped_tolerance": 1,
+  "real_samples": 2,
+  "real_stages_per_sample": [
+    3,
+    3
+  ],
+  "notes": "Native source/config/model conformance and execution, not country acceptance calibration. No customer identifiers or image hashes in this public summary."
+}

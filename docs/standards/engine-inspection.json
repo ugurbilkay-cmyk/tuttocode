@@ -1,0 +1,5794 @@
+{
+  "scope": "Static inspection of selected methods only; no reference executable was run; all string literals omitted",
+  "assemblies": [
+    {
+      "file": "Bin/Photomatic.DLL",
+      "sha256": "67a08bef61aef7b6d7950e5092cb265d74629517f847670c8d7637c3baf617ba",
+      "references": [
+        "mscorlib",
+        "System.Xml",
+        "System.Drawing",
+        "Interop.FaceItMedia",
+        "Interop.FaceItLocate",
+        "DPS_Library"
+      ],
+      "methods": [
+        {
+          "type": "Photomatic.ISOlevels",
+          "name": ".ctor",
+          "token": "0x6000001",
+          "instruction_count": 264,
+          "calls": [
+            "Object..ctor"
+          ],
+          "fields_referenced": [
+            "ISOlevels.CheckArtefacts",
+            "ISOlevels.CheckBackBright",
+            "ISOlevels.CheckBackColor",
+            "ISOlevels.CheckBackShadows",
+            "ISOlevels.CheckBackUniform",
+            "ISOlevels.CheckCompressed",
+            "ISOlevels.CheckConfidence",
+            "ISOlevels.CheckContrast",
+            "ISOlevels.CheckEyeAngle",
+            "ISOlevels.CheckEyeDistance",
+            "ISOlevels.CheckEyes",
+            "ISOlevels.CheckEyesClear",
+            "ISOlevels.CheckEyesOpen",
+            "ISOlevels.CheckFace",
+            "ISOlevels.CheckFaceFree",
+            "ISOlevels.CheckFaceLarge",
+            "ISOlevels.CheckFacePositionHigh",
+            "ISOlevels.CheckFacePositionLeft",
+            "ISOlevels.CheckFacePositionLow",
+            "ISOlevels.CheckFacePositionRight",
+            "ISOlevels.CheckFaceSmall",
+            "ISOlevels.CheckGenQuality",
+            "ISOlevels.CheckGlare",
+            "ISOlevels.CheckHotspots",
+            "ISOlevels.CheckInputFormat",
+            "ISOlevels.CheckInputSize",
+            "ISOlevels.CheckInterlaced",
+            "ISOlevels.CheckMotionblur",
+            "ISOlevels.CheckNoise",
+            "ISOlevels.CheckOverexposed",
+            "ISOlevels.CheckPose",
+            "ISOlevels.CheckShadowInEyes",
+            "ISOlevels.CheckShadowInFace",
+            "ISOlevels.CheckSharpness",
+            "ISOlevels.CheckSkinColor",
+            "ISOlevels.CheckSuitable",
+            "ISOlevels.CheckSunGlases",
+            "ISOlevels.CheckUnderexposed",
+            "ISOlevels.CheckUniform",
+            "ISOlevels.MaxAngle",
+            "ISOlevels.MinArtefacts",
+            "ISOlevels.MinBackBright",
+            "ISOlevels.MinBackColor",
+            "ISOlevels.MinBackShadows",
+            "ISOlevels.MinBackUniform",
+            "ISOlevels.MinCompressed",
+            "ISOlevels.MinConfidence",
+            "ISOlevels.MinContrast",
+            "ISOlevels.MinEyesNotFacingCamera",
+            "ISOlevels.MinEyesOpen",
+            "ISOlevels.MinEyesclear",
+            "ISOlevels.MinFaceLarge",
+            "ISOlevels.MinFaceNotFacingCamera",
+            "ISOlevels.MinFacePositionHigh",
+            "ISOlevels.MinFacePositionLeft",
+            "ISOlevels.MinFacePositionLow",
+            "ISOlevels.MinFacePositionRight",
+            "ISOlevels.MinFaceSmall",
+            "ISOlevels.MinFacefree",
+            "ISOlevels.MinGenQuality",
+            "ISOlevels.MinGlarefree",
+            "ISOlevels.MinGlasses",
+            "ISOlevels.MinHat",
+            "ISOlevels.MinHotspots",
+            "ISOlevels.MinInputHeight",
+            "ISOlevels.MinInputWidth",
+            "ISOlevels.MinInterlaced",
+            "ISOlevels.MinMotionblur",
+            "ISOlevels.MinNeutralExpression",
+            "ISOlevels.MinNoise",
+            "ISOlevels.MinOverexposed",
+            "ISOlevels.MinPose",
+            "ISOlevels.MinRedEyes",
+            "ISOlevels.MinSharpness",
+            "ISOlevels.MinSkinColor",
+            "ISOlevels.MinSmiling",
+            "ISOlevels.MinSuitable",
+            "ISOlevels.MinSunglases",
+            "ISOlevels.MinUnderexposed",
+            "ISOlevels.MinUniform",
+            "ISOlevels.MineyeDistance",
+            "ISOlevels.MouthClosed",
+            "ISOlevels.RefBackColorBlue",
+            "ISOlevels.RefBackColorGreen",
+            "ISOlevels.RefBackColorRed",
+            "ISOlevels.ShadowInEyes",
+            "ISOlevels.ShadowInFace"
+          ],
+          "instructions": [
+            {
+              "offset": "0xc",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xd",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xe",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckInputFormat"
+            },
+            {
+              "offset": "0x13",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x14",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x15",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckInputSize"
+            },
+            {
+              "offset": "0x1a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1b",
+              "opcode": "ldc.i4",
+              "operand": 300
+            },
+            {
+              "offset": "0x20",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinInputWidth"
+            },
+            {
+              "offset": "0x25",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x26",
+              "opcode": "ldc.i4",
+              "operand": 400
+            },
+            {
+              "offset": "0x2b",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinInputHeight"
+            },
+            {
+              "offset": "0x30",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x31",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x32",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFace"
+            },
+            {
+              "offset": "0x37",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x38",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x39",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckEyes"
+            },
+            {
+              "offset": "0x3e",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x3f",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x40",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckConfidence"
+            },
+            {
+              "offset": "0x45",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x46",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x48",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinConfidence"
+            },
+            {
+              "offset": "0x4d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x4e",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x4f",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckGenQuality"
+            },
+            {
+              "offset": "0x54",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x55",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x57",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinGenQuality"
+            },
+            {
+              "offset": "0x5c",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x5d",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x5e",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckEyeAngle"
+            },
+            {
+              "offset": "0x63",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x64",
+              "opcode": "ldc.i4.6",
+              "operand": null
+            },
+            {
+              "offset": "0x65",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0x6a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x6b",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x6c",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckEyeDistance"
+            },
+            {
+              "offset": "0x71",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x72",
+              "opcode": "ldc.i4.s",
+              "operand": 100
+            },
+            {
+              "offset": "0x74",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MineyeDistance"
+            },
+            {
+              "offset": "0x79",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x7a",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x7b",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckPose"
+            },
+            {
+              "offset": "0x80",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x81",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x83",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinPose"
+            },
+            {
+              "offset": "0x88",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x89",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x8a",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFaceFree"
+            },
+            {
+              "offset": "0x8f",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x90",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x92",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFacefree"
+            },
+            {
+              "offset": "0x97",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x98",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x99",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckSuitable"
+            },
+            {
+              "offset": "0x9e",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x9f",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xa1",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinSuitable"
+            },
+            {
+              "offset": "0xa6",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xa7",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xa8",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckEyesClear"
+            },
+            {
+              "offset": "0xad",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xae",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xb0",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinEyesclear"
+            },
+            {
+              "offset": "0xb5",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xb6",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xb7",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckEyesOpen"
+            },
+            {
+              "offset": "0xbc",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xbd",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xbf",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinEyesOpen"
+            },
+            {
+              "offset": "0xc4",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xc5",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xc6",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckSunGlases"
+            },
+            {
+              "offset": "0xcb",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xcc",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xce",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinSunglases"
+            },
+            {
+              "offset": "0xd3",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xd4",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xd5",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckGlare"
+            },
+            {
+              "offset": "0xda",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xdb",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xdd",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinGlarefree"
+            },
+            {
+              "offset": "0xe2",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xe3",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xe5",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinNeutralExpression"
+            },
+            {
+              "offset": "0xea",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xeb",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xed",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinHat"
+            },
+            {
+              "offset": "0xf2",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xf3",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xf5",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MouthClosed"
+            },
+            {
+              "offset": "0xfa",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xfb",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0xfd",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinSmiling"
+            },
+            {
+              "offset": "0x102",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x103",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x105",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinGlasses"
+            },
+            {
+              "offset": "0x10a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x10b",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x10d",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinRedEyes"
+            },
+            {
+              "offset": "0x112",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x113",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x115",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFaceNotFacingCamera"
+            },
+            {
+              "offset": "0x11a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x11b",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x11d",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinEyesNotFacingCamera"
+            },
+            {
+              "offset": "0x122",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x123",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x124",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckOverexposed"
+            },
+            {
+              "offset": "0x129",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x12a",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x12c",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinOverexposed"
+            },
+            {
+              "offset": "0x131",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x132",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x133",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckUnderexposed"
+            },
+            {
+              "offset": "0x138",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x139",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x13b",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinUnderexposed"
+            },
+            {
+              "offset": "0x140",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x141",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x142",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckSkinColor"
+            },
+            {
+              "offset": "0x147",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x148",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x14a",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinSkinColor"
+            },
+            {
+              "offset": "0x14f",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x150",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x151",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckHotspots"
+            },
+            {
+              "offset": "0x156",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x157",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x159",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinHotspots"
+            },
+            {
+              "offset": "0x15e",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x15f",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x160",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckUniform"
+            },
+            {
+              "offset": "0x165",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x166",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x168",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinUniform"
+            },
+            {
+              "offset": "0x16d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x16e",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x16f",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckShadowInEyes"
+            },
+            {
+              "offset": "0x174",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x175",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x177",
+              "opcode": "stfld",
+              "operand": "ISOlevels.ShadowInEyes"
+            },
+            {
+              "offset": "0x17c",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x17d",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x17e",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckShadowInFace"
+            },
+            {
+              "offset": "0x183",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x184",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x186",
+              "opcode": "stfld",
+              "operand": "ISOlevels.ShadowInFace"
+            },
+            {
+              "offset": "0x18b",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x18c",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x18d",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFaceLarge"
+            },
+            {
+              "offset": "0x192",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x193",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x195",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFaceLarge"
+            },
+            {
+              "offset": "0x19a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x19b",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x19c",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFaceSmall"
+            },
+            {
+              "offset": "0x1a1",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1a2",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1a4",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFaceSmall"
+            },
+            {
+              "offset": "0x1a9",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1aa",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1ab",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFacePositionLeft"
+            },
+            {
+              "offset": "0x1b0",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1b1",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1b3",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFacePositionLeft"
+            },
+            {
+              "offset": "0x1b8",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1b9",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1ba",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFacePositionRight"
+            },
+            {
+              "offset": "0x1bf",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1c0",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1c2",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFacePositionRight"
+            },
+            {
+              "offset": "0x1c7",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1c8",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1c9",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFacePositionHigh"
+            },
+            {
+              "offset": "0x1ce",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1cf",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1d1",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFacePositionHigh"
+            },
+            {
+              "offset": "0x1d6",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1d7",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1d8",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckFacePositionLow"
+            },
+            {
+              "offset": "0x1dd",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1de",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1e0",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinFacePositionLow"
+            },
+            {
+              "offset": "0x1e5",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1e6",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1e7",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckSharpness"
+            },
+            {
+              "offset": "0x1ec",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1ed",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1ef",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinSharpness"
+            },
+            {
+              "offset": "0x1f4",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1f5",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1f6",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckMotionblur"
+            },
+            {
+              "offset": "0x1fb",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1fc",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x1fe",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinMotionblur"
+            },
+            {
+              "offset": "0x203",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x204",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x205",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckContrast"
+            },
+            {
+              "offset": "0x20a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x20b",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x20d",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinContrast"
+            },
+            {
+              "offset": "0x212",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x213",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x214",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckArtefacts"
+            },
+            {
+              "offset": "0x219",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x21a",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x21c",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinArtefacts"
+            },
+            {
+              "offset": "0x221",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x222",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x223",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckNoise"
+            },
+            {
+              "offset": "0x228",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x229",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x22b",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinNoise"
+            },
+            {
+              "offset": "0x230",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x231",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x232",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckInterlaced"
+            },
+            {
+              "offset": "0x237",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x238",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x23a",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinInterlaced"
+            },
+            {
+              "offset": "0x23f",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x240",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x241",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckCompressed"
+            },
+            {
+              "offset": "0x246",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x247",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x249",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinCompressed"
+            },
+            {
+              "offset": "0x24e",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x24f",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x250",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckBackUniform"
+            },
+            {
+              "offset": "0x255",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x256",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x258",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinBackUniform"
+            },
+            {
+              "offset": "0x25d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x25e",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x25f",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckBackBright"
+            },
+            {
+              "offset": "0x264",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x265",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x267",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinBackBright"
+            },
+            {
+              "offset": "0x26c",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x26d",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x26e",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckBackShadows"
+            },
+            {
+              "offset": "0x273",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x274",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x276",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinBackShadows"
+            },
+            {
+              "offset": "0x27b",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x27c",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x27d",
+              "opcode": "stfld",
+              "operand": "ISOlevels.CheckBackColor"
+            },
+            {
+              "offset": "0x282",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x283",
+              "opcode": "ldc.i4.s",
+              "operand": 30
+            },
+            {
+              "offset": "0x285",
+              "opcode": "stfld",
+              "operand": "ISOlevels.MinBackColor"
+            },
+            {
+              "offset": "0x28a",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x28b",
+              "opcode": "ldc.i4",
+              "operand": 230
+            },
+            {
+              "offset": "0x290",
+              "opcode": "stfld",
+              "operand": "ISOlevels.RefBackColorRed"
+            },
+            {
+              "offset": "0x295",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x296",
+              "opcode": "ldc.i4",
+              "operand": 230
+            },
+            {
+              "offset": "0x29b",
+              "opcode": "stfld",
+              "operand": "ISOlevels.RefBackColorGreen"
+            },
+            {
+              "offset": "0x2a0",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2a1",
+              "opcode": "ldc.i4",
+              "operand": 230
+            },
+            {
+              "offset": "0x2a6",
+              "opcode": "stfld",
+              "operand": "ISOlevels.RefBackColorBlue"
+            },
+            {
+              "offset": "0x2ab",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2ac",
+              "opcode": "call",
+              "operand": "Object..ctor"
+            },
+            {
+              "offset": "0x2b1",
+              "opcode": "ret",
+              "operand": null
+            }
+          ],
+          "numeric_constructor_defaults": {
+            "CheckInputFormat": true,
+            "CheckInputSize": true,
+            "CheckFace": true,
+            "CheckEyes": true,
+            "CheckConfidence": true,
+            "CheckGenQuality": true,
+            "CheckEyeAngle": true,
+            "CheckEyeDistance": true,
+            "CheckPose": true,
+            "CheckFaceFree": true,
+            "CheckSuitable": true,
+            "CheckEyesClear": true,
+            "CheckEyesOpen": true,
+            "CheckSunGlases": true,
+            "CheckGlare": true,
+            "CheckExpression": false,
+            "CheckHat": false,
+            "CheckMouthClosed": false,
+            "CheckSmiling": false,
+            "CheckGlasses": false,
+            "CheckRedEyes": false,
+            "CheckAge": false,
+            "CheckGender": false,
+            "CheckRealface": false,
+            "CheckMultipleFaces": false,
+            "CheckFaceNotFacingCamera": false,
+            "CheckEyesNotFacingCamera": false,
+            "CheckOverexposed": true,
+            "CheckUnderexposed": true,
+            "CheckSkinColor": true,
+            "CheckHotspots": true,
+            "CheckUniform": true,
+            "CheckShadowInEyes": true,
+            "CheckShadowInFace": true,
+            "CheckFaceLarge": true,
+            "CheckFaceSmall": true,
+            "CheckFacePositionLeft": true,
+            "CheckFacePositionRight": true,
+            "CheckFacePositionHigh": true,
+            "CheckFacePositionLow": true,
+            "CheckSharpness": true,
+            "CheckMotionblur": true,
+            "CheckContrast": true,
+            "CheckArtefacts": true,
+            "CheckNoise": true,
+            "CheckInterlaced": true,
+            "CheckCompressed": true,
+            "CheckBackUniform": true,
+            "CheckBackBright": true,
+            "CheckBackShadows": true,
+            "CheckBackColor": true,
+            "MinInputWidth": 300,
+            "MinInputHeight": 400,
+            "MinConfidence": 30,
+            "MinGenQuality": 30,
+            "MaxAngle": 6,
+            "MineyeDistance": 100,
+            "MinPose": 30,
+            "MinFacefree": 30,
+            "MinSuitable": 30,
+            "MinEyesclear": 30,
+            "MinEyesOpen": 30,
+            "MinSunglases": 30,
+            "MinGlarefree": 30,
+            "MinNeutralExpression": 30,
+            "MinHat": 30,
+            "MouthClosed": 30,
+            "MinSmiling": 30,
+            "MinGlasses": 30,
+            "MinRedEyes": 30,
+            "MinFaceNotFacingCamera": 30,
+            "MinEyesNotFacingCamera": 30,
+            "MinOverexposed": 30,
+            "MinUnderexposed": 30,
+            "MinSkinColor": 30,
+            "MinHotspots": 30,
+            "MinUniform": 30,
+            "ShadowInEyes": 30,
+            "ShadowInFace": 30,
+            "MinFaceLarge": 30,
+            "MinFaceSmall": 30,
+            "MinFacePositionLeft": 30,
+            "MinFacePositionRight": 30,
+            "MinFacePositionHigh": 30,
+            "MinFacePositionLow": 30,
+            "MinSharpness": 30,
+            "MinMotionblur": 30,
+            "MinContrast": 30,
+            "MinArtefacts": 30,
+            "MinNoise": 30,
+            "MinInterlaced": 30,
+            "MinCompressed": 30,
+            "MinBackUniform": 30,
+            "MinBackBright": 30,
+            "MinBackShadows": 30,
+            "MinBackColor": 30,
+            "RefBackColorRed": 230,
+            "RefBackColorGreen": 230,
+            "RefBackColorBlue": 230
+          }
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "CalculateViewAuto",
+          "token": "0x600007e",
+          "instruction_count": 33,
+          "calls": [
+            "Photo.AutoCrop",
+            "Rectangle.get_Height",
+            "Rectangle.get_Width",
+            "Rectangle.get_X",
+            "Rectangle.get_Y"
+          ],
+          "fields_referenced": [
+            "Photo._viewsizex",
+            "Photo._viewsizey",
+            "Photo._viewstartx",
+            "Photo._viewstarty"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "AutoCrop7",
+          "token": "0x60000cf",
+          "instruction_count": 774,
+          "calls": [
+            "ControlFrame.get_Format",
+            "ControlFrame.get_iCanvasHeight",
+            "ControlFrame.get_iCanvasWidth",
+            "ControlFrame.get_view",
+            "DibImageClass..ctor",
+            "DibImageClass.GetHeight",
+            "DibImageClass.GetWidth",
+            "DibImageClass.ReadFile",
+            "FacePositionClass..ctor",
+            "FacePositionClass.GetRollAngle",
+            "FacePositionClass.get_FirstEyeX",
+            "FacePositionClass.get_FirstEyeY",
+            "FacePositionClass.get_SecondEyeX",
+            "FacePositionClass.get_SecondEyeY",
+            "LocateG6Class..ctor",
+            "LocateG6Class.FindFaceAuto",
+            "LocateG6Class.FindHead",
+            "Math.Round",
+            "Object.ToString",
+            "Rectangle..ctor"
+          ],
+          "fields_referenced": [
+            "Photo._angle",
+            "Photo._eye1posx",
+            "Photo._eye1posy",
+            "Photo._eye2posx",
+            "Photo._eye2posy",
+            "Photo._factor",
+            "Photo._viewsizex",
+            "Photo._viewsizey",
+            "Photo._viewstartx",
+            "Photo._viewstarty",
+            "Photo._workingimagewidth",
+            "Photo.locstr1",
+            "Photo.locstr2",
+            "View.bUseFaceHeight",
+            "View.bUseFaceWidth",
+            "View.iEyesHeight",
+            "View.iFaceHeight",
+            "View.iFaceHeightMax",
+            "View.iFaceWidth",
+            "View.iFaceWidthMax"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "AutoCrop7N",
+          "token": "0x60000d0",
+          "instruction_count": 882,
+          "calls": [
+            "ControlFrame.get_Format",
+            "ControlFrame.get_iCanvasHeight",
+            "ControlFrame.get_iCanvasWidth",
+            "ControlFrame.get_view",
+            "DibImageClass..ctor",
+            "DibImageClass.GetHeight",
+            "DibImageClass.GetWidth",
+            "DibImageClass.ReadFile",
+            "FacePositionClass..ctor",
+            "FacePositionClass.GetRollAngle",
+            "FacePositionClass.get_FirstEyeX",
+            "FacePositionClass.get_FirstEyeY",
+            "FacePositionClass.get_SecondEyeX",
+            "FacePositionClass.get_SecondEyeY",
+            "LocateG6Class..ctor",
+            "LocateG6Class.FindFaceAuto",
+            "LocateG6Class.FindHead",
+            "Math.Round",
+            "Object.ToString",
+            "Rectangle..ctor"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.NoseCenterLowx",
+            "BiometricsDetails.NoseLeftCornerx",
+            "BiometricsDetails.NoseRightCornerx",
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "GeometryDetails.FaceHeightinPixels",
+            "GeometryDetails.FaceWidthinPixels",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.GeometryDetail",
+            "Photo._angle",
+            "Photo._eye1posx",
+            "Photo._eye1posy",
+            "Photo._eye2posx",
+            "Photo._eye2posy",
+            "Photo._factor",
+            "Photo._viewsizex",
+            "Photo._viewsizey",
+            "Photo._viewstartx",
+            "Photo._viewstarty",
+            "Photo._workingimagewidth",
+            "Photo.locstr1",
+            "Photo.locstr2",
+            "View.bUseFaceHeight",
+            "View.bUseFaceWidth",
+            "View.iEyesHeight",
+            "View.iFaceHeight",
+            "View.iFaceHeightMax",
+            "View.iFaceWidth",
+            "View.iFaceWidthMax"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "ImageQualityCheck7",
+          "token": "0x60000d2",
+          "instruction_count": 1264,
+          "calls": [
+            "DibImageClass..ctor",
+            "DibImageClass.Crop",
+            "DibImageClass.GetHeight",
+            "DibImageClass.GetWidth",
+            "DibImageClass.ReadFile",
+            "DibImageClass.WriteFileJPEG",
+            "FacePosition2Class..ctor",
+            "FacePosition2Class.get_Confidence",
+            "FacePosition2Class.get_FirstMouthCornerX",
+            "FacePosition2Class.get_FirstMouthCornerY",
+            "FacePosition2Class.get_FirstNoseCornerX",
+            "FacePosition2Class.get_FirstNoseCornerY",
+            "FacePosition2Class.get_LipCenterTopX",
+            "FacePosition2Class.get_LipCenterTopY",
+            "FacePosition2Class.get_NoseBaseCenterX",
+            "FacePosition2Class.get_NoseBaseCenterY",
+            "FacePosition2Class.get_SecondMouthCornerX",
+            "FacePosition2Class.get_SecondMouthCornerY",
+            "FacePosition2Class.get_SecondNoseCornerX",
+            "FacePosition2Class.get_SecondNoseCornerY",
+            "FacePositionClass..ctor",
+            "FacePositionClass.GetRollAngle",
+            "FacePositionClass.get_FirstEyeX",
+            "FacePositionClass.get_FirstEyeY",
+            "FacePositionClass.get_SecondEyeX",
+            "FacePositionClass.get_SecondEyeY",
+            "LocateG6Class..ctor",
+            "LocateG6Class.CheckFaceEx",
+            "LocateG6Class.FindFaceAuto",
+            "LocateG6Class.FindFaceAutoWithPose",
+            "LocateG6Class.FindHead",
+            "LocateG6Class.GetQualityEx",
+            "LocateG6Class.ResetQuality",
+            "LocateG6Class.SetProperty",
+            "LocateG6Class.SetQualityMetrics",
+            "Object.ToString",
+            "Photo._Averageof6",
+            "Photo._Lowestof6",
+            "Rectangle..ctor",
+            "String.op_Equality"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.Eyesclear",
+            "BiometricsDetails.Eyesopen",
+            "BiometricsDetails.Facefree",
+            "BiometricsDetails.Glarefree",
+            "BiometricsDetails.MouthLeftCornerx",
+            "BiometricsDetails.MouthLeftCornery",
+            "BiometricsDetails.MouthLipCenterTopx",
+            "BiometricsDetails.MouthLipCenterTopy",
+            "BiometricsDetails.MouthRightCornerx",
+            "BiometricsDetails.MouthRightCornery",
+            "BiometricsDetails.NoseCenterLowx",
+            "BiometricsDetails.NoseCenterLowy",
+            "BiometricsDetails.NoseLeftCornerx",
+            "BiometricsDetails.NoseLeftCornery",
+            "BiometricsDetails.NoseRightCornerx",
+            "BiometricsDetails.NoseRightCornery",
+            "BiometricsDetails.Pose",
+            "BiometricsDetails.Suitable",
+            "BiometricsDetails.Sunglases",
+            "BiometricsDetails.angle",
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "BiometricsDetails.eyedistance",
+            "ImageQDetails.Artefacts",
+            "ImageQDetails.Compressed",
+            "ImageQDetails.Contrast",
+            "ImageQDetails.Interlaced",
+            "ImageQDetails.Motionblur",
+            "ImageQDetails.Noise",
+            "ImageQDetails.Sharpness",
+            "IsoScore.BiometricsAvg",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.BiometricsLow",
+            "IsoScore.Confidence",
+            "IsoScore.GeneralQ",
+            "IsoScore.HasEyes",
+            "IsoScore.HasFace",
+            "IsoScore.ImageQAvg",
+            "IsoScore.ImageQDetail",
+            "IsoScore.ImageQLow",
+            "IsoScore.InputFilename",
+            "IsoScore.InputImageHeight",
+            "IsoScore.InputImageWidth",
+            "IsoScore.LightingAvg",
+            "IsoScore.LightingDetail",
+            "IsoScore.LightingLow",
+            "IsoScore.Resultcode",
+            "LightingDetails.Hotspots",
+            "LightingDetails.Overexposed",
+            "LightingDetails.ShadowInEyes",
+            "LightingDetails.ShadowInFace",
+            "LightingDetails.SkinColor",
+            "LightingDetails.Underexposed",
+            "LightingDetails.Uniform",
+            "Photo._angle",
+            "Photo._eye1posx",
+            "Photo._eye1posy",
+            "Photo._eye2posx",
+            "Photo._eye2posy",
+            "Photo.locstr1",
+            "Photo.locstr2"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "ImageQualityCheck7",
+          "token": "0x60000d3",
+          "instruction_count": 1185,
+          "calls": [
+            "DibImageClass..ctor",
+            "DibImageClass.GetHeight",
+            "DibImageClass.GetWidth",
+            "DibImageClass.ReadFile",
+            "FacePosition2Class..ctor",
+            "FacePosition2Class.get_Confidence",
+            "FacePosition2Class.get_FirstMouthCornerX",
+            "FacePosition2Class.get_FirstMouthCornerY",
+            "FacePosition2Class.get_FirstNoseCornerX",
+            "FacePosition2Class.get_FirstNoseCornerY",
+            "FacePosition2Class.get_LipCenterTopX",
+            "FacePosition2Class.get_LipCenterTopY",
+            "FacePosition2Class.get_NoseBaseCenterX",
+            "FacePosition2Class.get_NoseBaseCenterY",
+            "FacePosition2Class.get_SecondMouthCornerX",
+            "FacePosition2Class.get_SecondMouthCornerY",
+            "FacePosition2Class.get_SecondNoseCornerX",
+            "FacePosition2Class.get_SecondNoseCornerY",
+            "FacePositionClass..ctor",
+            "FacePositionClass.GetRollAngle",
+            "FacePositionClass.get_FirstEyeX",
+            "FacePositionClass.get_FirstEyeY",
+            "FacePositionClass.get_SecondEyeX",
+            "FacePositionClass.get_SecondEyeY",
+            "LocateG6Class..ctor",
+            "LocateG6Class.CheckFaceEx",
+            "LocateG6Class.FindFaceAuto",
+            "LocateG6Class.FindFaceAutoWithPose",
+            "LocateG6Class.FindHead",
+            "LocateG6Class.GetQualityEx",
+            "LocateG6Class.ResetQuality",
+            "LocateG6Class.SetProperty",
+            "LocateG6Class.SetQualityMetrics",
+            "Object.ToString",
+            "Photo._Averageof6",
+            "Photo._Lowestof6",
+            "String.op_Equality"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.Eyesclear",
+            "BiometricsDetails.Eyesopen",
+            "BiometricsDetails.Facefree",
+            "BiometricsDetails.Glarefree",
+            "BiometricsDetails.MouthLeftCornerx",
+            "BiometricsDetails.MouthLeftCornery",
+            "BiometricsDetails.MouthLipCenterTopx",
+            "BiometricsDetails.MouthLipCenterTopy",
+            "BiometricsDetails.MouthRightCornerx",
+            "BiometricsDetails.MouthRightCornery",
+            "BiometricsDetails.NoseCenterLowx",
+            "BiometricsDetails.NoseCenterLowy",
+            "BiometricsDetails.NoseLeftCornerx",
+            "BiometricsDetails.NoseLeftCornery",
+            "BiometricsDetails.NoseRightCornerx",
+            "BiometricsDetails.NoseRightCornery",
+            "BiometricsDetails.Pose",
+            "BiometricsDetails.Suitable",
+            "BiometricsDetails.Sunglases",
+            "BiometricsDetails.angle",
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "BiometricsDetails.eyedistance",
+            "ImageQDetails.Artefacts",
+            "ImageQDetails.Compressed",
+            "ImageQDetails.Contrast",
+            "ImageQDetails.Interlaced",
+            "ImageQDetails.Motionblur",
+            "ImageQDetails.Noise",
+            "ImageQDetails.Sharpness",
+            "IsoScore.BiometricsAvg",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.BiometricsLow",
+            "IsoScore.Confidence",
+            "IsoScore.GeneralQ",
+            "IsoScore.HasEyes",
+            "IsoScore.HasFace",
+            "IsoScore.ImageQAvg",
+            "IsoScore.ImageQDetail",
+            "IsoScore.ImageQLow",
+            "IsoScore.LightingAvg",
+            "IsoScore.LightingDetail",
+            "IsoScore.LightingLow",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode",
+            "LightingDetails.Hotspots",
+            "LightingDetails.Overexposed",
+            "LightingDetails.ShadowInEyes",
+            "LightingDetails.ShadowInFace",
+            "LightingDetails.SkinColor",
+            "LightingDetails.Underexposed",
+            "LightingDetails.Uniform",
+            "Photo.locstr1",
+            "Photo.locstr2"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "GeometryCheck7",
+          "token": "0x60000d4",
+          "instruction_count": 931,
+          "calls": [
+            "Math.Abs",
+            "Photo._Lowestof10"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "GeometryDetails.EyesNotFacingCamera",
+            "GeometryDetails.FaceHeightinPixels",
+            "GeometryDetails.FaceLarge",
+            "GeometryDetails.FaceNotFacingCamera",
+            "GeometryDetails.FacePositionHigh",
+            "GeometryDetails.FacePositionLeft",
+            "GeometryDetails.FacePositionLow",
+            "GeometryDetails.FacePositionRight",
+            "GeometryDetails.FaceSmall",
+            "GeometryDetails.FaceWidthinPixels",
+            "ISOlevels.CheckEyesNotFacingCamera",
+            "ISOlevels.CheckFaceNotFacingCamera",
+            "ISOlevels.MinEyesNotFacingCamera",
+            "ISOlevels.MinFaceLarge",
+            "ISOlevels.MinFaceNotFacingCamera",
+            "ISOlevels.MinFacePositionHigh",
+            "ISOlevels.MinFacePositionLeft",
+            "ISOlevels.MinFacePositionLow",
+            "ISOlevels.MinFacePositionRight",
+            "ISOlevels.MinFaceSmall",
+            "ISOlevels.MinInputHeight",
+            "ISOlevels.MinInputWidth",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.Geometry",
+            "IsoScore.GeometryDetail",
+            "IsoScore.InputImageHeight",
+            "IsoScore.InputImageWidth",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode",
+            "View.bUseFaceHeight",
+            "View.bUseFaceWidth",
+            "View.iEyesHeight",
+            "View.iEyesHeightMax",
+            "View.iEyesHeightMin",
+            "View.iFaceHeightMax",
+            "View.iFaceHeightMin",
+            "View.iFaceWidthMax",
+            "View.iFaceWidthMin"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "GeometryCheckExtra7",
+          "token": "0x60000d5",
+          "instruction_count": 465,
+          "calls": [
+            "Math.Abs",
+            "Photo._Lowestof6"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.eye1posy",
+            "GeometryDetails.FaceHeightinPixels",
+            "GeometryDetails.FaceLarge",
+            "GeometryDetails.FacePositionHigh",
+            "GeometryDetails.FacePositionLeft",
+            "GeometryDetails.FacePositionLow",
+            "GeometryDetails.FacePositionRight",
+            "GeometryDetails.FaceSmall",
+            "GeometryDetails.FaceWidthinPixels",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.Geometry",
+            "IsoScore.GeometryDetail",
+            "View.bUseFaceHeight",
+            "View.bUseFaceWidth",
+            "View.iEyesHeight",
+            "View.iEyesHeightMax",
+            "View.iEyesHeightMin",
+            "View.iFaceHeightMax",
+            "View.iFaceHeightMin",
+            "View.iFaceWidthMax",
+            "View.iFaceWidthMin"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "BackgroundCheck7",
+          "token": "0x60000d6",
+          "instruction_count": 886,
+          "calls": [
+            "Color.get_B",
+            "Color.get_G",
+            "Color.get_R",
+            "ControlFrame.get_BackB",
+            "ControlFrame.get_BackBmax",
+            "ControlFrame.get_BackBmin",
+            "ControlFrame.get_BackG",
+            "ControlFrame.get_BackGmax",
+            "ControlFrame.get_BackGmin",
+            "ControlFrame.get_BackR",
+            "ControlFrame.get_BackRmax",
+            "ControlFrame.get_BackRmin",
+            "ControlFrame.get_BackgroundColor",
+            "File.Exists",
+            "Image.Dispose",
+            "Image.FromFile",
+            "Math.Abs",
+            "MeasureBackground..ctor",
+            "MeasureBackground.Measure",
+            "MeasureBackground.get_Mean",
+            "MeasureBackground.get_MeanLB",
+            "MeasureBackground.get_MeanLO",
+            "MeasureBackground.get_MeanRB",
+            "MeasureBackground.get_MeanRO",
+            "Point..ctor",
+            "String.op_Equality"
+          ],
+          "fields_referenced": [
+            "BackgroundDetails.BackBright",
+            "BackgroundDetails.BackColor",
+            "BackgroundDetails.BackDark",
+            "BackgroundDetails.BackShadows",
+            "BackgroundDetails.BackUniform",
+            "BackgroundDetails.ColorLBB",
+            "BackgroundDetails.ColorLBG",
+            "BackgroundDetails.ColorLBR",
+            "BackgroundDetails.ColorLOB",
+            "BackgroundDetails.ColorLOG",
+            "BackgroundDetails.ColorLOR",
+            "BackgroundDetails.ColorRBB",
+            "BackgroundDetails.ColorRBG",
+            "BackgroundDetails.ColorRBR",
+            "BackgroundDetails.ColorROB",
+            "BackgroundDetails.ColorROG",
+            "BackgroundDetails.ColorROR",
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "ISOlevels.CheckBackBright",
+            "ISOlevels.CheckBackColor",
+            "ISOlevels.CheckBackShadows",
+            "ISOlevels.CheckBackUniform",
+            "ISOlevels.MinBackBright",
+            "ISOlevels.MinBackShadows",
+            "ISOlevels.MinBackUniform",
+            "IsoScore.Background",
+            "IsoScore.BackgroundDetail",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "BackgroundCheck7",
+          "token": "0x60000d7",
+          "instruction_count": 876,
+          "calls": [
+            "Color.get_B",
+            "Color.get_G",
+            "Color.get_R",
+            "ControlFrame.get_BackB",
+            "ControlFrame.get_BackBmax",
+            "ControlFrame.get_BackBmin",
+            "ControlFrame.get_BackG",
+            "ControlFrame.get_BackGmax",
+            "ControlFrame.get_BackGmin",
+            "ControlFrame.get_BackR",
+            "ControlFrame.get_BackRmax",
+            "ControlFrame.get_BackRmin",
+            "ControlFrame.get_BackgroundColor",
+            "Math.Abs",
+            "MeasureBackground..ctor",
+            "MeasureBackground.Measure",
+            "MeasureBackground.get_Mean",
+            "MeasureBackground.get_MeanLB",
+            "MeasureBackground.get_MeanLO",
+            "MeasureBackground.get_MeanRB",
+            "MeasureBackground.get_MeanRO",
+            "Point..ctor"
+          ],
+          "fields_referenced": [
+            "BackgroundDetails.BackBright",
+            "BackgroundDetails.BackColor",
+            "BackgroundDetails.BackDark",
+            "BackgroundDetails.BackShadows",
+            "BackgroundDetails.BackUniform",
+            "BackgroundDetails.ColorLBB",
+            "BackgroundDetails.ColorLBG",
+            "BackgroundDetails.ColorLBR",
+            "BackgroundDetails.ColorLOB",
+            "BackgroundDetails.ColorLOG",
+            "BackgroundDetails.ColorLOR",
+            "BackgroundDetails.ColorRBB",
+            "BackgroundDetails.ColorRBG",
+            "BackgroundDetails.ColorRBR",
+            "BackgroundDetails.ColorROB",
+            "BackgroundDetails.ColorROG",
+            "BackgroundDetails.ColorROR",
+            "BiometricsDetails.eye1posx",
+            "BiometricsDetails.eye1posy",
+            "BiometricsDetails.eye2posx",
+            "BiometricsDetails.eye2posy",
+            "ISOlevels.CheckBackBright",
+            "ISOlevels.CheckBackColor",
+            "ISOlevels.CheckBackShadows",
+            "ISOlevels.CheckBackUniform",
+            "ISOlevels.MinBackBright",
+            "ISOlevels.MinBackShadows",
+            "ISOlevels.MinBackUniform",
+            "IsoScore.Background",
+            "IsoScore.BackgroundDetail",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode"
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "CheckICAOlevelsNoGeometry",
+          "token": "0x60000eb",
+          "instruction_count": 349,
+          "calls": [
+            "Math.Abs"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.Eyesclear",
+            "BiometricsDetails.Eyesopen",
+            "BiometricsDetails.Facefree",
+            "BiometricsDetails.Glarefree",
+            "BiometricsDetails.Hat",
+            "BiometricsDetails.MouthClosed",
+            "BiometricsDetails.Smile",
+            "BiometricsDetails.Suitable",
+            "BiometricsDetails.Sunglases",
+            "BiometricsDetails.angle",
+            "BiometricsDetails.eyedistance",
+            "ISOlevels.CheckArtefacts",
+            "ISOlevels.CheckCompressed",
+            "ISOlevels.CheckConfidence",
+            "ISOlevels.CheckContrast",
+            "ISOlevels.CheckEyeAngle",
+            "ISOlevels.CheckEyeDistance",
+            "ISOlevels.CheckEyesClear",
+            "ISOlevels.CheckEyesOpen",
+            "ISOlevels.CheckFaceFree",
+            "ISOlevels.CheckGenQuality",
+            "ISOlevels.CheckGlare",
+            "ISOlevels.CheckHat",
+            "ISOlevels.CheckHotspots",
+            "ISOlevels.CheckInterlaced",
+            "ISOlevels.CheckMotionblur",
+            "ISOlevels.CheckMouthClosed",
+            "ISOlevels.CheckNoise",
+            "ISOlevels.CheckOverexposed",
+            "ISOlevels.CheckShadowInEyes",
+            "ISOlevels.CheckShadowInFace",
+            "ISOlevels.CheckSharpness",
+            "ISOlevels.CheckSkinColor",
+            "ISOlevels.CheckSmiling",
+            "ISOlevels.CheckSuitable",
+            "ISOlevels.CheckSunGlases",
+            "ISOlevels.CheckUnderexposed",
+            "ISOlevels.CheckUniform",
+            "ISOlevels.MaxAngle",
+            "ISOlevels.MinArtefacts",
+            "ISOlevels.MinCompressed",
+            "ISOlevels.MinConfidence",
+            "ISOlevels.MinContrast",
+            "ISOlevels.MinEyesOpen",
+            "ISOlevels.MinEyesclear",
+            "ISOlevels.MinFacefree",
+            "ISOlevels.MinGenQuality",
+            "ISOlevels.MinGlarefree",
+            "ISOlevels.MinHat",
+            "ISOlevels.MinHotspots",
+            "ISOlevels.MinInterlaced",
+            "ISOlevels.MinMotionblur",
+            "ISOlevels.MinNoise",
+            "ISOlevels.MinOverexposed",
+            "ISOlevels.MinSharpness",
+            "ISOlevels.MinSkinColor",
+            "ISOlevels.MinSmiling",
+            "ISOlevels.MinSuitable",
+            "ISOlevels.MinSunglases",
+            "ISOlevels.MinUnderexposed",
+            "ISOlevels.MinUniform",
+            "ISOlevels.MineyeDistance",
+            "ISOlevels.MouthClosed",
+            "ISOlevels.ShadowInEyes",
+            "ISOlevels.ShadowInFace",
+            "ImageQDetails.Artefacts",
+            "ImageQDetails.Compressed",
+            "ImageQDetails.Contrast",
+            "ImageQDetails.Interlaced",
+            "ImageQDetails.Motionblur",
+            "ImageQDetails.Noise",
+            "ImageQDetails.Sharpness",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.Confidence",
+            "IsoScore.GeneralQ",
+            "IsoScore.ImageQDetail",
+            "IsoScore.LightingDetail",
+            "LightingDetails.Hotspots",
+            "LightingDetails.Overexposed",
+            "LightingDetails.ShadowInEyes",
+            "LightingDetails.ShadowInFace",
+            "LightingDetails.SkinColor",
+            "LightingDetails.Underexposed",
+            "LightingDetails.Uniform"
+          ],
+          "instructions": [
+            {
+              "offset": "0xc",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xd",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckConfidence"
+            },
+            {
+              "offset": "0x12",
+              "opcode": "brfalse.s",
+              "operand": 36
+            },
+            {
+              "offset": "0x14",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x15",
+              "opcode": "ldfld",
+              "operand": "IsoScore.Confidence"
+            },
+            {
+              "offset": "0x1a",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1b",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinConfidence"
+            },
+            {
+              "offset": "0x20",
+              "opcode": "bge.s",
+              "operand": 36
+            },
+            {
+              "offset": "0x22",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x23",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x24",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x25",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckGenQuality"
+            },
+            {
+              "offset": "0x2a",
+              "opcode": "brfalse.s",
+              "operand": 60
+            },
+            {
+              "offset": "0x2c",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x2d",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeneralQ"
+            },
+            {
+              "offset": "0x32",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x33",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinGenQuality"
+            },
+            {
+              "offset": "0x38",
+              "opcode": "bge.s",
+              "operand": 60
+            },
+            {
+              "offset": "0x3a",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x3b",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x3c",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x3d",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeAngle"
+            },
+            {
+              "offset": "0x42",
+              "opcode": "brfalse.s",
+              "operand": 113
+            },
+            {
+              "offset": "0x44",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x45",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x4a",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0x4f",
+              "opcode": "call",
+              "operand": "Math.Abs"
+            },
+            {
+              "offset": "0x54",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x55",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0x5a",
+              "opcode": "conv.r4",
+              "operand": null
+            },
+            {
+              "offset": "0x5b",
+              "opcode": "ble.un.s",
+              "operand": 113
+            },
+            {
+              "offset": "0x5d",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x5e",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x63",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0x68",
+              "opcode": "ldc.r4",
+              "operand": -1.0
+            },
+            {
+              "offset": "0x6d",
+              "opcode": "beq.s",
+              "operand": 113
+            },
+            {
+              "offset": "0x6f",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x70",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x71",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x72",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeDistance"
+            },
+            {
+              "offset": "0x77",
+              "opcode": "brfalse.s",
+              "operand": 142
+            },
+            {
+              "offset": "0x79",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x7a",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x7f",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.eyedistance"
+            },
+            {
+              "offset": "0x84",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x85",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MineyeDistance"
+            },
+            {
+              "offset": "0x8a",
+              "opcode": "bge.s",
+              "operand": 142
+            },
+            {
+              "offset": "0x8c",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x8d",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x8e",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x8f",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyesClear"
+            },
+            {
+              "offset": "0x94",
+              "opcode": "brfalse.s",
+              "operand": 185
+            },
+            {
+              "offset": "0x96",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x97",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x9c",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Eyesclear"
+            },
+            {
+              "offset": "0xa1",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xa2",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinEyesclear"
+            },
+            {
+              "offset": "0xa7",
+              "opcode": "bge.s",
+              "operand": 185
+            },
+            {
+              "offset": "0xa9",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xaa",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xaf",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Eyesclear"
+            },
+            {
+              "offset": "0xb4",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xb5",
+              "opcode": "beq.s",
+              "operand": 185
+            },
+            {
+              "offset": "0xb7",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xb8",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xb9",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xba",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyesOpen"
+            },
+            {
+              "offset": "0xbf",
+              "opcode": "brfalse.s",
+              "operand": 228
+            },
+            {
+              "offset": "0xc1",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xc2",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xc7",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Eyesopen"
+            },
+            {
+              "offset": "0xcc",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xcd",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinEyesOpen"
+            },
+            {
+              "offset": "0xd2",
+              "opcode": "bge.s",
+              "operand": 228
+            },
+            {
+              "offset": "0xd4",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xd5",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xda",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Eyesopen"
+            },
+            {
+              "offset": "0xdf",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xe0",
+              "opcode": "beq.s",
+              "operand": 228
+            },
+            {
+              "offset": "0xe2",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xe3",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xe4",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xe5",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFaceFree"
+            },
+            {
+              "offset": "0xea",
+              "opcode": "brfalse.s",
+              "operand": 271
+            },
+            {
+              "offset": "0xec",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xed",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xf2",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Facefree"
+            },
+            {
+              "offset": "0xf7",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xf8",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacefree"
+            },
+            {
+              "offset": "0xfd",
+              "opcode": "bge.s",
+              "operand": 271
+            },
+            {
+              "offset": "0xff",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x100",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x105",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Facefree"
+            },
+            {
+              "offset": "0x10a",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x10b",
+              "opcode": "beq.s",
+              "operand": 271
+            },
+            {
+              "offset": "0x10d",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x10e",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x10f",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x110",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckGlare"
+            },
+            {
+              "offset": "0x115",
+              "opcode": "brfalse.s",
+              "operand": 314
+            },
+            {
+              "offset": "0x117",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x118",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x11d",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Glarefree"
+            },
+            {
+              "offset": "0x122",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x123",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinGlarefree"
+            },
+            {
+              "offset": "0x128",
+              "opcode": "bge.s",
+              "operand": 314
+            },
+            {
+              "offset": "0x12a",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x12b",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x130",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Glarefree"
+            },
+            {
+              "offset": "0x135",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x136",
+              "opcode": "beq.s",
+              "operand": 314
+            },
+            {
+              "offset": "0x138",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x139",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x13a",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x13b",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckSuitable"
+            },
+            {
+              "offset": "0x140",
+              "opcode": "brfalse.s",
+              "operand": 357
+            },
+            {
+              "offset": "0x142",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x143",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x148",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Suitable"
+            },
+            {
+              "offset": "0x14d",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x14e",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinSuitable"
+            },
+            {
+              "offset": "0x153",
+              "opcode": "bge.s",
+              "operand": 357
+            },
+            {
+              "offset": "0x155",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x156",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x15b",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Suitable"
+            },
+            {
+              "offset": "0x160",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x161",
+              "opcode": "beq.s",
+              "operand": 357
+            },
+            {
+              "offset": "0x163",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x164",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x165",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x166",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckSunGlases"
+            },
+            {
+              "offset": "0x16b",
+              "opcode": "brfalse.s",
+              "operand": 400
+            },
+            {
+              "offset": "0x16d",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x16e",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x173",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Sunglases"
+            },
+            {
+              "offset": "0x178",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x179",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinSunglases"
+            },
+            {
+              "offset": "0x17e",
+              "opcode": "bge.s",
+              "operand": 400
+            },
+            {
+              "offset": "0x180",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x181",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x186",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Sunglases"
+            },
+            {
+              "offset": "0x18b",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x18c",
+              "opcode": "beq.s",
+              "operand": 400
+            },
+            {
+              "offset": "0x18e",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x18f",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x190",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x191",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckMouthClosed"
+            },
+            {
+              "offset": "0x196",
+              "opcode": "brfalse.s",
+              "operand": 443
+            },
+            {
+              "offset": "0x198",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x199",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x19e",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.MouthClosed"
+            },
+            {
+              "offset": "0x1a3",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1a4",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MouthClosed"
+            },
+            {
+              "offset": "0x1a9",
+              "opcode": "bge.s",
+              "operand": 443
+            },
+            {
+              "offset": "0x1ab",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1ac",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x1b1",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.MouthClosed"
+            },
+            {
+              "offset": "0x1b6",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x1b7",
+              "opcode": "beq.s",
+              "operand": 443
+            },
+            {
+              "offset": "0x1b9",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1ba",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x1bb",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1bc",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckSmiling"
+            },
+            {
+              "offset": "0x1c1",
+              "opcode": "brfalse.s",
+              "operand": 486
+            },
+            {
+              "offset": "0x1c3",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1c4",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x1c9",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Smile"
+            },
+            {
+              "offset": "0x1ce",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1cf",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinSmiling"
+            },
+            {
+              "offset": "0x1d4",
+              "opcode": "bge.s",
+              "operand": 486
+            },
+            {
+              "offset": "0x1d6",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1d7",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x1dc",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Smile"
+            },
+            {
+              "offset": "0x1e1",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x1e2",
+              "opcode": "beq.s",
+              "operand": 486
+            },
+            {
+              "offset": "0x1e4",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x1e5",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x1e6",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1e7",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckHat"
+            },
+            {
+              "offset": "0x1ec",
+              "opcode": "brfalse.s",
+              "operand": 529
+            },
+            {
+              "offset": "0x1ee",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x1ef",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x1f4",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Hat"
+            },
+            {
+              "offset": "0x1f9",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x1fa",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinHat"
+            },
+            {
+              "offset": "0x1ff",
+              "opcode": "bge.s",
+              "operand": 529
+            },
+            {
+              "offset": "0x201",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x202",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x207",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.Hat"
+            },
+            {
+              "offset": "0x20c",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0x20d",
+              "opcode": "beq.s",
+              "operand": 529
+            },
+            {
+              "offset": "0x20f",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x210",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x211",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x212",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckArtefacts"
+            },
+            {
+              "offset": "0x217",
+              "opcode": "brfalse.s",
+              "operand": 558
+            },
+            {
+              "offset": "0x219",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x21a",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x21f",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Artefacts"
+            },
+            {
+              "offset": "0x224",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x225",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinArtefacts"
+            },
+            {
+              "offset": "0x22a",
+              "opcode": "bge.s",
+              "operand": 558
+            },
+            {
+              "offset": "0x22c",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x22d",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x22e",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x22f",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckCompressed"
+            },
+            {
+              "offset": "0x234",
+              "opcode": "brfalse.s",
+              "operand": 587
+            },
+            {
+              "offset": "0x236",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x237",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x23c",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Compressed"
+            },
+            {
+              "offset": "0x241",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x242",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinCompressed"
+            },
+            {
+              "offset": "0x247",
+              "opcode": "bge.s",
+              "operand": 587
+            },
+            {
+              "offset": "0x249",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x24a",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x24b",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x24c",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckContrast"
+            },
+            {
+              "offset": "0x251",
+              "opcode": "brfalse.s",
+              "operand": 616
+            },
+            {
+              "offset": "0x253",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x254",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x259",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Contrast"
+            },
+            {
+              "offset": "0x25e",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x25f",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinContrast"
+            },
+            {
+              "offset": "0x264",
+              "opcode": "bge.s",
+              "operand": 616
+            },
+            {
+              "offset": "0x266",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x267",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x268",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x269",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckInterlaced"
+            },
+            {
+              "offset": "0x26e",
+              "opcode": "brfalse.s",
+              "operand": 645
+            },
+            {
+              "offset": "0x270",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x271",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x276",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Interlaced"
+            },
+            {
+              "offset": "0x27b",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x27c",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinInterlaced"
+            },
+            {
+              "offset": "0x281",
+              "opcode": "bge.s",
+              "operand": 645
+            },
+            {
+              "offset": "0x283",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x284",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x285",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x286",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckMotionblur"
+            },
+            {
+              "offset": "0x28b",
+              "opcode": "brfalse.s",
+              "operand": 674
+            },
+            {
+              "offset": "0x28d",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x28e",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x293",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Motionblur"
+            },
+            {
+              "offset": "0x298",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x299",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinMotionblur"
+            },
+            {
+              "offset": "0x29e",
+              "opcode": "bge.s",
+              "operand": 674
+            },
+            {
+              "offset": "0x2a0",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2a1",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x2a2",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2a3",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckNoise"
+            },
+            {
+              "offset": "0x2a8",
+              "opcode": "brfalse.s",
+              "operand": 703
+            },
+            {
+              "offset": "0x2aa",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x2ab",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x2b0",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Noise"
+            },
+            {
+              "offset": "0x2b5",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2b6",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinNoise"
+            },
+            {
+              "offset": "0x2bb",
+              "opcode": "bge.s",
+              "operand": 703
+            },
+            {
+              "offset": "0x2bd",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2be",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x2bf",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2c0",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckSharpness"
+            },
+            {
+              "offset": "0x2c5",
+              "opcode": "brfalse.s",
+              "operand": 732
+            },
+            {
+              "offset": "0x2c7",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x2c8",
+              "opcode": "ldfld",
+              "operand": "IsoScore.ImageQDetail"
+            },
+            {
+              "offset": "0x2cd",
+              "opcode": "ldfld",
+              "operand": "ImageQDetails.Sharpness"
+            },
+            {
+              "offset": "0x2d2",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2d3",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinSharpness"
+            },
+            {
+              "offset": "0x2d8",
+              "opcode": "bge.s",
+              "operand": 732
+            },
+            {
+              "offset": "0x2da",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2db",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x2dc",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2dd",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckUnderexposed"
+            },
+            {
+              "offset": "0x2e2",
+              "opcode": "brfalse.s",
+              "operand": 761
+            },
+            {
+              "offset": "0x2e4",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x2e5",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x2ea",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.Underexposed"
+            },
+            {
+              "offset": "0x2ef",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2f0",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinUnderexposed"
+            },
+            {
+              "offset": "0x2f5",
+              "opcode": "bge.s",
+              "operand": 761
+            },
+            {
+              "offset": "0x2f7",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2f8",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x2f9",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2fa",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckOverexposed"
+            },
+            {
+              "offset": "0x2ff",
+              "opcode": "brfalse.s",
+              "operand": 790
+            },
+            {
+              "offset": "0x301",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x302",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x307",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.Overexposed"
+            },
+            {
+              "offset": "0x30c",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x30d",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinOverexposed"
+            },
+            {
+              "offset": "0x312",
+              "opcode": "bge.s",
+              "operand": 790
+            },
+            {
+              "offset": "0x314",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x315",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x316",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x317",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckSkinColor"
+            },
+            {
+              "offset": "0x31c",
+              "opcode": "brfalse.s",
+              "operand": 819
+            },
+            {
+              "offset": "0x31e",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x31f",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x324",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.SkinColor"
+            },
+            {
+              "offset": "0x329",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x32a",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinSkinColor"
+            },
+            {
+              "offset": "0x32f",
+              "opcode": "bge.s",
+              "operand": 819
+            },
+            {
+              "offset": "0x331",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x332",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x333",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x334",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckHotspots"
+            },
+            {
+              "offset": "0x339",
+              "opcode": "brfalse.s",
+              "operand": 848
+            },
+            {
+              "offset": "0x33b",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x33c",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x341",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.Hotspots"
+            },
+            {
+              "offset": "0x346",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x347",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinHotspots"
+            },
+            {
+              "offset": "0x34c",
+              "opcode": "bge.s",
+              "operand": 848
+            },
+            {
+              "offset": "0x34e",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x34f",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x350",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x351",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckUniform"
+            },
+            {
+              "offset": "0x356",
+              "opcode": "brfalse.s",
+              "operand": 877
+            },
+            {
+              "offset": "0x358",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x359",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x35e",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.Uniform"
+            },
+            {
+              "offset": "0x363",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x364",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinUniform"
+            },
+            {
+              "offset": "0x369",
+              "opcode": "bge.s",
+              "operand": 877
+            },
+            {
+              "offset": "0x36b",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x36c",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x36d",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x36e",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckShadowInEyes"
+            },
+            {
+              "offset": "0x373",
+              "opcode": "brfalse.s",
+              "operand": 906
+            },
+            {
+              "offset": "0x375",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x376",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x37b",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.ShadowInEyes"
+            },
+            {
+              "offset": "0x380",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x381",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.ShadowInEyes"
+            },
+            {
+              "offset": "0x386",
+              "opcode": "bge.s",
+              "operand": 906
+            },
+            {
+              "offset": "0x388",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x389",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x38a",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x38b",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckShadowInFace"
+            },
+            {
+              "offset": "0x390",
+              "opcode": "brfalse.s",
+              "operand": 935
+            },
+            {
+              "offset": "0x392",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x393",
+              "opcode": "ldfld",
+              "operand": "IsoScore.LightingDetail"
+            },
+            {
+              "offset": "0x398",
+              "opcode": "ldfld",
+              "operand": "LightingDetails.ShadowInFace"
+            },
+            {
+              "offset": "0x39d",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x39e",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.ShadowInFace"
+            },
+            {
+              "offset": "0x3a3",
+              "opcode": "bge.s",
+              "operand": 935
+            },
+            {
+              "offset": "0x3a5",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x3a6",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x3a7",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x3a8",
+              "opcode": "ret",
+              "operand": null
+            }
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "CheckICAOlevelsGeometry",
+          "token": "0x60000ec",
+          "instruction_count": 106,
+          "calls": [],
+          "fields_referenced": [
+            "BiometricsDetails.angle",
+            "BiometricsDetails.eyedistance",
+            "GeometryDetails.FaceLarge",
+            "GeometryDetails.FacePositionHigh",
+            "GeometryDetails.FacePositionLeft",
+            "GeometryDetails.FacePositionLow",
+            "GeometryDetails.FacePositionRight",
+            "GeometryDetails.FaceSmall",
+            "ISOlevels.CheckEyeAngle",
+            "ISOlevels.CheckEyeDistance",
+            "ISOlevels.CheckFaceLarge",
+            "ISOlevels.CheckFacePositionHigh",
+            "ISOlevels.CheckFacePositionLeft",
+            "ISOlevels.CheckFacePositionLow",
+            "ISOlevels.CheckFacePositionRight",
+            "ISOlevels.CheckFaceSmall",
+            "ISOlevels.MaxAngle",
+            "ISOlevels.MinFaceLarge",
+            "ISOlevels.MinFacePositionHigh",
+            "ISOlevels.MinFacePositionLeft",
+            "ISOlevels.MinFacePositionLow",
+            "ISOlevels.MinFacePositionRight",
+            "ISOlevels.MinFaceSmall",
+            "ISOlevels.MineyeDistance",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.GeometryDetail"
+          ],
+          "instructions": [
+            {
+              "offset": "0xc",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xd",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFaceLarge"
+            },
+            {
+              "offset": "0x12",
+              "opcode": "brfalse.s",
+              "operand": 41
+            },
+            {
+              "offset": "0x14",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x15",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x1a",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FaceLarge"
+            },
+            {
+              "offset": "0x1f",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x20",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFaceLarge"
+            },
+            {
+              "offset": "0x25",
+              "opcode": "bge.s",
+              "operand": 41
+            },
+            {
+              "offset": "0x27",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x28",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x29",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2a",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFaceSmall"
+            },
+            {
+              "offset": "0x2f",
+              "opcode": "brfalse.s",
+              "operand": 70
+            },
+            {
+              "offset": "0x31",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x32",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x37",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FaceSmall"
+            },
+            {
+              "offset": "0x3c",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x3d",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFaceSmall"
+            },
+            {
+              "offset": "0x42",
+              "opcode": "bge.s",
+              "operand": 70
+            },
+            {
+              "offset": "0x44",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x45",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x46",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x47",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionHigh"
+            },
+            {
+              "offset": "0x4c",
+              "opcode": "brfalse.s",
+              "operand": 99
+            },
+            {
+              "offset": "0x4e",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x4f",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x54",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionHigh"
+            },
+            {
+              "offset": "0x59",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x5a",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionHigh"
+            },
+            {
+              "offset": "0x5f",
+              "opcode": "bge.s",
+              "operand": 99
+            },
+            {
+              "offset": "0x61",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x62",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x63",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x64",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionLow"
+            },
+            {
+              "offset": "0x69",
+              "opcode": "brfalse.s",
+              "operand": 128
+            },
+            {
+              "offset": "0x6b",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x6c",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x71",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionLow"
+            },
+            {
+              "offset": "0x76",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x77",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionLow"
+            },
+            {
+              "offset": "0x7c",
+              "opcode": "bge.s",
+              "operand": 128
+            },
+            {
+              "offset": "0x7e",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x7f",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x80",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x81",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionLeft"
+            },
+            {
+              "offset": "0x86",
+              "opcode": "brfalse.s",
+              "operand": 157
+            },
+            {
+              "offset": "0x88",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x89",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x8e",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionLeft"
+            },
+            {
+              "offset": "0x93",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x94",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionLeft"
+            },
+            {
+              "offset": "0x99",
+              "opcode": "bge.s",
+              "operand": 157
+            },
+            {
+              "offset": "0x9b",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x9c",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x9d",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x9e",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionRight"
+            },
+            {
+              "offset": "0xa3",
+              "opcode": "brfalse.s",
+              "operand": 186
+            },
+            {
+              "offset": "0xa5",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xa6",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0xab",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionRight"
+            },
+            {
+              "offset": "0xb0",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xb1",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionRight"
+            },
+            {
+              "offset": "0xb6",
+              "opcode": "bge.s",
+              "operand": 186
+            },
+            {
+              "offset": "0xb8",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xb9",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xba",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xbb",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeAngle"
+            },
+            {
+              "offset": "0xc0",
+              "opcode": "brfalse.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xc2",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xc3",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xc8",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xcd",
+              "opcode": "ldc.r4",
+              "operand": 0.0
+            },
+            {
+              "offset": "0xd2",
+              "opcode": "ble.un.s",
+              "operand": 234
+            },
+            {
+              "offset": "0xd4",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xd5",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xda",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xdf",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xe0",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0xe5",
+              "opcode": "conv.r4",
+              "operand": null
+            },
+            {
+              "offset": "0xe6",
+              "opcode": "ble.un.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xe8",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xe9",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xea",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xeb",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xf0",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xf5",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xf6",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0xfb",
+              "opcode": "neg",
+              "operand": null
+            },
+            {
+              "offset": "0xfc",
+              "opcode": "conv.r4",
+              "operand": null
+            },
+            {
+              "offset": "0xfd",
+              "opcode": "bge.un.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xff",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x100",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x101",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x102",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeDistance"
+            },
+            {
+              "offset": "0x107",
+              "opcode": "brfalse.s",
+              "operand": 286
+            },
+            {
+              "offset": "0x109",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x10a",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x10f",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.eyedistance"
+            },
+            {
+              "offset": "0x114",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x115",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MineyeDistance"
+            },
+            {
+              "offset": "0x11a",
+              "opcode": "bge.s",
+              "operand": 286
+            },
+            {
+              "offset": "0x11c",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x11d",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x11e",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x11f",
+              "opcode": "ret",
+              "operand": null
+            }
+          ]
+        },
+        {
+          "type": "Photomatic.Photo",
+          "name": "CheckBackground",
+          "token": "0x60000ed",
+          "instruction_count": 2,
+          "calls": [],
+          "fields_referenced": [],
+          "instructions": [
+            {
+              "offset": "0x1",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x2",
+              "opcode": "ret",
+              "operand": null
+            }
+          ]
+        },
+        {
+          "type": "Photomatic.ControlFrame",
+          "name": ".ctor",
+          "token": "0x6000144",
+          "instruction_count": 72,
+          "calls": [
+            "Object..ctor",
+            "View..ctor"
+          ],
+          "fields_referenced": [
+            "ControlFrame._App2Start",
+            "ControlFrame._ISOtemplatename",
+            "ControlFrame._bDoAutoCrop",
+            "ControlFrame._bDoICAOcheck",
+            "ControlFrame._bUseOverlay",
+            "ControlFrame._canvasheight",
+            "ControlFrame._canvaswidth",
+            "ControlFrame._defaultprinttemplatename",
+            "ControlFrame._emailtemplatename",
+            "ControlFrame._flagfilename",
+            "ControlFrame._format",
+            "ControlFrame._landcode",
+            "ControlFrame._landname",
+            "ControlFrame._overlayfilename",
+            "ControlFrame._radiobtnlabel",
+            "ControlFrame._requiredDigitalFileSizemax",
+            "ControlFrame._requiredDigitalFileSizemin",
+            "ControlFrame._requiredDigitalHeight",
+            "ControlFrame._requiredDigitalWidth",
+            "ControlFrame._savetemplatename",
+            "ControlFrame._strFormat",
+            "ControlFrame._urlforspecs",
+            "ControlFrame._view"
+          ],
+          "instructions": [
+            {
+              "offset": "0xc",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xd",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x12",
+              "opcode": "stfld",
+              "operand": "ControlFrame._landcode"
+            },
+            {
+              "offset": "0x17",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x18",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x1d",
+              "opcode": "stfld",
+              "operand": "ControlFrame._landname"
+            },
+            {
+              "offset": "0x22",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x23",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x28",
+              "opcode": "stfld",
+              "operand": "ControlFrame._urlforspecs"
+            },
+            {
+              "offset": "0x2d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x2e",
+              "opcode": "ldc.i4.s",
+              "operand": 35
+            },
+            {
+              "offset": "0x30",
+              "opcode": "stfld",
+              "operand": "ControlFrame._canvaswidth"
+            },
+            {
+              "offset": "0x35",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x36",
+              "opcode": "ldc.i4.s",
+              "operand": 45
+            },
+            {
+              "offset": "0x38",
+              "opcode": "stfld",
+              "operand": "ControlFrame._canvasheight"
+            },
+            {
+              "offset": "0x3d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x3e",
+              "opcode": "ldc.i4.3",
+              "operand": null
+            },
+            {
+              "offset": "0x3f",
+              "opcode": "stfld",
+              "operand": "ControlFrame._format"
+            },
+            {
+              "offset": "0x44",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x45",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x4a",
+              "opcode": "stfld",
+              "operand": "ControlFrame._strFormat"
+            },
+            {
+              "offset": "0x4f",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x50",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x51",
+              "opcode": "stfld",
+              "operand": "ControlFrame._bUseOverlay"
+            },
+            {
+              "offset": "0x56",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x57",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x5c",
+              "opcode": "stfld",
+              "operand": "ControlFrame._overlayfilename"
+            },
+            {
+              "offset": "0x61",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x62",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x67",
+              "opcode": "stfld",
+              "operand": "ControlFrame._flagfilename"
+            },
+            {
+              "offset": "0x6c",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x6d",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x72",
+              "opcode": "stfld",
+              "operand": "ControlFrame._defaultprinttemplatename"
+            },
+            {
+              "offset": "0x77",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x78",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x7d",
+              "opcode": "stfld",
+              "operand": "ControlFrame._ISOtemplatename"
+            },
+            {
+              "offset": "0x82",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x83",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x88",
+              "opcode": "stfld",
+              "operand": "ControlFrame._emailtemplatename"
+            },
+            {
+              "offset": "0x8d",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x8e",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x93",
+              "opcode": "stfld",
+              "operand": "ControlFrame._savetemplatename"
+            },
+            {
+              "offset": "0x98",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0x99",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0x9e",
+              "opcode": "stfld",
+              "operand": "ControlFrame._radiobtnlabel"
+            },
+            {
+              "offset": "0xa3",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xa4",
+              "opcode": "ldstr",
+              "operand": "[string literal omitted]"
+            },
+            {
+              "offset": "0xa9",
+              "opcode": "stfld",
+              "operand": "ControlFrame._App2Start"
+            },
+            {
+              "offset": "0xae",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xaf",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xb0",
+              "opcode": "stfld",
+              "operand": "ControlFrame._requiredDigitalWidth"
+            },
+            {
+              "offset": "0xb5",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xb6",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xb7",
+              "opcode": "stfld",
+              "operand": "ControlFrame._requiredDigitalHeight"
+            },
+            {
+              "offset": "0xbc",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xbd",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xbe",
+              "opcode": "stfld",
+              "operand": "ControlFrame._requiredDigitalFileSizemin"
+            },
+            {
+              "offset": "0xc3",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xc4",
+              "opcode": "ldc.i4.m1",
+              "operand": null
+            },
+            {
+              "offset": "0xc5",
+              "opcode": "stfld",
+              "operand": "ControlFrame._requiredDigitalFileSizemax"
+            },
+            {
+              "offset": "0xca",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xcb",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xcc",
+              "opcode": "stfld",
+              "operand": "ControlFrame._bDoAutoCrop"
+            },
+            {
+              "offset": "0xd1",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xd2",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0xd3",
+              "opcode": "stfld",
+              "operand": "ControlFrame._bDoICAOcheck"
+            },
+            {
+              "offset": "0xd8",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xd9",
+              "opcode": "call",
+              "operand": "Object..ctor"
+            },
+            {
+              "offset": "0xde",
+              "opcode": "ldarg.0",
+              "operand": null
+            },
+            {
+              "offset": "0xdf",
+              "opcode": "newobj",
+              "operand": "View..ctor"
+            },
+            {
+              "offset": "0xe4",
+              "opcode": "stfld",
+              "operand": "ControlFrame._view"
+            },
+            {
+              "offset": "0xe9",
+              "opcode": "ret",
+              "operand": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "Bin/PhotoMatic7.exe",
+      "sha256": "8bb9d5fd95921ef34f9a9e1011a9dd72b5bcfa3922a29a4452cf5414873070a1",
+      "references": [
+        "mscorlib",
+        "System.Drawing",
+        "Photomatic",
+        "DPSFramework",
+        "System.Windows.Forms",
+        "System",
+        "System.Management",
+        "SimpleWifi",
+        "CanonCameraAppLib",
+        "EDSDKAPI.Controls.WinForms",
+        "DPS_Library",
+        "System.Printing",
+        "System.Net.Http",
+        "ICSharpCode.SharpZipLib",
+        "ColorMine",
+        "System.Web.Services",
+        "System.Configuration",
+        "System.Core",
+        "Unikey.Net",
+        "EDSDKAPI",
+        "Osklib",
+        "System.Net.Http.Formatting",
+        "Newtonsoft.Json"
+      ],
+      "methods": [
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "ServerICAOtestAsync",
+          "token": "0x6000140",
+          "instruction_count": 17,
+          "calls": [
+            ".",
+            ".Create",
+            ".get_Task"
+          ],
+          "fields_referenced": [
+            "<ServerICAOtestAsync>d__529.<>1__state",
+            "<ServerICAOtestAsync>d__529.<>4__this",
+            "<ServerICAOtestAsync>d__529.<>t__builder"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "GetjustICAO",
+          "token": "0x6000141",
+          "instruction_count": 20,
+          "calls": [
+            ".",
+            ".Create",
+            ".get_Task"
+          ],
+          "fields_referenced": [
+            "<GetjustICAO>d__530.<>1__state",
+            "<GetjustICAO>d__530.<>t__builder",
+            "<GetjustICAO>d__530.path",
+            "<GetjustICAO>d__530.strarg"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "StartIsoCheck",
+          "token": "0x600014d",
+          "instruction_count": 56,
+          "calls": [
+            "ControlFrame.get_view",
+            "Image.Clone",
+            "IsoScore..ctor",
+            "Logging.Add1RejectedICAOtest",
+            "Photo.CheckICAOlevelsNoGeometry",
+            "Photo.FillReportImageQuality7",
+            "Photo.RunISOQualityCheck",
+            "PhotomaticSettings.get_bLog"
+          ],
+          "fields_referenced": [
+            "Form1.PhotomaticSettings",
+            "Form1._ISOcheckfile",
+            "Form1._controlframe",
+            "Form1._foto",
+            "Form1._isolevels",
+            "Form1._isoscore",
+            "Form1._logsession",
+            "Form1._workingImage",
+            "Form1.bFotoICAO_OK",
+            "Logging.bLogManagerOnline"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "StartGeoCheck",
+          "token": "0x600014e",
+          "instruction_count": 1029,
+          "calls": [
+            ".",
+            "..ctor",
+            "ControlFrame.get_bUseOverlay",
+            "ControlFrame.get_view",
+            "Form1.ShowPreview",
+            "Image.Clone",
+            "LanguageData.get_Form_Main",
+            "Math.Abs",
+            "Photo.CheckICAOlevelsGeometry",
+            "Photo.MoveDown",
+            "Photo.MoveLeft",
+            "Photo.MoveRight",
+            "Photo.MoveUp",
+            "Photo.RunGeometryCheck",
+            "Photo.ZoomIn",
+            "Photo.ZoomOut",
+            "PictureBox.set_Image"
+          ],
+          "fields_referenced": [
+            "BiometricsDetails.angle",
+            "Form1._controlframe",
+            "Form1._foto",
+            "Form1._isolevels",
+            "Form1._isoscore",
+            "Form1._previewImage",
+            "Form1._previewfile",
+            "Form1._workingImage",
+            "Form1.bFotoGeometryIs_OK",
+            "Form1.languagedata",
+            "Form1.pictureBox1",
+            "Form_Main.errmsg30",
+            "Form_Main.errmsg31",
+            "Form_Main.errmsg32",
+            "Form_Main.errmsg33",
+            "Form_Main.errmsg34",
+            "Form_Main.errmsg35",
+            "Form_Main.errmsg7",
+            "GeometryDetails.EyesNotFacingCamera",
+            "GeometryDetails.FaceLarge",
+            "GeometryDetails.FaceNotFacingCamera",
+            "GeometryDetails.FacePositionHigh",
+            "GeometryDetails.FacePositionLeft",
+            "GeometryDetails.FacePositionLow",
+            "GeometryDetails.FacePositionRight",
+            "GeometryDetails.FaceSmall",
+            "ISOlevels.CheckEyeAngle",
+            "ISOlevels.CheckEyesNotFacingCamera",
+            "ISOlevels.CheckFaceLarge",
+            "ISOlevels.CheckFaceNotFacingCamera",
+            "ISOlevels.CheckFacePositionHigh",
+            "ISOlevels.CheckFacePositionLeft",
+            "ISOlevels.CheckFacePositionLow",
+            "ISOlevels.CheckFacePositionRight",
+            "ISOlevels.CheckFaceSmall",
+            "ISOlevels.MaxAngle",
+            "ISOlevels.MinEyesNotFacingCamera",
+            "ISOlevels.MinFaceLarge",
+            "ISOlevels.MinFaceNotFacingCamera",
+            "ISOlevels.MinFacePositionHigh",
+            "ISOlevels.MinFacePositionLeft",
+            "ISOlevels.MinFacePositionLow",
+            "ISOlevels.MinFacePositionRight",
+            "ISOlevels.MinFaceSmall",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.GeometryDetail",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "StartBackgroundCheck",
+          "token": "0x6000150",
+          "instruction_count": 1162,
+          "calls": [
+            "Bitmap..ctor",
+            "Color.FromArgb",
+            "Color.get_B",
+            "Color.get_G",
+            "Color.get_R",
+            "Control.set_Cursor",
+            "ControlFrame.get_BackB",
+            "ControlFrame.get_BackBmax",
+            "ControlFrame.get_BackBmin",
+            "ControlFrame.get_BackG",
+            "ControlFrame.get_BackGmax",
+            "ControlFrame.get_BackGmin",
+            "ControlFrame.get_BackR",
+            "ControlFrame.get_BackRmax",
+            "ControlFrame.get_BackRmin",
+            "Cursors.get_Default",
+            "Cursors.get_WaitCursor",
+            "Graphics.Dispose",
+            "Graphics.DrawImage",
+            "Graphics.FromImage",
+            "IDisposable.Dispose",
+            "Image.get_Height",
+            "Image.get_Width",
+            "Math.Abs",
+            "MeasureBackground..ctor",
+            "MeasureBackground.FloodFill",
+            "MeasureBackground.Measure",
+            "MeasureBackground.get_Mean",
+            "MeasureBackground.get_MeanLB",
+            "MeasureBackground.get_MeanLO",
+            "MeasureBackground.get_MeanRB",
+            "MeasureBackground.get_MeanRO",
+            "Photo.CheckForPaddingErrors",
+            "Photo.CreateBGmeasureRect2",
+            "Photo.get_Eye1PosX",
+            "Photo.get_Eye1PosY",
+            "Photo.get_Eye2PosX",
+            "Photo.get_Eye2PosY",
+            "PhotomaticSettings.get_bAutoBackground",
+            "PhotomaticSettings.get_bDoBackgroundTest",
+            "PhotomaticSettings.get_bSelfie",
+            "Point..ctor",
+            "Rectangle.get_Height",
+            "Rectangle.get_Width",
+            "Rectangle.get_X",
+            "Rectangle.get_Y",
+            "RuntimeHelpers.InitializeArray"
+          ],
+          "fields_referenced": [
+            "BackgroundDetails.BackBright",
+            "BackgroundDetails.BackColor",
+            "BackgroundDetails.BackDark",
+            "BackgroundDetails.BackShadows",
+            "BackgroundDetails.BackUniform",
+            "BackgroundDetails.ColorLBB",
+            "BackgroundDetails.ColorLBG",
+            "BackgroundDetails.ColorLBR",
+            "BackgroundDetails.ColorLOB",
+            "BackgroundDetails.ColorLOG",
+            "BackgroundDetails.ColorLOR",
+            "BackgroundDetails.ColorRBB",
+            "BackgroundDetails.ColorRBG",
+            "BackgroundDetails.ColorRBR",
+            "BackgroundDetails.ColorROB",
+            "BackgroundDetails.ColorROG",
+            "BackgroundDetails.ColorROR",
+            "Form1.PhotomaticSettings",
+            "Form1._controlframe",
+            "Form1._foto",
+            "Form1._isolevels",
+            "Form1._isoscore",
+            "Form1._workingImage",
+            "Form1.bFotoBackgroundIs_OK",
+            "Form1.backgroundrectView",
+            "ISOlevels.CheckBackBright",
+            "ISOlevels.CheckBackColor",
+            "ISOlevels.CheckBackShadows",
+            "ISOlevels.CheckBackUniform",
+            "ISOlevels.MinBackBright",
+            "ISOlevels.MinBackColor",
+            "ISOlevels.MinBackShadows",
+            "ISOlevels.MinBackUniform",
+            "IsoScore.Background",
+            "IsoScore.BackgroundDetail",
+            "IsoScore.ResultText",
+            "IsoScore.Resultcode"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "CheckICAOlevelsGeometry",
+          "token": "0x6000165",
+          "instruction_count": 106,
+          "calls": [],
+          "fields_referenced": [
+            "BiometricsDetails.angle",
+            "BiometricsDetails.eyedistance",
+            "GeometryDetails.FaceLarge",
+            "GeometryDetails.FacePositionHigh",
+            "GeometryDetails.FacePositionLeft",
+            "GeometryDetails.FacePositionLow",
+            "GeometryDetails.FacePositionRight",
+            "GeometryDetails.FaceSmall",
+            "ISOlevels.CheckEyeAngle",
+            "ISOlevels.CheckEyeDistance",
+            "ISOlevels.CheckFaceLarge",
+            "ISOlevels.CheckFacePositionHigh",
+            "ISOlevels.CheckFacePositionLeft",
+            "ISOlevels.CheckFacePositionLow",
+            "ISOlevels.CheckFacePositionRight",
+            "ISOlevels.CheckFaceSmall",
+            "ISOlevels.MaxAngle",
+            "ISOlevels.MinFaceLarge",
+            "ISOlevels.MinFacePositionHigh",
+            "ISOlevels.MinFacePositionLeft",
+            "ISOlevels.MinFacePositionLow",
+            "ISOlevels.MinFacePositionRight",
+            "ISOlevels.MinFaceSmall",
+            "ISOlevels.MineyeDistance",
+            "IsoScore.BiometricsDetail",
+            "IsoScore.GeometryDetail"
+          ],
+          "instructions": [
+            {
+              "offset": "0xc",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xd",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFaceLarge"
+            },
+            {
+              "offset": "0x12",
+              "opcode": "brfalse.s",
+              "operand": 41
+            },
+            {
+              "offset": "0x14",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x15",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x1a",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FaceLarge"
+            },
+            {
+              "offset": "0x1f",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x20",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFaceLarge"
+            },
+            {
+              "offset": "0x25",
+              "opcode": "bge.s",
+              "operand": 41
+            },
+            {
+              "offset": "0x27",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x28",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x29",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x2a",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFaceSmall"
+            },
+            {
+              "offset": "0x2f",
+              "opcode": "brfalse.s",
+              "operand": 70
+            },
+            {
+              "offset": "0x31",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x32",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x37",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FaceSmall"
+            },
+            {
+              "offset": "0x3c",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x3d",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFaceSmall"
+            },
+            {
+              "offset": "0x42",
+              "opcode": "bge.s",
+              "operand": 70
+            },
+            {
+              "offset": "0x44",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x45",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x46",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x47",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionHigh"
+            },
+            {
+              "offset": "0x4c",
+              "opcode": "brfalse.s",
+              "operand": 99
+            },
+            {
+              "offset": "0x4e",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x4f",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x54",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionHigh"
+            },
+            {
+              "offset": "0x59",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x5a",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionHigh"
+            },
+            {
+              "offset": "0x5f",
+              "opcode": "bge.s",
+              "operand": 99
+            },
+            {
+              "offset": "0x61",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x62",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x63",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x64",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionLow"
+            },
+            {
+              "offset": "0x69",
+              "opcode": "brfalse.s",
+              "operand": 128
+            },
+            {
+              "offset": "0x6b",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x6c",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x71",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionLow"
+            },
+            {
+              "offset": "0x76",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x77",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionLow"
+            },
+            {
+              "offset": "0x7c",
+              "opcode": "bge.s",
+              "operand": 128
+            },
+            {
+              "offset": "0x7e",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x7f",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x80",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x81",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionLeft"
+            },
+            {
+              "offset": "0x86",
+              "opcode": "brfalse.s",
+              "operand": 157
+            },
+            {
+              "offset": "0x88",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x89",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0x8e",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionLeft"
+            },
+            {
+              "offset": "0x93",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x94",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionLeft"
+            },
+            {
+              "offset": "0x99",
+              "opcode": "bge.s",
+              "operand": 157
+            },
+            {
+              "offset": "0x9b",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x9c",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x9d",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x9e",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckFacePositionRight"
+            },
+            {
+              "offset": "0xa3",
+              "opcode": "brfalse.s",
+              "operand": 186
+            },
+            {
+              "offset": "0xa5",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xa6",
+              "opcode": "ldfld",
+              "operand": "IsoScore.GeometryDetail"
+            },
+            {
+              "offset": "0xab",
+              "opcode": "ldfld",
+              "operand": "GeometryDetails.FacePositionRight"
+            },
+            {
+              "offset": "0xb0",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xb1",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MinFacePositionRight"
+            },
+            {
+              "offset": "0xb6",
+              "opcode": "bge.s",
+              "operand": 186
+            },
+            {
+              "offset": "0xb8",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xb9",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xba",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xbb",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeAngle"
+            },
+            {
+              "offset": "0xc0",
+              "opcode": "brfalse.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xc2",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xc3",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xc8",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xcd",
+              "opcode": "ldc.r4",
+              "operand": 0.0
+            },
+            {
+              "offset": "0xd2",
+              "opcode": "ble.un.s",
+              "operand": 234
+            },
+            {
+              "offset": "0xd4",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xd5",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xda",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xdf",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xe0",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0xe5",
+              "opcode": "conv.r4",
+              "operand": null
+            },
+            {
+              "offset": "0xe6",
+              "opcode": "ble.un.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xe8",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0xe9",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0xea",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0xeb",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0xf0",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.angle"
+            },
+            {
+              "offset": "0xf5",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0xf6",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MaxAngle"
+            },
+            {
+              "offset": "0xfb",
+              "opcode": "neg",
+              "operand": null
+            },
+            {
+              "offset": "0xfc",
+              "opcode": "conv.r4",
+              "operand": null
+            },
+            {
+              "offset": "0xfd",
+              "opcode": "bge.un.s",
+              "operand": 257
+            },
+            {
+              "offset": "0xff",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x100",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x101",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x102",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.CheckEyeDistance"
+            },
+            {
+              "offset": "0x107",
+              "opcode": "brfalse.s",
+              "operand": 286
+            },
+            {
+              "offset": "0x109",
+              "opcode": "ldarg.1",
+              "operand": null
+            },
+            {
+              "offset": "0x10a",
+              "opcode": "ldfld",
+              "operand": "IsoScore.BiometricsDetail"
+            },
+            {
+              "offset": "0x10f",
+              "opcode": "ldfld",
+              "operand": "BiometricsDetails.eyedistance"
+            },
+            {
+              "offset": "0x114",
+              "opcode": "ldarg.2",
+              "operand": null
+            },
+            {
+              "offset": "0x115",
+              "opcode": "ldfld",
+              "operand": "ISOlevels.MineyeDistance"
+            },
+            {
+              "offset": "0x11a",
+              "opcode": "bge.s",
+              "operand": 286
+            },
+            {
+              "offset": "0x11c",
+              "opcode": "ldc.i4.0",
+              "operand": null
+            },
+            {
+              "offset": "0x11d",
+              "opcode": "ret",
+              "operand": null
+            },
+            {
+              "offset": "0x11e",
+              "opcode": "ldc.i4.1",
+              "operand": null
+            },
+            {
+              "offset": "0x11f",
+              "opcode": "ret",
+              "operand": null
+            }
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "RunICAOtask",
+          "token": "0x6000166",
+          "instruction_count": 17,
+          "calls": [
+            ".",
+            ".Create",
+            ".get_Task"
+          ],
+          "fields_referenced": [
+            "<RunICAOtask>d__567.<>1__state",
+            "<RunICAOtask>d__567.<>4__this",
+            "<RunICAOtask>d__567.<>t__builder"
+          ]
+        },
+        {
+          "type": "PhotoMatic7.Form1",
+          "name": "RunGEOtask",
+          "token": "0x6000167",
+          "instruction_count": 20,
+          "calls": [
+            ".",
+            ".Create",
+            ".get_Task"
+          ],
+          "fields_referenced": [
+            "<RunGEOtask>d__568.<>1__state",
+            "<RunGEOtask>d__568.<>4__this",
+            "<RunGEOtask>d__568.<>t__builder",
+            "<RunGEOtask>d__568.bAutoCorrection"
+          ]
+        }
+      ]
+    }
+  ]
+}

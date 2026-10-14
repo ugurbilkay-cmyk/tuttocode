@@ -1,0 +1,147 @@
+'use strict';
+const { JSDOM } = require('jsdom');
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const root = path.join(__dirname, '..');
+const code = fs.readFileSync(path.join(root, 'static/station.js'), 'utf8');
+
+function page(name) {
+  const html = fs.readFileSync(path.join(root, `output/station-dom-fixtures/${name}.html`), 'utf8');
+  const dom = new JSDOM(html, { url: 'http://localhost:8767/admin/new', runScripts: 'outside-only' });
+  const { window } = dom;
+  const opened = [];
+  window.fetch = async () => ({ok:true,json:async()=>({runs:[]})});
+  window.HTMLDialogElement.prototype.showModal = function () { this.open = true; opened.push(this.id); };
+  window.HTMLDialogElement.prototype.close = function () { this.open = false; };
+  // Only the template's own configuration script and our station code execute.
+  const config = [...window.document.scripts].find(s => s.textContent.startsWith('window.stationPhotoId='));
+  window.eval(config.textContent);
+  window.eval(code + '\nwindow.testShowGovukRuns = showGovukRuns;');
+  return { window, document: window.document, opened, close: () => window.close() };
+}
+
+const studio = page('new');
+const { window: w, document: d } = studio;
+const form = d.getElementById('photo-form');
+const field = name => form.elements.namedItem(name);
+assert.equal(field('use_ai').checked, false);
+assert.equal(field('adaptive_profile').value, 'balanced');
+assert.match(d.getElementById('enhancement-choice').textContent, /Balanced lighting · \+0\.50 EV/);
+assert.match(d.getElementById('lighting-scope').textContent, /Lighting only: skin polishing, shine reduction and spot cleaning stay off/);
+assert.equal(d.querySelector('#enhancer-tools'), null);
+assert.equal(field('background_engine'), null);
+field('replace_bg').checked = true;
+field('use_ai').checked = true;
+field('ai_consent').checked = true;
+for (const key of ['natural', 'balanced', 'recovery']) {
+  d.querySelector(`[data-enhance-preset="${key}"]`).click();
+  assert.equal(field('adaptive_profile').value, key);
+  assert.equal(d.querySelector(`[data-enhance-preset="${key}"]`).getAttribute('aria-pressed'), 'true');
+  assert.equal(field('replace_bg').checked, true);
+  assert.equal(field('use_ai').checked, true);
+  assert.equal(field('ai_consent').checked, true);
+  const exposure = {natural:'0.25',balanced:'0.50',recovery:'0.75'}[key];
+  assert.ok(d.getElementById('enhancement-choice').textContent.includes(`+${exposure} EV`));
+}
+d.getElementById('no-enhancement').click();
+assert.equal(field('adaptive_profile').value, 'off');
+assert.match(d.getElementById('enhancement-choice').textContent, /Original lighting · no lighting correction/);
+assert.equal(field('replace_bg').checked, true);
+assert.equal(field('use_ai').checked, true);
+assert.equal(field('ai_consent').checked, true);
+field('zoom').value = '.84'; field('x').value = '-17'; field('angle').value = '-3';
+d.querySelector('[data-country="united-kingdom-online-renewal"]').click();
+assert.equal(field('country_id').value, 'united-kingdom-online-renewal');
+assert.equal(field('zoom').value, '1'); assert.equal(field('x').value, '0'); assert.equal(field('angle').value, '0');
+assert.match(d.getElementById('format-note').textContent, /5:7.*800 × 1120/);
+assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-ratio'), '50/70');
+assert.ok(field('print_template_id').value);
+d.querySelector('[data-country="united-kingdom-passport"]').click();
+assert.match(d.getElementById('format-note').textContent, /35 × 45 mm/);
+assert.equal(d.getElementById('photo-stage').style.getPropertyValue('--photo-ratio'), '35/45');
+studio.close();
+
+for (const [status, expected, message] of [
+  ['partial', /some preparation did not complete/, /Selected lighting could not finish; input pixels retained/],
+  ['unavailable', /quality editing unavailable/, /Facial measurements unavailable; input pixels retained/],
+  ['unchanged', /no facial edits selected/, /Recovery evaluated · no facial correction selected/],
+]) {
+  const outcomePage = page(`adaptive-${status}`);
+  const outcome = outcomePage.document.getElementById('adaptive-outcome').textContent;
+  assert.match(outcome, expected, `${status} must retain its preparation outcome even with identical input/output hashes`);
+  assert.match(outcome, message, 'The saved explanation must be visible without opening details');
+  if (status !== 'unchanged') {
+    assert.doesNotMatch(outcome, /no facial edits selected/);
+    const explanation = outcomePage.document.querySelector('#adaptive-outcome + details').textContent;
+    assert.doesNotMatch(explanation, /This profile made no facial pixel changes/);
+    assert.doesNotMatch(explanation, /No texture cleanup was needed/);
+  }
+  outcomePage.close();
+}
+
+const lightingOnly = page('lighting-only');
+assert.match(lightingOnly.document.getElementById('adaptive-outcome').textContent, /lighting correction applied/);
+const lightingExplanation = lightingOnly.document.querySelector('#adaptive-outcome + details').textContent;
+assert.match(lightingExplanation, /No skin polishing, shine reduction or spot cleaning was selected/);
+assert.doesNotMatch(lightingExplanation, /Lighting and cleanup were chosen/);
+lightingOnly.close();
+
+const loaded = page('photo');
+loaded.document.getElementById('before-toggle').click();
+assert.equal(loaded.document.getElementById('before-photo').hidden,false);
+assert.equal(loaded.document.getElementById('before-toggle').textContent,'Show after');
+assert.match(loaded.document.getElementById('comparison-state').textContent,/matched crop and pixel grid/);
+loaded.document.getElementById('before-photo').dispatchEvent(new loaded.window.Event('error'));
+assert.equal(loaded.document.getElementById('before-photo').hidden,true);
+assert.equal(loaded.document.getElementById('stage-photo').hidden,false);
+assert.equal(loaded.document.getElementById('before-toggle').disabled,true);
+assert.match(loaded.document.getElementById('comparison-state').textContent,/unavailable/);
+const interactive=page('photo');
+const photoForm=interactive.document.getElementById('photo-form');
+const zoom=photoForm.elements.namedItem('zoom');
+zoom.value='1.1';zoom.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+const sourcePreview=interactive.document.getElementById('crop-preview-photo');
+assert.equal(sourcePreview.hidden,false,'Moving zoom must immediately display source framing');
+assert.match(sourcePreview.getAttribute('src'),/crop-source\.jpg$/);
+const previewWidth=sourcePreview.style.width;
+zoom.value='1.2';zoom.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+assert.notEqual(sourcePreview.style.width,previewWidth,'A second slider input updates visible magnification');
+const horizontal=photoForm.elements.namedItem('x');
+const previewLeft=sourcePreview.style.left;
+horizontal.value='5';horizontal.dispatchEvent(new interactive.window.Event('input',{bubbles:true}));
+assert.notEqual(sourcePreview.style.left,previewLeft,'Horizontal movement changes the source window');
+assert.equal(interactive.document.getElementById('crop-preview-note').hidden,false);
+interactive.document.getElementById('reset-crop').click();
+assert.equal(sourcePreview.hidden,true,'Reset restores the saved photo when crop settings match');
+assert.equal(interactive.document.getElementById('stage-photo').hidden,false);
+interactive.close();
+loaded.document.getElementById('open-govuk').click();
+assert.ok(loaded.opened.includes('govuk-dialog'));
+loaded.window.testShowGovukRuns([{id:'test-run-reference',status:'unavailable',current:true,photo_sha256:'abc123',synthetic_dob:true,error:'Browser blocked',access_diagnostics:{category:'known_bots_detection',attackId:'20000051'}}]);
+assert.match(loaded.document.getElementById('govuk-results').textContent,/Bot-protection block · 20000051/);
+assert.match(loaded.document.getElementById('govuk-results').textContent,/does not assess the photo/);
+loaded.document.getElementById('close-govuk').click();
+assert.equal(loaded.document.getElementById('govuk-dialog').open,false);
+loaded.document.querySelector('[data-enhance-preset="balanced"]').click();
+assert.equal(loaded.document.getElementById('pending-changes').hidden, false);
+assert.equal(loaded.document.getElementById('print-button').disabled, true);
+assert.equal(loaded.document.getElementById('open-govuk').disabled,true);
+assert.equal(loaded.document.getElementById('govuk-submit').disabled,true);
+assert.equal(loaded.document.querySelector('a[href$="/save.jpg"]').getAttribute('aria-disabled'), 'true');
+loaded.document.getElementById('open-openai').click();
+assert.ok(loaded.opened.includes('openai-dialog'));
+loaded.document.getElementById('close-openai').click();
+assert.equal(loaded.document.getElementById('openai-dialog').open, false);
+loaded.close();
+
+const ready = page('ready');
+assert.ok(ready.opened.includes('openai-dialog'), 'Pending AI preview must remain discoverable after reload');
+assert.ok(ready.document.getElementById('ai-recheck-form'), 'Paid image has a local-only rebuild action');
+ready.document.querySelector('[data-enhance-preset="balanced"]').click();
+assert.equal(ready.document.querySelector('#ai-recheck-form button').disabled, true, 'Unsaved choices must not rebuild an old version');
+ready.close();
+const readonly = page('readonly');
+assert.equal(readonly.document.querySelector('[data-enhance-preset]'), null);
+readonly.close();
+console.log('Studio DOM interactions pass: three real levels, isolated background/OpenAI choices, UK format switch, dirty-state output and AI review.');

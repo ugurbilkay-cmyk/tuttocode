@@ -2,25 +2,41 @@
 
 *Last updated: 12 October 2026*
 
+## Tuttoprint Photo Studio update (12 October 2026)
+
+The repository now includes the supplied installation's 208 country/document
+profiles and 169 print layouts, an independent studio prototype, country-specific AI
+crops, pending-photo adjustments and digital exports. This update is prepared
+for review; it has not been deployed to the live VPS. See
+[reference import and validation](docs/PHOTOMATIC.md). The confirmed workflow is
+file upload and printing on a Fujifilm DE100-XD. The imported default print canvas
+is not a calibrated DE100-XD sheet. See the
+[system specification and remaining gaps](docs/SYSTEM_SPEC.md). UK code retrieval is retained;
+Irish code issuance requires a separate provider connection and remains disabled.
+See [Irish integration research](docs/IRISH_CODES.md).
+
 ## 1. What it is
 
 An in-shop system that turns a customer's photo into a **UK passport photo code**.
 The customer enters the code on gov.uk, and HM Passport Office (HMPO) collects the
 photo directly from our server. It replaces the retiring Fujifilm ID service.
 
-**Status: live and working.** On 12 Oct 2026 a test code (`tpcode.uk/nKAeerjA`) was
+**Historical UK service result recorded before the studio update.** On 12 Oct 2026 a test code (`tpcode.uk/nKAeerjA`) was
 entered on gov.uk and HMPO successfully retrieved the photo.
+This records the earlier deployment; it does not verify the current branch's
+production status or complete studio workflow.
 
 ## 2. How it works
 
 1. Staff open **https://staff.tpcode.uk/admin** in any browser and log in.
 2. **+ New photo**: take or upload the photo (e.g. from the Canon camera).
-3. The system automatically:
+3. The earlier system automatically:
    - finds the face and crops to passport size (35×45 mm ratio, 1050×1350 px)
-   - **auto-enhances**: fixes colour casts and exposure, softens shadows on the face, evens out the background (each one can be switched off per photo)
+   - offered automatic colour/exposure correction, face-shadow softening and background evening
    - runs checks: one face, head straight, facing camera, eyes open, neutral expression, sharpness, lighting, background, glasses glare, resolution
 4. The staff member reviews **Before / After** and the checklist, then clicks **Issue photo code**.
-5. Print the **6×4 sheet** (4 photos plus the code) on the Mitsubishi, and/or the **code slip** for the customer.
+5. Preview the selected photo sheet and/or code slip. The target shop printer is
+   the **Fujifilm DE100-XD**; physical layout calibration is still required.
 6. The customer applies at gov.uk and enters the code. HMPO fetches the photo.
 
 ### Security
@@ -28,7 +44,8 @@ entered on gov.uk and HMPO successfully retrieved the photo.
   request must carry HMPO's digital signature, which the server checks against
   HMPO's published key. Anyone else gets "not found".
 - The staff page is password-protected.
-- Original uploads are not kept. Photos without a code are deleted after 24 hours,
+- Original shop uploads are kept while pending and removed when issued, rejected
+  or expired. Photos without a code are deleted after 24 hours,
   and issued codes and photos after 30 days. Every HMPO collection is logged.
 
 ## 3. What we set up
@@ -84,22 +101,24 @@ After changing them, run `systemctl restart tpcode`.
 
 ## 6. Still to do
 
-1. **Test auto-enhance on real Canon photos** and fine-tune the crop (head size, space above head).
-2. **Match the Fujifilm look**: send before/after pairs and settings screenshots from the Fujifilm system.
-3. **Print test** of the 6×4 sheet on the Mitsubishi (check size and borders).
-4. **ICO registration** (UK data protection fee), since we store customer photos.
-5. **Hosting decision** after the 1-month trial (keep monthly, or switch to a longer plan).
-6. Optional: email codes to customers (needs email settings), card payments, and auto-import straight from the Canon camera.
-7. Optional: make the GitHub repo **private** (updates on the server would then need an access token).
+1. Complete profile-specific rules, final export validation and the job lifecycle.
+2. Complete familiar crop controls, measurement/background inspectors and output dialogs.
+3. Calibrate the DE100-XD sheet, driver settings and print colour management.
+4. Record staff review/consent and validate the own UK code service after deployment.
+5. Establish independent Irish provider onboarding and retrieval.
+6. Run paired reference-photo and physical-print acceptance jobs.
+
+The [system specification](docs/SYSTEM_SPEC.md) gives the detailed scope and
+completion checks. Native camera control is outside the confirmed upload workflow.
 
 ## 7. Note on auto-enhance
 
-HMPO's published rules say photos should be unedited. Colour and exposure fixes are
-standard photo-lab adjustments. Face-shadow softening and background replacement go
-further. Facial features are never reshaped, but HMPO could still reject a photo. Each
-option can be switched off per photo, and the defaults are in `/etc/tpcode.env`
-(`AUTO_ADJUST`, `FIX_SHADOWS`, `EVEN_BG`, `BG_REPLACE`). Keep an eye on the first
-applications.
+UK and Irish published photo rules prohibit digital alteration. The prototype's
+enhancement options default off, but server-side document/output restrictions
+remain to be implemented. Treat passport analysis/cropping, general ID editing
+and print colour management as separate operations. Sources:
+[UK photo rules](https://www.gov.uk/photos-for-passports/photo-requirements),
+[Irish photo guidelines](https://api.ireland.ie/en/dfa/passports/photo-guidelines/).
 
 ## 8. Code overview (for a developer)
 

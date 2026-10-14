@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ profile.name }} · {{ cfg.SHOP_NAME }} Photo Studio</title>
+  <link rel="stylesheet" href="/static/station.css">
+</head>
+<body>
+<header class="station-header">
+  <a class="brand" href="/admin/new"><span class="wordmark">{{ cfg.SHOP_NAME }}<small>Photo Studio</small></span></a>
+  <nav><a href="/admin/new">New photo</a><a href="/admin/history">Photo history</a><details class="header-more"><summary>More</summary><a href="/admin/tests">Test queues</a><a href="/admin/import">Import Photomatic export</a><a href="/privacy">Privacy</a></details></nav>
+</header>
+<main class="station">
+  <div class="workflow-heading"><div><h1>Prepare a photo</h1><p>Upload, crop, remove the background and choose your finish.</p></div><span class="local-badge">Local tools included</span></div>
+  <form id="photo-form" method="post" enctype="{% if row %}application/x-www-form-urlencoded{% else %}multipart/form-data{% endif %}" action="{% if row %}/admin/p/{{ row.id }}/reprocess{% else %}/admin/new{% endif %}">
+    <input type="hidden" name="opts" value="1">
+    <input type="hidden" name="enhancer_blemish_keep" id="blemish-keep" value='{{ options.get("enhancement_options",{}).get("blemish_keep",[])|tojson }}'>
+    <input type="hidden" name="cleaner_revision" value="{{ row.revision if row else 0 }}">
+    <div class="workspace">
+      <section class="photo-column" aria-label="Photo workspace">
+        <div class="stage-tools">
+          <span id="photo-size">{{ profile.width_mm|int }} × {{ profile.height_mm|int }} mm</span>
+          <label><input id="show-overlay" type="checkbox" checked> Guides</label>
+          {% if has_photo %}<button type="button" id="before-toggle" aria-pressed="false">Show before</button>{% endif %}
+          {% if row and (row.measurements|fromjson).get('skin_cleaning',{}).get('status')=='applied' %}<button type="button" id="open-cleaner">Review skin repairs</button>{% endif %}
+        </div>
+        <div class="photo-stage" id="photo-stage" style="--photo-ratio:{{ profile.width_mm }}/{{ profile.height_mm }}">
+          {% if has_photo or (row and editable) %}
+            <img class="stage-photo" id="stage-photo" src="/admin/p/{{ row.id }}/{{ 'full' if has_photo else 'original' }}.jpg?revision={{ row.revision }}" alt="{{ 'Processed ' + profile.name + ' photo' if has_photo else 'Camera original · adjust the crop' }}">
+            {% if has_photo %}
+            <img class="stage-photo before-photo" id="before-photo" src="/admin/p/{{ row.id }}/before.jpg?revision={{ row.revision }}" alt="Unedited input on the same crop and pixel grid" hidden>
+            {% endif %}
+          {% else %}
+            <img class="stage-photo" id="stage-photo" alt="Selected photo" hidden>
+            <div class="empty-photo" id="empty-photo"><span class="camera-symbol">▣</span><h2>Upload a photo</h2><p>Start with your camera photo.<br>Your result will appear here.</p></div>
+          {% endif %}
+          <img class="stage-photo" id="crop-preview-photo" alt="Live crop preview from source" hidden>
+          <img class="crop-overlay" id="crop-overlay" {% if profile.overlay %}src="{{ profile.overlay }}"{% else %}hidden{% endif %} alt="{{ profile.name }} crop guide">
+        </div>
+        <div class="photo-caption">{% if row and not has_photo and editable %}Camera original · adjust the crop, then Apply changes{% elif row %}{{ row.name or 'Walk-in customer' }} · {{ row.created|dt }}{% else %}Original preview · crop is applied when you prepare the photo{% endif %}</div>
+        {% if has_photo %}<p class="subtle" id="comparison-state">After · saved prepared photo</p><p class="subtle">Before uses the {{ 'unedited accepted OpenAI input' if options.ai else 'selected RAW development' if options.get('raw_settings') else 'unedited camera input' }} at the same crop and pixel dimensions as After. <a href="/admin/p/{{ row.id }}/camera-original">Download untouched camera file</a></p>{% endif %}
+        <p class="subtle" id="crop-preview-note" hidden>Live crop preview from source pixels · Apply changes renders the selected tools and updates checks.</p>
+
+        <details class="check-details results-panel" {% if checks|selectattr('status','equalto','fail')|list %}open{% endif %}><summary>Photo checks{% if row %} · review results{% endif %}</summary>
+        <div class="quality-summary">
+          {% for name in ['Image quality','Face size and position','Background'] %}
+            {% set group = groups|selectattr('name','equalto',name)|first %}
+            <button class="quality-row" type="button" data-measurements {% if not row %}disabled{% endif %}><span>{{ name }}</span><span class="quality-light {{ group.status if group else 'waiting' }}" aria-label="{{ group.status if group else 'Not checked' }}">{{ '✓' if group and group.status == 'pass' else '!' if group else '—' }}</span></button>
+          {% endfor %}
+        </div>
+        {% if row and editable and has_photo %}<button type="submit" form="ofiq-check-form" {% if not cfg.OFIQ_ENABLED %}disabled{% endif %}>Run OFIQ on this photo · no enhancement</button><p class="subtle">Native quality measurements of retained files. Open a measurement panel for raw and mapped values; no extra OpenAI request.</p>{% endif %}
+        <p class="subtle">Local checks support staff review. Full Photomatic score equivalence has not been established.</p>
+        {% if row %}<button type="button" data-measurements>Detailed measurements</button><button type="button" id="open-hotspots">Inspect hotspots</button>{% endif %}
+        {% if checks %}<details class="check-details"><summary>View all checks</summary>{% include '_checks.html' %}</details>{% endif %}
+        {% if profile.special_mode %}<p class="notice">This template also needs its external document submission/signature step.</p>{% endif %}
+        </details>
+      </section>
+      <aside class="controls" aria-label="Photo preparation steps">
+        <section class="workflow-step" id="upload-step">
+          <h2><span class="step-number">1</span> Upload</h2>
+          {% if not row %}
+          <input type="file" name="photo" id="file-input" accept="image/*,.cr2" required class="file-input">
+          <label for="file-input" class="action-button primary">Upload photo</label><p class="subtle" id="upload-filename">Choose a JPEG, PNG or Canon CR2 photo from your camera or computer.</p>
+          <details class="step-options"><summary>Camera and customer details</summary>
+            <button type="button" id="camera-button">Use camera</button>
+            <label class="field-label">Age<select name="age_group">{% for k,v in ages.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+            <label class="field-label">Name<input type="text" name="name" maxlength="100"></label>
+            <label class="field-label">Email<input type="email" name="email" maxlength="200"></label>
+            <label class="field-label">Phone<input type="tel" name="phone" maxlength="40"></label>
+          </details>
+          {% else %}<p class="subtle">Photo loaded{% if row.name %} · {{ row.name }}{% endif %}</p><a class="action-button" href="/admin/new">Upload another photo</a>{% endif %}
+        </section>
+        <section class="workflow-step" id="country-step">
+          <h2><span class="step-number">2</span> Country and crop</h2>
+          <button class="country-button" id="choose-country" type="button" {% if not editable %}disabled{% endif %}>
+            <img id="country-flag" {% if profile.flag %}src="{{ profile.flag }}"{% else %}hidden{% endif %} alt="">
+            <span id="country-label">{{ profile.name }}</span><span>▾</span>
+          </button>
+          <input type="hidden" name="country_id" id="country-id" value="{{ profile.id }}">
+          {% if editable %}<div class="quick-formats"><button type="button" data-country="united-kingdom-passport">UK print</button><button type="button" data-country="united-kingdom-online-renewal">UK online code</button></div>{% endif %}
+          <p class="profile-note" id="format-note">{% if profile.id=='united-kingdom-online-renewal' %}UK online · 5:7 crop · 800 × 1120 pixels{% elif profile.digital_size[0]>0 and profile.digital_size[1]>0 %}Digital photo · {{ profile.digital_size[0] }} × {{ profile.digital_size[1] }} pixels{% else %}Print photo · {{ profile.width_mm|int }} × {{ profile.height_mm|int }} mm{% endif %}</p>
+        {% if editable %}
+        <details class="step-options" id="crop-controls" {% if row and not has_photo %}open{% endif %}>
+          <summary>Move, zoom and rotate</summary>
+          <div class="sliders">
+            <label>Zoom <output id="zoom-value">{{ crop.zoom }}</output><input type="range" name="zoom" id="zoom" min="0.5" max="2" step="0.01" value="{{ crop.zoom }}"></label>
+            <label>Horizontal <output id="x-value">{{ crop.x }}%</output><input type="range" name="x" id="x" min="-30" max="30" step="1" value="{{ crop.x }}"></label>
+            <label>Vertical <output id="y-value">{{ crop.y }}%</output><input type="range" name="y" id="y" min="-30" max="30" step="1" value="{{ crop.y }}"></label>
+            <label>Rotate<select name="rotation" id="rotation">{% for v in [0,90,180,270] %}<option value="{{ v }}" {% if crop.rotation == v %}selected{% endif %}>{{ v }}° clockwise</option>{% endfor %}</select></label>
+            <label>Fine rotation <output id="angle-value">{{ crop.angle or 0 }}°</output><input type="range" name="angle" id="angle" min="-15" max="15" step="1" value="{{ crop.angle or 0 }}"></label>
+          </div>
+          <div class="rotation-buttons"><button type="button" data-rotate="-1">Rotate −1°</button><button type="button" data-rotate="1">Rotate +1°</button></div>
+          <button type="button" id="reset-crop">Reset crop</button>
+          {% if row %}<p class="subtle">Click Apply changes to update the photo and recalculate its checks from the {{ 'accepted AI source' if options.ai else 'camera original' }}.</p><button type="submit">Apply changes</button>
+          {% else %}<p class="subtle">The crop settings take effect when you click Prepare and check photo.</p>{% endif %}
+        </details>
+        {% endif %}
+          {% if editable %}<details class="step-options"><summary>Other photo formats</summary><label class="tick"><input type="checkbox" id="print-only" name="print_only" {% if options.print_only %}checked{% endif %}> Keep the full photo for printing</label><p class="subtle">Fits the whole image into the selected format instead of cropping around the face.</p></details>{% endif %}
+          {% if profile.special_mode %}<p class="notice">This template also needs its external document submission/signature step.</p>{% endif %}
+        </section>
+        {% if editable %}
+        <section class="workflow-step" id="background-step">
+          <h2><span class="step-number">3</span> Background</h2>
+          <label class="tick main-option"><input type="checkbox" id="replace-background" name="replace_bg" {% if options.replace_bg %}checked{% endif %}> Remove and replace background</label>
+          <p class="subtle">Use the plain background for the selected document.</p>
+          <p class="subtle">The engine selects the local removal tool automatically.</p>
+        </section>
+        <section class="workflow-step" id="local-tools">
+          <h2><span class="step-number">4</span> Lighting</h2>
+          {% set raw = options.get('raw_settings',{}) %}
+          {% if not row or raw %}
+          <details class="step-options" id="raw-controls" {% if not raw %}hidden{% endif %}>
+            <summary>RAW development</summary>
+            <p class="subtle">Choose the RAW base before applying a lighting option. The original sensor file is retained.</p>
+            <label class="field-label">White balance<select name="raw_wb" id="raw-wb" {% if not raw %}disabled{% endif %}><option value="camera" {% if raw.get('wb','camera')=='camera' %}selected{% endif %}>As shot</option><option value="auto" {% if raw.get('wb')=='auto' %}selected{% endif %}>Auto</option></select></label>
+            <label class="field-label">Base exposure · EV<input type="number" name="raw_exposure_ev" id="raw-exposure" min="-2" max="3" step="0.05" value="{{ raw.get('exposure_ev',0) }}" {% if not raw %}disabled{% endif %}></label>
+            <label class="field-label">Highlights<select name="raw_tone" id="raw-tone" {% if not raw %}disabled{% endif %}><option value="neutral" {% if raw.get('tone','neutral')=='neutral' %}selected{% endif %}>Standard</option><option value="photographic" {% if raw.get('tone')=='photographic' %}selected{% endif %}>Gentle highlight roll-off</option></select></label>
+            <p class="subtle" id="raw-lighting-scope">Natural, Balanced and Recovery add +0.25, +0.50 and +0.75 EV to this base. Bright highlights may limit the increase. Apply changes to review the result.</p>
+          </details>
+          {% endif %}
+          {% set selected_profile = options.get('enhancement_options',{}).get('adaptive_profile','off') if row else 'balanced' %}
+          <input type="hidden" name="adaptive_profile" id="adaptive-profile" value="{{ selected_profile }}">
+          <div class="enhance-levels" role="group" aria-label="Lighting strength">
+            <button type="button" data-enhance-preset="natural" aria-pressed="false"><strong>1</strong><span>Natural</span><small>+0.25 EV lighting</small></button>
+            <button type="button" data-enhance-preset="balanced" aria-pressed="false"><strong>2</strong><span>Balanced</span><small>+0.50 EV lighting</small></button>
+            <button type="button" data-enhance-preset="recovery" aria-pressed="false"><strong>3</strong><span>Recovery</span><small>+0.75 EV lighting</small></button>
+          </div>
+          <div class="enhance-caption"><span class="subtle" id="enhancement-choice"></span><button type="button" id="no-enhancement">Original lighting</button></div>
+          <p class="subtle" id="lighting-scope">Adjust exposure across the photo and balance uneven facial lighting. Lighting only: skin polishing, shine reduction and spot cleaning stay off. Background removal uses the control above. Compare Before / After.</p>
+          {% if row %}{% set adaptive = (row.measurements|fromjson).get('adaptive_quality',{}) %}{% if adaptive %}
+          {% set lighting_only = adaptive.mode|default('') == 'lighting_only' %}
+          <p class="notice" id="adaptive-outcome">Last saved {{ adaptive.label|default('profile') }} result: {% if adaptive.status=='unavailable' %}{{ 'lighting correction' if lighting_only else 'quality editing' }} unavailable.{% elif adaptive.status=='partial' %}some {{ 'lighting correction' if lighting_only else 'preparation' }} did not complete.{% elif adaptive.source_rgb_sha256==adaptive.output_rgb_sha256 %}{{ 'no lighting pixel changes' if lighting_only else 'no facial edits selected' }}. Background replacement is separate.{% else %}{{ 'lighting correction' if lighting_only else 'quality edits' }} applied; compare with the matched Before image.{% endif %}{% if adaptive.message %} {{ adaptive.message }}{% endif %}</p>
+          <details class="step-options"><summary>Why this correction?</summary><p>{{ adaptive.message }}</p>
+          <p class="subtle">{% if adaptive.status=='partial' %}Some {{ 'lighting correction' if lighting_only else 'preparation' }} did not complete. Review the original and result.{% elif adaptive.status=='unavailable' %}{{ 'Lighting correction' if lighting_only else 'Facial editing' }} could not run; the input was retained.{% elif adaptive.source_rgb_sha256==adaptive.output_rgb_sha256 %}This {{ 'lighting option made no pixel changes' if lighting_only else 'profile made no facial pixel changes' }}. Background replacement is a separate operation.{% elif lighting_only %}Scene exposure and uneven-lighting correction were applied together. No skin polishing, shine reduction or spot cleaning was selected by this lighting option.{% else %}Lighting and cleanup were chosen from measured pixels. These trial settings still need comparison testing.{% endif %}</p>
+          {% if lighting_only %}{% for stage in pipeline_rows if stage.name in ['Lighting option','Retinexformer lighting','Skin smoothing','Advanced skin cleaning','Background removal'] %}<div class="execution-stage"><strong>{{ 'Skin polish' if stage.name=='Skin smoothing' else 'Local skin cleaning' if stage.name=='Advanced skin cleaning' else stage.name }}</strong><span>{{ stage.state }}</span></div>{% endfor %}{% endif %}
+          {% if adaptive.source_diagnosis is defined and not lighting_only %}<p class="subtle">The original was assessed for relative facial highlights, clipping and skin texture before editing. Background removal is a separate final step.</p>
+          {% for stage in pipeline_rows if stage.name in ['Source photo diagnosis','Relative facial highlights','Skin smoothing','Advanced skin cleaning','Feature detail check','Background removal'] %}<div class="execution-stage"><strong>{{ 'Skin polish' if stage.name=='Skin smoothing' else 'Local skin cleaning' if stage.name=='Advanced skin cleaning' else stage.name }}</strong><span>{{ stage.state }}</span></div>{% endfor %}{% endif %}
+          {% if adaptive.texture_guard is defined %}<p class="subtle">{% if adaptive.texture_guard.status=='unchanged' %}No texture cleanup changed the input.{% else %}Cleanup retained {{ (adaptive.cleanup_blend|default(adaptive.texture_guard.blend) * 100)|round|int }}% of the proposed edit after the source-detail check.{% endif %}</p>{% endif %}
+          {% if adaptive.feature_detail_guard is defined %}<p class="subtle">{% if adaptive.feature_detail_guard.status=='measured' %}Eyes, brows, nose/lip edges and source marks received a separate detail check.{% elif adaptive.feature_detail_guard.status=='unchanged' %}Fine-detail cleanup left the feature reference unchanged.{% else %}Feature-detail assessment was uncertain; cleanup was reduced to the source reference.{% endif %}</p>{% endif %}
+          </details>{% endif %}{% endif %}
+          {% if not row %}<details class="step-options"><summary>OpenAI · optional extra</summary>
+            <label class="tick"><input type="checkbox" id="use-ai" name="use_ai" {% if not cfg.OPENAI_API_KEY %}disabled{% endif %}> Enhance with OpenAI</label>
+            <p class="subtle">One setup: exposure, lighting and colour, gentle skin cleanup, reduced harsh shine and natural detail. Facial features and identifying marks are instructed to stay unchanged. Compare the result before accepting.</p>
+            {% if cfg.OPENAI_API_KEY %}<label class="tick"><input type="checkbox" id="upload-ai-consent" name="ai_consent"> Customer agrees to send this photo to OpenAI for preparation</label>{% else %}<p class="subtle">OpenAI needs server setup. Local tools are available.</p>{% endif %}
+          </details>{% elif row.status=='pending' %}<button type="button" class="openai-choice" id="open-openai">OpenAI options · optional extra</button>{% endif %}
+        </section>
+        {% else %}<section class="workflow-step"><h2>Saved photo</h2><p class="subtle">This job is read-only. Upload another photo to prepare a new version.</p></section>{% endif %}
+        <p id="pending-changes" class="notice" hidden>Apply your changes to update the photo and its checks.</p>
+        <div class="station-actions">
+          {% if not row %}<button class="primary" id="process-button" type="submit">Prepare and check photo</button>
+          {% elif editable %}<button class="primary" id="process-button" type="submit">Apply changes</button>{% endif %}
+          {% if has_photo %}<div class="output-actions"><button type="button" id="print-button">Print</button><a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save</a><button type="submit" form="email-form" {% if not row.email or not cfg.SMTP_HOST %}disabled title="Add an email address and configure SMTP to send"{% endif %}>Email</button></div>{% endif %}
+        </div>
+        {% if has_photo and profile.code_service=='uk' %}<button type="button" id="open-govuk">Check with GOV.UK · test</button>{% endif %}
+        <details class="step-options delivery-options"><summary>Print and delivery options</summary>
+        <label class="field-label" for="printer">Layout family</label>
+        <select id="printer" name="printer">{% for printer in printers %}<option {% if printer == layout.printer %}selected{% endif %}>{{ printer }}</option>{% endfor %}</select>
+        <label class="field-label" for="print-template">Print layout</label>
+        <select id="print-template" name="print_template_id">{% for choice in choices %}<option value="{{ choice.id }}" {% if choice.id == layout.id %}selected{% endif %}>{{ choice.name }} · {{ choice.boxes|length }} photos · {{ choice.printer }}</option>{% endfor %}</select>
+        <p class="subtle" id="print-dimensions">{{ layout.width_px }} × {{ layout.height_px }} px · {{ layout.dpi }} DPI</p>
+          {% if has_photo and row.status=='pending' %}<details class="step-options"><summary>Photomatic handoff</summary><a class="action-button photomatic-handoff" href="/admin/p/{{ row.id }}/photomatic.jpg">Save for Photomatic</a><a class="action-button photomatic-handoff" href="/admin/import?parent={{ row.id }}">Import reviewed export</a></details>{% endif %}
+        {% if row %}{% set bg_info = (row.measurements|fromjson).get('background_removal',{}) %}{% if bg_info %}<p class="subtle" id="background-result">Background removal: {{ bg_info.status }}{% if bg_info.cache_hit %} · reused source mask{% endif %}</p>{% endif %}{% endif %}
+        </details>
+      </aside>
+    </div>
+  </form>
+  {% if row and editable and has_photo %}<form id="ofiq-check-form" method="post" action="/admin/p/{{ row.id }}/ofiq"><input type="hidden" name="review_revision" value="{{ row.revision }}"></form>{% endif %}
+  {% if has_photo and profile.code_service=='uk' %}
+  <dialog id="govuk-dialog"><div class="dialog-heading"><h2>GOV.UK photo test</h2><button type="button" id="close-govuk">Close</button></div>
+    <p>Check the exact saved export through GOV.UK's basic photo precheck. Results are separate from our measurements and Photomatic review.</p>
+    <form id="govuk-form" method="post" action="/admin/p/{{ row.id }}/govuk">
+      <input type="hidden" name="review_revision" value="{{ row.revision }}">
+      <label class="field-label">Date of birth<input type="date" name="dob" id="govuk-dob" required></label>
+      <label class="tick"><input type="checkbox" name="synthetic_dob" id="govuk-synthetic"> Placeholder birthday for a sample test · excluded from customer validation counts</label>
+      <p class="subtle">Use the customer's correct birthday for comparisons. Child allowances depend on age; child journeys still need verification.</p>
+      <label class="tick"><input type="checkbox" name="govuk_consent" required> I am authorised to send this photo and birthday to GOV.UK</label>
+      <p class="subtle">GOV.UK may retain the photo and birthday for up to six months. This test stops at the photo result and submits no passport application.</p>
+      <button class="primary" id="govuk-submit" type="submit" {% if not cfg.GOVUK_PRECHECK_ENABLED %}disabled{% endif %}>Run GOV.UK check</button>
+      {% if not cfg.GOVUK_PRECHECK_ENABLED %}<p class="notice">This optional test tool needs local browser setup.</p>{% endif %}
+    </form>
+    <p id="govuk-progress" role="status"></p><div id="govuk-results"></div>
+    <p class="subtle">If automatic access is unavailable, download the frozen test JPEG below and use the normal browser journey.</p>
+    <a class="action-button" href="https://www.gov.uk/apply-renew-passport" target="_blank" rel="noopener">Open GOV.UK in your browser</a>
+  </dialog>
+  {% endif %}
+  {% if row and row.status == 'pending' %}
+  <dialog id="openai-dialog"><div class="dialog-heading"><h2>OpenAI preparation</h2><button type="button" id="close-openai">Close</button></div>
+  <details class="ai-panel premium-tools" id="ai-panel" {% if ai_status.status in ['running','ready','error'] %}open{% endif %}>
+    <summary>Optional OpenAI upgrade</summary>
+    <p>Use the included local tools first. OpenAI preparation is an optional extra service.</p>
+    {% if ai_status.status == 'running' %}<p role="status">Preparing lighting, skin and detail… This may take a few minutes. Refresh to see the result.</p>
+    {% elif ai_status.status == 'ready' %}
+      <p>Compare the camera original with the prepared crop. Check eyes, skin texture, hair and all distinguishing marks.</p>
+      {% if ai_status.print_only and not options.print_only %}<p class="notice">Passport crop failed in this preview. This is a full-frame print layout with borders, not a prepared passport crop.</p>{% endif %}
+      <div class="ai-comparison"><figure><img src="/admin/p/{{ row.id }}/original.jpg" alt="Camera original"><figcaption>Camera original · full frame</figcaption></figure><figure><img src="/admin/p/{{ row.id }}/ai-preview.jpg" alt="OpenAI preparation preview"><figcaption>{{ 'AI image · full-frame print layout, passport crop not assessed' if ai_status.print_only else 'AI image · local document crop and selected tools' }}</figcaption></figure></div>
+      <button type="button" id="open-ai-measurements">Detailed AI preview measurements</button>
+      <p class="subtle">OpenAI model: {{ ai_status.model }} · returned image recorded{% if ai_status.local_rechecked_at %} · local tools refreshed without another OpenAI request{% endif %}.</p>
+      <details class="processing-evidence"><summary>What actually ran · AI preview</summary>{% for stage in ai_pipeline_rows %}<div class="execution-stage"><strong>{{ stage.name }}</strong><span>{{ stage.state }}</span><p class="subtle">{{ stage.detail }}</p></div>{% endfor %}</details>
+      {% if ai_status.original_checks %}<details><summary>Checks on the camera original</summary>{% set checks = ai_status.original_checks %}{% include '_checks.html' %}</details>{% endif %}
+      <details><summary>Checks on the AI preview</summary>{% set checks = ai_status.checks %}{% include '_checks.html' %}</details>
+      {% if not ai_status.ok %}<p class="notice">The preview has failed or unapproved checks. Review them before deciding whether to proceed under staff responsibility.</p>{% endif %}
+      <form id="ai-recheck-form" method="post" action="/admin/p/{{ row.id }}/ai/recheck"><input type="hidden" name="candidate_id" value="{{ ai_status.candidate_id }}"><input type="hidden" name="review_revision" value="{{ row.revision }}"><button type="submit">Refresh crop and selected local tools · no OpenAI call</button><p id="ai-recheck-progress" role="status" hidden></p></form>
+      <div class="ai-review-actions">
+        <form method="post" action="/admin/p/{{ row.id }}/ai/accept"><input type="hidden" name="candidate_id" value="{{ ai_status.candidate_id }}"><label class="tick"><input type="checkbox" name="review_likeness" required> I compared both photos and the person's appearance is preserved</label><button class="primary" type="submit">Accept preparation and recheck</button></form>
+        <form method="post" action="/admin/p/{{ row.id }}/ai/discard"><button type="submit">Discard AI preview</button></form>
+      </div>
+    {% else %}
+      {% if ai_status.status == 'error' %}<p class="notice" role="alert">{{ ai_status.message }}</p>{% endif %}
+      {% if options.ai %}<p class="success-message">AI preparation accepted and checked. Staff likeness review recorded.</p>{% endif %}
+      <form id="ai-prepare-form" method="post" action="/admin/p/{{ row.id }}/ai/prepare">
+        <input type="hidden" name="lighting" value="on"><input type="hidden" name="colour" value="on">
+        <p>One setup: balance exposure, lighting and colour; gently clean skin, reduce harsh shine and improve natural detail. Preserve facial features, proportions and identifying marks. Compare the preview with the original before accepting.</p>
+        <label class="tick"><input type="checkbox" name="ai_consent" required> Customer agrees to send this photo to OpenAI for preparation</label>
+        <button class="primary" type="submit" {% if not cfg.OPENAI_API_KEY or not editable %}disabled{% endif %}>{{ 'Prepare again from original' if options.ai else 'Prepare with OpenAI' }}</button>
+        {% if not cfg.OPENAI_API_KEY %}<p class="subtle">OpenAI connection needs server setup.</p>{% endif %}
+        <p id="ai-progress" role="status" hidden></p>
+      </form>
+    {% endif %}
+    {% if options.ai and editable %}<form method="post" action="/admin/p/{{ row.id }}/restore-original"><button type="submit">Use camera original and recheck</button></form>{% endif %}
+  </details>
+  </dialog>
+  {% endif %}
+  {% if has_photo %}<form id="email-form" method="post" action="/admin/p/{{ row.id }}/email"></form>{% endif %}
+  {% if row %}
+  <section class="code-panel">
+    {% if row.code %}
+      <div><span class="eyebrow">Passport photo code</span><strong class="code">{{ cfg.SHORT_DOMAIN }}/{{ row.code }}</strong><p class="subtle">Valid until {{ row.expires|dt }} · collected by HMPO {{ row.fetched_count }} times</p></div>
+      {% set review = row.issue_review|fromjson %}{% if review.exception %}<p class="notice">Approved with {{ review.exception.category }} exception: {{ review.exception.reason }}. Failed measurements are retained in the review record.</p>{% endif %}
+      {% if review.staff_override %}<p class="notice">Issued under staff responsibility by {{ review.staff_override.confirmed_by }}. Failed checks remain recorded. {{ review.staff_override.reason }}</p>{% endif %}
+      <a class="action-button" href="/admin/p/{{ row.id }}/slip" target="_blank">Print code slip</a>
+    {% elif row.status == 'pending' and profile.hmpo_code and has_photo %}
+      <form method="post" action="/admin/p/{{ row.id }}/issue">
+        <input type="hidden" name="review_revision" value="{{ row.revision }}">
+        <h2>Issue UK passport photo code</h2>
+        {% set responsibility_needed = not row.ok or options.get('print_only',false) or options.get('ai',{}).get('print_only',false) %}
+        <label class="tick"><input type="checkbox" name="review_likeness" required> I reviewed likeness, recency, framing and background</label>
+        <label class="tick"><input type="checkbox" name="review_visibility" required> I reviewed head coverings, eye visibility, glare and red eye</label>
+        <label class="tick"><input type="checkbox" name="customer_permission" required> Customer informed and agrees to photo storage and code delivery</label>
+        {% if responsibility_needed %}<p class="notice">Quality checks are advisory. Review the red or unapproved results, then confirm responsibility if you choose to issue anyway.</p>{% endif %}
+        <label class="tick"><input type="checkbox" name="staff_override" {% if responsibility_needed %}required{% endif %}> Issue despite failed or unapproved quality checks — I take responsibility for this decision</label>
+        <label class="field-label">Optional decision note<textarea name="override_reason" maxlength="1000" rows="2"></textarea></label>
+        {% if ai_status.status in ['ready','running'] %}<p class="notice">Finish the AI preview review before issuing a code.</p>{% endif %}
+        <button class="primary" type="submit" {% if ai_status.status in ['ready','running'] or row.edit_token %}disabled{% endif %}>Issue UK photo code</button>
+        <p class="subtle">A photo code delivers the photo; passport acceptance is decided by HMPO.</p>
+      </form>
+    {% elif profile.code_service == 'ie' %}<div><h2>Irish passport photo code</h2><p>Irish codes are handled by your external provider. Save the photo and submit it through that provider.</p><a class="action-button" href="/admin/p/{{ row.id }}/save.jpg">Save for Irish provider</a>{% if cfg.IRISH_PROVIDER_URL %}<a class="action-button" href="{{ cfg.IRISH_PROVIDER_URL }}" target="_blank" rel="noopener noreferrer">Open Irish provider</a>{% endif %}</div>
+    {% elif not profile.code_service %}<p>Print, save or email this {{ profile.name }} photo. Online codes are limited to UK and Irish passports.</p>{% endif %}
+    {% if emailed == '1' %}<p class="success-message">Email sent to customer.</p>{% elif emailed == '0' and row.email %}<p class="notice">Email was not sent. Check SMTP settings.</p>{% endif %}
+    <form class="reject-form" method="post" action="/admin/p/{{ row.id }}/reject" onsubmit="return confirm('Delete this photo and cancel its code?')"><button class="danger" type="submit">{{ 'Cancel code and delete' if row.code else 'Reject and delete' }}</button></form>
+  </section>
+  {% endif %}
+</main>
+{% if row %}
+<dialog id="hotspots-dialog">
+  <div class="dialog-heading"><h2>Regional hotspot inspector</h2><button type="button" id="close-hotspots">Close</button></div>
+  <p>Compare bright patches on the forehead, nose, cheeks and chin. Outlines are estimated facial regions; amber boxes locate candidate bright patches.</p>
+  <p class="notice">Diagnostic measurements only. These values do not certify a passport photo or change code approval. Near-clipped pixels can indicate lost detail; a darker edited patch does not prove that detail was recovered.</p>
+  <button type="button" id="refresh-hotspots">Measure current images</button>
+  <label class="tick"><input type="checkbox" id="hotspot-overlay" checked> Show regions and candidate patches</label>
+  <p id="hotspot-progress" role="status"></p>
+  <div id="hotspot-results" class="hotspot-stages"></div>
+  <details><summary>How these measurements work</summary><p>Bright candidates: at least 80 L* and 15 L* above the regional median, or a colour channel at 250 or above. Near-clipped values count channels at 250–255 in the decoded 8-bit image. These diagnostic thresholds need calibration against shop photographs; they are not country pass limits or Photomatic scores. Eye regions and lips are excluded. Glasses glare needs a separate check. The preview is reduced for display; counts use native image pixels.</p></details>
+</dialog>
+{% endif %}
+{% if row %}<dialog id="measurements-dialog"><div class="dialog-heading"><h2>{{ measurement_title }}</h2><button type="button" id="close-measurements">Close</button></div><p class="subtle">Eye positions refer to the print master. Source distance refers to the oriented camera / AI image. Values use our measurement methods; they are not Photomatic's proprietary 0–100 scores.</p><p class="measurement-legend">Green: passed · Amber: review · Red: failed · Grey: measured without a calibrated limit, or not tested</p>{% include '_measurements.html' %}{% include '_ofiq.html' %}</dialog>{% endif %}
+{% if ai_status.status == 'ready' %}
+<dialog id="ai-measurements-dialog">
+  <div class="dialog-heading"><h2>AI preview measurements</h2><button type="button" id="close-ai-measurements">Close</button></div>
+  <p class="subtle">These measurements were rerun on the AI result. They use our local methods; unimplemented proprietary scores remain not tested.</p>
+  {% with measurement_sections=ai_measurement_sections %}{% include '_measurements.html' %}{% endwith %}
+  {% with ofiq_report=ai_ofiq_report %}{% include '_ofiq.html' %}{% endwith %}
+</dialog>
+{% endif %}
+<dialog id="country-dialog">
+  <div class="dialog-heading"><h2>Select country / document</h2><button type="button" id="close-countries">Close</button></div>
+  <label for="country-search" class="sr-only">Search templates</label><input id="country-search" type="search" placeholder="Search country, passport, visa, ID or online…">
+  <p class="subtle">{{ catalog.countries|length }} country and document profiles</p>
+  <div class="country-grid">{% for c in catalog.countries %}<button type="button" class="country-choice" data-country="{{ c.id }}" data-search="{{ (c.name ~ ' ' ~ c.country)|lower }}">{% if c.flag %}<img src="{{ c.flag }}" alt="" loading="lazy">{% endif %}<span>{{ c.name }}</span><small>{{ c.width_mm|int }} × {{ c.height_mm|int }} mm{% if c.digital_size[0] > 0 %} · {{ c.digital_size[0] }} × {{ c.digital_size[1] }} px{% endif %}</small></button>{% endfor %}</div>
+  <p id="no-countries" hidden>No matching templates.</p>
+</dialog>
+<dialog id="camera-dialog"><div class="dialog-heading"><h2>Camera</h2><button type="button" id="close-camera">Close</button></div><video id="camera-video" autoplay playsinline muted></video><p id="camera-error" class="notice" hidden></p><button type="button" id="capture-photo">Take photo</button></dialog>
+<script id="station-catalog" type="application/json">{{ {'countries':catalog.countries,'prints':catalog.prints}|tojson }}</script>
+{% if row and (row.measurements|fromjson).get('skin_cleaning',{}).get('status')=='applied' %}
+<dialog id="cleaner-dialog">
+  <div class="dialog-heading"><h2>Review skin repairs</h2><button type="button" id="close-cleaner">Close</button></div>
+  <p class="subtle">Blue highlights show spot repairs.{% if editable %} Click or drag on the left photo to mark an area to keep; green circles preserve those pixels when you apply changes.{% else %} This issued or locked photo is available for review.{% endif %}</p>
+  <div class="cleaner-grid"><section><h3>Before cleaning · mark areas to keep</h3><canvas id="cleaner-canvas"></canvas></section><section><h3>After spot cleaning</h3><img id="cleaner-after" loading="lazy" src="/admin/p/{{ row.id }}/cleaner/after.png?revision={{ row.revision }}" alt="After local spot repairs"></section></div>
+  <label class="tick"><input id="cleaner-show-mask" type="checkbox" checked> Show repair highlights</label>
+  {% if editable %}<label class="local-control">Keep-area brush size <input id="cleaner-radius" type="range" min="0.005" max="0.06" step="0.005" value="0.015"></label>{% endif %}
+  <p id="cleaner-progress" class="subtle"></p>
+  {% if editable %}<button type="button" id="cleaner-undo">Undo last keep area</button><button type="button" id="cleaner-clear">Clear keep areas</button><button type="button" id="cleaner-use">Use keep areas · then Apply changes</button>{% endif %}
+</dialog>
+{% endif %}
+<script id="enhancer-presets" type="application/json">{"natural":{"label":"Natural lighting · +0.25 EV"},"balanced":{"label":"Balanced lighting · +0.50 EV"},"recovery":{"label":"Recovery lighting · +0.75 EV"}}</script>
+<script>window.stationPhotoId={{ (row.id if row else none)|tojson }};window.stationRevision={{ (row.revision if row else 0)|tojson }};window.stationEditable={{ editable|tojson }};window.stationAiStatus={{ ai_status.get("status","")|tojson }};window.stationFullFrame={{ options.get('print_only',false)|tojson }};window.stationCrop={{ crop|tojson }};window.stationCropGeometry={{ crop_preview_geometry|default({})|tojson }};</script>
+<script src="/static/station.js" defer></script>
+</body></html>

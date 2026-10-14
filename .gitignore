@@ -3,3 +3,6 @@ models/
 __pycache__/
 *.pyc
 .env
+output/
+.background-venv/
+node_modules/

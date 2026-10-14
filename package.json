@@ -1,0 +1,14 @@
+{
+  "name": "tuttocode-ui-tests",
+  "private": true,
+  "scripts": {
+    "test:station": "node tests/test_station_ui.cjs",
+    "test:govuk": "node --test tests/test_govuk_precheck.mjs",
+    "test:govuk-photo": "node scripts/govuk_precheck.mjs",
+    "test:queue": "node tests/test_test_queue_ui.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.2",
+    "playwright": "^1.64.0"
+  }
+}

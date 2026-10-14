@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Test queues{% endblock %}
+{% block home %}/admin/new{% endblock %}
+{% block nav %}<a href="/admin/history">Photo history</a>{% endblock %}
+{% block content %}
+<h1>{{ 'Add photos to ' + append_queue.title if append_queue else 'Photo test queues' }}</h1>
+<p>Prepare photos in our studio, then select their saved exports here. Staff upload each JPEG in the normal GOV.UK browser session and record the observed result. Photomatic comparison is a separate step.</p>
+<form method="post" action="/admin/tests" id="test-queue-form">
+{% if append_queue %}<input type="hidden" name="queue_id" value="{{ append_queue.id }}">{% else %}<label>Queue name<input type="text" name="title" value="UK photo validation" maxlength="100" required></label>{% endif %}
+{% if not append_queue %}<label class="check"><input type="checkbox" name="keep_snapshots"> Keep separate test copies and observations for {{ cfg.RETENTION_DAYS }} days for this study · I am authorised to retain these test photos</label>{% endif %}
+<div class="card">
+<div class="row" style="align-items:center"><div><button type="button" class="btn secondary" data-select-count="5">First 5</button> <button type="button" class="btn secondary" data-select-count="10">10</button> <button type="button" class="btn secondary" data-select-count="20">20</button> <button type="button" class="btn secondary" data-select-count="200">All · up to 200</button></div><div><span id="queue-selection-count">0 selected</span> <button type="button" class="btn secondary" data-select-count="0">Clear</button></div></div>
+<div style="overflow:auto;max-height:540px"><table><tr><th>Select</th><th>Photo</th><th>Document</th><th>Prepared</th><th>Local checks</th></tr>
+{% for row in rows %}<tr><td><input type="checkbox" name="photo_ids" value="{{ row.id }}" aria-label="Select photo {{ row.id }}"></td><td><a href="/admin/p/{{ row.id }}"><img src="/admin/p/{{ row.id }}/full.jpg" alt="Prepared photo" loading="lazy">{{ row.id[:6] }}</a></td><td>{{ profiles[row.country_id].name }}</td><td>{{ row.created|dt }}</td><td>{{ 'Pass' if row.ok else 'Review findings' }}</td></tr>{% else %}<tr><td colspan="5">Prepare a photo first. <a href="/admin/new">Open studio</a></td></tr>{% endfor %}</table></div>
+<p class="muted">The queue freezes exact Save JPEGs and existing engine checks. It makes no GOV.UK, Photomatic or OpenAI requests. Without study-copy retention, cases follow source expiry. Rejection of an original removes its test copies. Export your report before expiry.</p>
+<button class="btn" type="submit">{{ 'Add selected photos' if append_queue else 'Create test queue' }}</button><p id="queue-building" class="muted" hidden>Freezing selected JPEGs… Large queues may take a minute.</p>
+</div></form>
+{% if not append_queue %}<h2>Existing queues</h2><div class="card"><table><tr><th>Queue</th><th>Cases</th><th>Created</th></tr>{% for queue in queues %}<tr><td><a href="/admin/tests/{{ queue.id }}">{{ queue.title }}</a></td><td>{{ queue.count }}</td><td>{{ queue.created|dt }}</td></tr>{% else %}<tr><td colspan="3">No test queue yet.</td></tr>{% endfor %}</table></div>{% endif %}
+<script src="/static/test_queue.js" defer></script>
+{% endblock %}

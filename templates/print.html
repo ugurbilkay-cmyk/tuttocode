@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{{ layout.name }} · Print photo sheet</title>
+<style>
+@page{size:{{ (layout.width_px / layout.dpi * 25.4)|round(3) }}mm {{ (layout.height_px / layout.dpi * 25.4)|round(3) }}mm;margin:0}
+body{margin:0;font:16px system-ui;background:#eee}nav{padding:16px;background:#fff}button,a{margin-right:12px}img{display:block;width:{{ (layout.width_px / layout.dpi * 25.4)|round(3) }}mm;height:{{ (layout.height_px / layout.dpi * 25.4)|round(3) }}mm}
+@media print{nav{display:none}body{background:white}img{max-width:none;max-height:none}}
+</style></head><body><nav><button onclick="window.print()">Print sheet</button><a href="?template={{ layout.id|urlencode }}&amp;printer={{ layout.printer|urlencode }}" download="{{ layout.name }}.jpg">Download JPEG</a><p>{{ layout.boxes|length }} photos · {{ layout.dpi }} DPI. Print at actual size (100%), with margins and headers off. Use the matching paper and check the first print with a ruler.</p></nav><img src="?template={{ layout.id|urlencode }}&amp;printer={{ layout.printer|urlencode }}" alt="{{ layout.name }} print sheet"></body></html>
